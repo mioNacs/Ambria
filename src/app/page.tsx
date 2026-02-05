@@ -9,7 +9,12 @@ import {
   ArrowRight,
   Check,
   FolderKanban,
+  FolderGit2,
+  GitPullRequest,
   Lock,
+  MessageSquareText,
+  Search,
+  ShieldCheck,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -109,9 +114,12 @@ export default function LandingPage() {
               >
                 Features
               </Link>
-              <div className="w-44">
-                <LoginButton className="!w-auto !px-4 !py-2.5 !text-sm" />
-              </div>
+              <Link
+                href="#signin"
+                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-white transition-colors"
+              >
+                Sign in
+              </Link>
             </div>
           </div>
         </div>
@@ -119,7 +127,7 @@ export default function LandingPage() {
 
       <main className="mx-auto w-full max-w-6xl px-6">
         {/* Hero */}
-        <section className="pt-14 pb-12 lg:pt-20 lg:pb-20">
+        <section id="signin" className="pt-14 pb-12 lg:pt-20 lg:pb-20">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <motion.div
               initial={{ opacity: 0, y: 14 }}
@@ -136,8 +144,8 @@ export default function LandingPage() {
                 <span className="gradient-text">AI</span>
               </h1>
               <p className="mt-4 text-lg text-gray-600 max-w-xl">
-                Connect a repository and keep work organized by workspace. Ask questions,
-                triage issues, and understand unfamiliar projects quicker.
+                Connect a repo, keep context separated by workspace, and get answers that
+                stay tied to the code you’re looking at.
               </p>
 
               <Suspense fallback={null}>
@@ -149,10 +157,10 @@ export default function LandingPage() {
                   <LoginButton />
                 </div>
                 <Link
-                  href="#how"
+                  href="#features"
                   className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-gray-200 bg-white/80 hover:bg-white text-gray-900 font-medium transition-colors"
                 >
-                  See how it works
+                  Explore features
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -164,11 +172,11 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <span>Get quick repo overviews, file search, and multi-file pulls</span>
+                  <span>Pull file snippets, search code, and summarize changes quickly</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <span>Keep work organized by repository workspace</span>
+                  <span>Keep threads and tokens separated by workspace</span>
                 </li>
               </ul>
             </motion.div>
@@ -182,34 +190,53 @@ export default function LandingPage() {
               <div className="rounded-3xl border border-gray-200 bg-white/75 backdrop-blur shadow-sm overflow-hidden">
                 <div className="p-8">
                   <div className="flex items-center justify-between gap-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Secure OAuth</h2>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Lock className="w-3.5 h-3.5" />
-                      GitHub sign-in
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      Secure GitHub OAuth
                     </div>
+                    <div className="text-xs text-gray-500">No access without permission</div>
                   </div>
                   <p className="mt-2 text-sm text-gray-600">
-                    Authenticate with GitHub to connect repositories and detect
-                    permissions.
+                    Stay in flow: keep repo context scoped to a workspace and jump between
+                    issues, PRs, and code.
                   </p>
 
-                  <div className="mt-6">
-                    <LoginButton className="w-full" />
-                  </div>
-
-                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {["Issues", "Pull Requests", "Code Search"].map((label) => (
-                      <motion.div
-                        key={label}
-                        whileHover={{ y: -4 }}
-                        transition={{ type: "spring", stiffness: 320, damping: 24 }}
+                  <div className="mt-6 grid gap-3">
+                    {[
+                      {
+                        icon: <FolderGit2 className="w-4 h-4" />,
+                        title: "Connect a repository",
+                        description: "Detect access level and branch context automatically.",
+                      },
+                      {
+                        icon: <FolderKanban className="w-4 h-4" />,
+                        title: "Organize by workspace",
+                        description: "Keep threads and tokens separated per repo.",
+                      },
+                      {
+                        icon: <MessageSquareText className="w-4 h-4" />,
+                        title: "Ask with context",
+                        description: "Get answers grounded in the files you reference.",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.title}
                         className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4"
                       >
-                        <div className="text-xs text-gray-500">Focus</div>
-                        <div className="mt-1 text-sm font-semibold text-gray-900">
-                          {label}
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-gray-900 text-white">
+                            {item.icon}
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              {item.title}
+                            </div>
+                            <div className="mt-1 text-xs text-gray-600">
+                              {item.description}
+                            </div>
+                          </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -225,6 +252,22 @@ export default function LandingPage() {
                     <div className="rounded-xl bg-gray-900 text-white px-3 py-2 text-xs font-semibold">
                       /dashboard
                     </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {[
+                      { icon: <FolderKanban className="w-4 h-4" />, label: "Issues" },
+                      { icon: <GitPullRequest className="w-4 h-4" />, label: "PRs" },
+                      { icon: <Search className="w-4 h-4" />, label: "Code" },
+                    ].map((chip) => (
+                      <div
+                        key={chip.label}
+                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700"
+                      >
+                        {chip.icon}
+                        {chip.label}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -246,8 +289,8 @@ export default function LandingPage() {
                   Designed for real OSS work
                 </h2>
                 <p className="mt-2 text-gray-600 max-w-2xl">
-                  A workspace-first flow that keeps repos separate and makes it easy
-                  to chat with context.
+                  A workspace-first flow that keeps repos separate and makes it easy to
+                  ask questions without losing your place.
                 </p>
               </div>
             </div>
@@ -256,12 +299,12 @@ export default function LandingPage() {
               <FeatureCard
                 icon={<FolderKanban className="w-5 h-5" />}
                 title="Workspace organization"
-                description="Keep repo-specific threads, tokens, and context together so you can switch projects without losing your place."
+                description="Keep threads, tokens, and context scoped per repo so you can switch projects cleanly."
               />
               <FeatureCard
                 icon={<Zap className="w-5 h-5" />}
                 title="Fast repo understanding"
-                description="Pull file snippets, search code, and generate summaries that help you contribute faster—without the guesswork."
+                description="Pull snippets, search code, and generate summaries that help you contribute faster."
               />
             </div>
           </motion.div>
@@ -276,39 +319,40 @@ export default function LandingPage() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="rounded-3xl border border-gray-200 bg-white/70 backdrop-blur p-8 lg:p-10 shadow-sm"
           >
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-              Three-step flow
-            </h2>
+            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">How it works</h2>
             <p className="mt-2 text-gray-600 max-w-2xl">
-              The whole product stays simple: sign in, connect a repo, start asking.
+              Three steps: sign in, connect a repo, start asking.
             </p>
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {[
                 {
+                  icon: <ShieldCheck className="w-5 h-5" />,
                   title: "Sign in with GitHub",
                   description:
-                    "OAuth keeps it secure and lets us verify access levels for each repo.",
+                    "OAuth keeps it secure and lets us verify access for each repo.",
                 },
                 {
+                  icon: <FolderGit2 className="w-5 h-5" />,
                   title: "Add a workspace",
                   description:
                     "Each workspace is a repo + your role, with separate context and threads.",
                 },
                 {
+                  icon: <MessageSquareText className="w-5 h-5" />,
                   title: "Chat with context",
                   description:
                     "Ask about issues, PRs, or code. Get answers tied to the repo you’re in.",
                 },
-              ].map((step, idx) => (
+              ].map((step) => (
                 <motion.div
                   key={step.title}
                   whileHover={{ y: -6 }}
                   transition={{ type: "spring", stiffness: 320, damping: 24 }}
                   className="rounded-2xl border border-gray-200 bg-white px-6 py-6"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-semibold">
-                    {idx + 1}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                    {step.icon}
                   </div>
                   <div className="mt-4 text-base font-semibold text-gray-900">
                     {step.title}
