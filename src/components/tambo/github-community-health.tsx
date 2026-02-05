@@ -41,6 +41,15 @@ export function CommunityHealth({
   className,
   ...props
 }: CommunityHealthProps) {
+  const uniqueFiles = React.useMemo(() => {
+    const seen = new Set<string>();
+    return files.filter((file) => {
+      if (seen.has(file.path)) return false;
+      seen.add(file.path);
+      return true;
+    });
+  }, [files]);
+
   const presentCount = files.filter((f) => f.exists).length;
   const missingCount = files.filter((f) => f.exists === false).length;
 
@@ -65,14 +74,13 @@ export function CommunityHealth({
         <p className="mt-3 text-sm text-muted-foreground">No results.</p>
       ) : (
         <div className="mt-3 space-y-2">
-          {files.map((file) => {
+          {uniqueFiles.map((file) => {
             const name = file.name ?? file.path;
             const path = file.path;
-            const stableKey = `${path}:${file.exists ? "present" : "missing"}:${name}`;
 
             return (
               <div
-                key={stableKey}
+                key={path}
                 className={cn(
                   "rounded-md border border-border",
                   "px-3 py-2",

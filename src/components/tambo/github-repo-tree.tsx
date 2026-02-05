@@ -87,10 +87,7 @@ export function GitHubRepoTree({
     if (!state) return;
     if (state.selectedPath) return;
 
-    setState({
-      selectedPath: initialSelectedPath,
-      expandedPaths: state.expandedPaths,
-    });
+    setState({ ...state, selectedPath: initialSelectedPath });
   }, [initialSelectedPath, setState, state]);
 
   const items = React.useMemo(() => sortTree(tree), [tree]);
@@ -174,7 +171,7 @@ export function GitHubRepoTree({
 
     const isExpanded = expandedPaths[path] ?? true;
     setState({
-      selectedPath: state.selectedPath,
+      ...state,
       expandedPaths: {
         ...expandedPaths,
         [path]: !isExpanded,
@@ -184,7 +181,7 @@ export function GitHubRepoTree({
 
   const selectPath = (path: string) => {
     if (!state) return;
-    setState({ selectedPath: path, expandedPaths });
+    setState({ ...state, selectedPath: path });
   };
 
   const renderNode = (node: TreeNode, depth: number) => {
