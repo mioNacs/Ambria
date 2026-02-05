@@ -42,8 +42,15 @@ export function useAuth() {
         return () => subscription.unsubscribe();
     }, [supabase]);
 
+    /**
+     * Starts the GitHub OAuth flow (redirects to GitHub).
+     * Throws on any error (including if the Supabase client isn't initialized).
+     * Callers should wrap in `try/catch` to show user-facing feedback.
+     */
     const signInWithGitHub = useCallback(async () => {
-        if (!supabase) return;
+        if (!supabase) {
+            throw new Error("Supabase client is not initialized");
+        }
 
         const scopes = process.env.NEXT_PUBLIC_GITHUB_OAUTH_SCOPES || "repo read:user";
         const { error } = await supabase.auth.signInWithOAuth({
@@ -53,14 +60,21 @@ export function useAuth() {
                 scopes,
             },
         });
-        if (error) {
-            console.error("Error signing in with GitHub:", error);
-        }
+
+        if (error) throw error;
     }, [supabase]);
 
+    /**
+     * Signs the user out and navigates to `/login`.
+     * Throws on any error (including if the Supabase client isn't initialized).
+     * Callers should wrap in `try/catch` to show user-facing feedback.
+     */
     const signOut = useCallback(async () => {
-        if (!supabase) return;
-        await supabase.auth.signOut();
+        if (!supabase) {
+            throw new Error("Supabase client is not initialized");
+        }
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
         router.push("/login");
     }, [supabase, router]);
 
