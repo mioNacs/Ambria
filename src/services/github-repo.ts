@@ -1023,7 +1023,7 @@ export async function getCommunityFiles(params: {
     const results: CommunityFile[] = [];
 
     for (const check of checks) {
-        let found: { candidate: string; type: string } | null = null;
+        let found: { path: string; type: string } | null = null;
 
         for (const candidate of check.candidates) {
             const parts = candidate.split("/").filter(Boolean);
@@ -1036,11 +1036,11 @@ export async function getCommunityFiles(params: {
             const entry = listing?.get(name);
             if (!entry) continue;
 
-            found = { candidate, type: entry.type };
+            found = { path: entry.path, type: entry.type };
             break;
         }
 
-        const outputPath = found?.candidate ?? check.candidates[0] ?? check.label;
+        const outputPath = found?.path ?? check.candidates[0] ?? check.label;
         const outputName = outputPath.split("/").pop() || outputPath;
 
         if (!found) {

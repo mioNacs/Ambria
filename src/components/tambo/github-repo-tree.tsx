@@ -77,9 +77,39 @@ export function GitHubRepoTree({
 }: GitHubRepoTreeProps) {
   const instanceId = React.useId();
   const resolvedStateKey = stateKey ?? `github-repo-tree:${instanceId}`;
+
+  const initialExpandedPaths = React.useMemo(() => {
+    const expanded: Record<string, boolean> = {};
+
+    for (const item of tree) {
+      const parts = item.path.split("/").filter(Boolean);
+      const topLevel = parts[0];
+      if (!topLevel) continue;
+
+      if (item.type === "dir" || parts.length > 1) {
+        expanded[topLevel] = true;
+      }
+    }
+
+    if (initialSelectedPath) {
+      const parts = initialSelectedPath.split("/").filter(Boolean);
+      let currentPath = "";
+
+      for (const part of parts.slice(0, -1)) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        expanded[currentPath] = true;
+      }
+    }
+
+    return expanded;
+  }, [initialSelectedPath, tree]);
+
   const [state, setState] = useTamboComponentState<RepoTreeState>(
     resolvedStateKey,
-    { selectedPath: initialSelectedPath ?? null, expandedPaths: {} },
+    {
+      selectedPath: initialSelectedPath ?? null,
+      expandedPaths: initialExpandedPaths,
+    },
   );
 
   React.useEffect(() => {
@@ -169,7 +199,7 @@ export function GitHubRepoTree({
   const toggleExpanded = (path: string) => {
     if (!state) return;
 
-    const isExpanded = expandedPaths[path] ?? true;
+    const isExpanded = expandedPaths[path] ?? false;
     setState({
       ...state,
       expandedPaths: {
@@ -187,7 +217,7 @@ export function GitHubRepoTree({
   const renderNode = (node: TreeNode, depth: number) => {
     const label = node.name || getRowLabel(node.path);
     const isSelected = node.type === "file" && node.path === selectedPath;
-    const isExpanded = expandedPaths[node.path] ?? true;
+    const isExpanded = expandedPaths[node.path] ?? false;
     const paddingLeft = 12 + depth * 16;
 
     if (node.type === "dir") {

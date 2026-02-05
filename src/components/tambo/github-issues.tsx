@@ -54,7 +54,7 @@ export const issueCardSchema = githubIssueSchema
 export type IssueCardProps = z.infer<typeof issueCardSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
-function formatDate(value?: string) {
+function formatDate(value?: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) return value;
@@ -92,7 +92,7 @@ export function IssueCard({
   const header = number ? `#${number}` : "Issue";
   const created = formatDate(createdAt);
   const updated = formatDate(updatedAt);
-  const closed = formatDate(closedAt ?? undefined);
+  const closed = formatDate(closedAt);
   const allLabels = (labels ?? []).filter(Boolean);
   const normalizedLabels = allLabels.slice(0, 8);
   const extraLabelsCount = allLabels.length - normalizedLabels.length;

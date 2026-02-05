@@ -50,8 +50,8 @@ export function CommunityHealth({
     });
   }, [files]);
 
-  const presentCount = files.filter((f) => f.exists).length;
-  const missingCount = files.filter((f) => f.exists === false).length;
+  const presentCount = uniqueFiles.filter((f) => f.exists).length;
+  const missingCount = uniqueFiles.filter((f) => f.exists === false).length;
 
   return (
     <div
@@ -70,7 +70,7 @@ export function CommunityHealth({
         </div>
       </div>
 
-      {files.length === 0 ? (
+      {uniqueFiles.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No results.</p>
       ) : (
         <div className="mt-3 space-y-2">
