@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTamboThreadList, useTamboThread } from "@tambo-ai/react";
 import { createClient } from "@/lib/supabase/client";
+import { getFallbackThreadTitle, getMeaningfulThreadName } from "@/lib/thread-titles";
 
 export interface WorkspaceThread {
     id: string;
@@ -11,17 +12,6 @@ export interface WorkspaceThread {
     title: string | null;
     last_activity_at: string;
     created_at: string;
-}
-
-function getFallbackThreadTitle(threadId: string) {
-    return `Thread ${threadId.slice(-6)}`;
-}
-
-function getMeaningfulThreadName(threadId: string, name: string | null | undefined) {
-    const trimmed = name?.trim();
-    if (!trimmed) return null;
-    if (trimmed === getFallbackThreadTitle(threadId)) return null;
-    return trimmed;
 }
 
 /**
@@ -39,13 +29,17 @@ export function useWorkspaceThreads(workspaceId: string) {
     const [workspaceThreads, setWorkspaceThreads] = useState<WorkspaceThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const currentWorkspaceThreadTitle = useMemo(() => {
+    const currentWorkspaceThread = useMemo(() => {
         if (!currentThread?.id) return null;
         return (
-            workspaceThreads.find((t) => t.tambo_thread_id === currentThread.id)
-                ?.title ?? null
+            workspaceThreads.find((t) => t.tambo_thread_id === currentThread.id) ??
+            null
         );
     }, [currentThread?.id, workspaceThreads]);
+
+    const currentWorkspaceThreadTitle = currentWorkspaceThread?.title ?? null;
+    const currentWorkspaceThreadLastActivityAt =
+        currentWorkspaceThread?.last_activity_at ?? null;
 
     const currentMessageCount = currentThread?.messages?.length ?? 0;
     const lastMessageCreatedAt =
@@ -180,6 +174,13 @@ export function useWorkspaceThreads(workspaceId: string) {
             const title =
                 meaningfulName || existingTitle || currentThread.name || fallbackTitle;
 
+            if (
+                currentWorkspaceThreadTitle === title &&
+                currentWorkspaceThreadLastActivityAt === lastActivityAt
+            ) {
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from("workspace_threads")
@@ -230,6 +231,7 @@ export function useWorkspaceThreads(workspaceId: string) {
         lastMessageCreatedAt,
         currentThread?.name,
         currentWorkspaceThreadTitle,
+        currentWorkspaceThreadLastActivityAt,
         supabase,
         workspaceId,
     ]);

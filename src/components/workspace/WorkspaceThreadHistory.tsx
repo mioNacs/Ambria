@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Plus, MessageSquare, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { useWorkspaceThreads, WorkspaceThread } from "@/hooks/useWorkspaceThreads";
+import { NEW_THREAD_SHORTCUT } from "@/lib/shortcuts";
+import { getFallbackThreadTitle } from "@/lib/thread-titles";
 import { cn } from "@/lib/utils";
 
 export interface WorkspaceThreadHistoryProps {
@@ -27,7 +29,7 @@ export function WorkspaceThreadHistory({
     const [searchQuery, setSearchQuery] = React.useState("");
 
     const getThreadLabel = (t: WorkspaceThread) =>
-        t.title || `Thread ${t.tambo_thread_id.slice(-6)}`;
+        t.title || getFallbackThreadTitle(t.tambo_thread_id);
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const filteredThreads = normalizedQuery
@@ -57,7 +59,7 @@ export function WorkspaceThreadHistory({
         return (
             <div
                 className={cn(
-                    "w-14 flex flex-col items-center py-4 bg-white/80 backdrop-blur border-gray-200",
+                    "w-14 flex flex-col items-center py-4 bg-white/90 backdrop-blur border-gray-200 shadow-sm",
                     position === "left" ? "border-r" : "border-l",
                 )}
             >
@@ -163,9 +165,9 @@ export function WorkspaceThreadHistory({
 
             {/* Footer */}
             <div className="px-4 py-3 border-t border-gray-200 text-xs text-gray-500">
-                Tip: Press <span className="font-medium text-gray-700">Alt</span>+
-                <span className="font-medium text-gray-700">Shift</span>+
-                <span className="font-medium text-gray-700">N</span> to start a new thread.
+                Tip: Press{" "}
+                <span className="font-medium text-gray-700">{NEW_THREAD_SHORTCUT}</span> to
+                start a new thread.
             </div>
         </div>
     );

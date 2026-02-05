@@ -26,6 +26,7 @@ import { WorkspaceThreadHistory } from "./WorkspaceThreadHistory";
 import type { Suggestion } from "@tambo-ai/react";
 import type { VariantProps } from "class-variance-authority";
 import * as React from "react";
+import { NEW_THREAD_SHORTCUT } from "@/lib/shortcuts";
 
 export interface WorkspaceChatProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: VariantProps<typeof messageVariants>["variant"];
@@ -97,7 +98,7 @@ export const WorkspaceChat = React.forwardRef<
                     </MessageInput>
                     <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                         <span className="truncate">Threads are scoped to this workspace.</span>
-                        <span className="flex-shrink-0">Alt+Shift+N</span>
+                        <span className="flex-shrink-0">{NEW_THREAD_SHORTCUT}</span>
                     </div>
                 </div>
 
