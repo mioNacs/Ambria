@@ -38,10 +38,6 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     const [workspaceThreads, setWorkspaceThreads] = useState<WorkspaceThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const linkedThreadIds = useMemo(
-        () => new Set(workspaceThreads.map((t) => t.tambo_thread_id)),
-        [workspaceThreads],
-    );
 
     const currentWorkspaceThreadTitle = useMemo(() => {
         if (!currentThread?.id) return null;
@@ -50,6 +46,12 @@ export function useWorkspaceThreads(workspaceId: string) {
                 ?.title ?? null
         );
     }, [currentThread?.id, workspaceThreads]);
+
+    const currentMessageCount = currentThread?.messages?.length ?? 0;
+    const lastMessageCreatedAt =
+        currentMessageCount > 0
+            ? currentThread?.messages?.[currentMessageCount - 1]?.createdAt
+            : null;
 
     // Fetch workspace threads from Supabase
     const fetchWorkspaceThreads = useCallback(async () => {
@@ -164,8 +166,9 @@ export function useWorkspaceThreads(workspaceId: string) {
             if (!supabase) return;
             if (!currentThread?.id || !workspaceId) return;
 
-            const messageCount = currentThread.messages?.length ?? 0;
-            if (messageCount === 0) return;
+            if (currentMessageCount === 0) return;
+            const lastActivityAt =
+                lastMessageCreatedAt ?? new Date().toISOString();
 
             const existingTitle = currentWorkspaceThreadTitle;
 
@@ -185,7 +188,7 @@ export function useWorkspaceThreads(workspaceId: string) {
                             workspace_id: workspaceId,
                             tambo_thread_id: currentThread.id,
                             title,
-                            last_activity_at: new Date().toISOString(),
+                            last_activity_at: lastActivityAt,
                         },
                         { onConflict: "tambo_thread_id" },
                     )
@@ -223,7 +226,8 @@ export function useWorkspaceThreads(workspaceId: string) {
         void upsertCurrentThread();
     }, [
         currentThread?.id,
-        currentThread?.messages?.length,
+        currentMessageCount,
+        lastMessageCreatedAt,
         currentThread?.name,
         currentWorkspaceThreadTitle,
         supabase,
@@ -291,14 +295,8 @@ export function useWorkspaceThreads(workspaceId: string) {
         startNewThread();
     }, [startNewThread]);
 
-    // Filter Tambo threads to only show workspace threads
-    const filteredThreads = tamboThreadsArray.filter((t: { id: string }) =>
-        linkedThreadIds.has(t.id)
-    );
-
     return {
         threads: workspaceThreads,
-        tamboThreads: filteredThreads,
         currentThread,
         isLoading: isLoading || isLoadingTambo,
         switchToThread,

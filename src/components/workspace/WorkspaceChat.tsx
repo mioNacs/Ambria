@@ -86,7 +86,7 @@ export const WorkspaceChat = React.forwardRef<
                 {/* Message input */}
                 <div className="px-4 pb-4">
                     <MessageInput>
-                        <MessageInputTextarea placeholder={`Ask about ${repoName || "this repository"}...`} />
+                        <MessageInputTextarea placeholder={`Ask about ${repoName || 'this repository'}...`} />
                         <MessageInputToolbar>
                             <MessageInputFileButton />
                             <MessageInputMcpPromptButton />

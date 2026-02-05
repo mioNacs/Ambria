@@ -26,10 +26,8 @@ export function WorkspaceThreadHistory({
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState("");
 
-    const getThreadLabel = React.useCallback(
-        (t: WorkspaceThread) => t.title || `Thread ${t.tambo_thread_id.slice(-6)}`,
-        [],
-    );
+    const getThreadLabel = (t: WorkspaceThread) =>
+        t.title || `Thread ${t.tambo_thread_id.slice(-6)}`;
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const filteredThreads = normalizedQuery
@@ -198,7 +196,15 @@ function ThreadItem({
                     ? "bg-emerald-50 text-gray-900"
                     : "hover:bg-gray-100 text-gray-700",
             )}
+            role="button"
+            tabIndex={0}
             onClick={onSelect}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
         >
             <div
                 className={cn(
