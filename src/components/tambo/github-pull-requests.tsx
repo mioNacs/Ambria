@@ -94,6 +94,7 @@ export function PullRequestCard({
   labels,
   createdAt,
   updatedAt,
+  closedAt,
   mergedAt,
   draft,
   htmlUrl,
@@ -107,6 +108,7 @@ export function PullRequestCard({
   const header = number ? `#${number}` : "Pull request";
   const created = formatDate(createdAt);
   const updated = formatDate(updatedAt);
+  const closed = formatDate(closedAt ?? undefined);
   const merged = formatDate(mergedAt ?? undefined);
   const allLabels = (labels ?? []).filter(Boolean);
   const normalizedLabels = allLabels.slice(0, 8);
@@ -141,6 +143,7 @@ export function PullRequestCard({
             {author ? <span>by {author}</span> : null}
             {created ? <span>• opened {created}</span> : null}
             {updated ? <span>• updated {updated}</span> : null}
+            {closed ? <span>• closed {closed}</span> : null}
             {merged ? (
               <span className="inline-flex items-center gap-1">
                 • <GitMerge className="size-3.5" /> merged {merged}

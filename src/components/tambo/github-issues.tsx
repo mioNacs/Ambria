@@ -80,6 +80,8 @@ export function IssueCard({
   author,
   labels,
   createdAt,
+  updatedAt,
+  closedAt,
   comments,
   htmlUrl,
   body,
@@ -89,6 +91,8 @@ export function IssueCard({
 }: IssueCardProps) {
   const header = number ? `#${number}` : "Issue";
   const created = formatDate(createdAt);
+  const updated = formatDate(updatedAt);
+  const closed = formatDate(closedAt ?? undefined);
   const allLabels = (labels ?? []).filter(Boolean);
   const normalizedLabels = allLabels.slice(0, 8);
   const extraLabelsCount = allLabels.length - normalizedLabels.length;
@@ -116,6 +120,8 @@ export function IssueCard({
               ) : null}
               {author ? <span>by {author}</span> : null}
               {created ? <span>• {created}</span> : null}
+              {updated ? <span>• updated {updated}</span> : null}
+              {closed ? <span>• closed {closed}</span> : null}
               {typeof comments === "number" ? (
                 <span className="inline-flex items-center gap-1">
                   • <MessageCircle className="size-3.5" /> {comments}

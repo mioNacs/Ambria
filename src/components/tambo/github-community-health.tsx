@@ -65,13 +65,13 @@ export function CommunityHealth({
         <p className="mt-3 text-sm text-muted-foreground">No results.</p>
       ) : (
         <div className="mt-3 space-y-2">
-          {files.map((file) => {
+          {files.map((file, index) => {
             const name = file.name ?? file.path;
             const path = file.path;
 
             return (
               <div
-                key={path}
+                key={`${path}-${index}`}
                 className={cn(
                   "rounded-md border border-border",
                   "px-3 py-2",

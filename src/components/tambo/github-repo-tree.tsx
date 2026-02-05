@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useTamboComponentState } from "@tambo-ai/react";
-import { FileText, Folder, Scissors } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Folder, Scissors } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
 
@@ -21,6 +21,12 @@ export const githubRepoTreeSchema = z
       .string()
       .optional()
       .describe("Title displayed above the repository tree"),
+    stateKey: z
+      .string()
+      .optional()
+      .describe(
+        "Optional state key to persist selection/expansion across renders. Use the same key across components to coordinate state.",
+      ),
     tree: z.array(repoTreeItemSchema).describe("Repository tree items"),
     truncated: z
       .boolean()
@@ -41,6 +47,7 @@ type RepoTreeItem = z.infer<typeof repoTreeItemSchema>;
 
 type RepoTreeState = {
   selectedPath: string | null;
+  expandedPaths: Record<string, boolean>;
 };
 
 export type GitHubRepoTreeProps = z.infer<typeof githubRepoTreeSchema> &
@@ -61,26 +68,190 @@ function sortTree(items: RepoTreeItem[]) {
 
 export function GitHubRepoTree({
   title = "Repository tree",
+  stateKey,
   tree = [],
   truncated,
   initialSelectedPath,
   className,
   ...props
 }: GitHubRepoTreeProps) {
-  const instanceId = React.useId();
+  const resolvedStateKey = stateKey ?? `github-repo-tree:${title}`;
   const [state, setState] = useTamboComponentState<RepoTreeState>(
-    `github-repo-tree:${instanceId}`,
-    { selectedPath: initialSelectedPath ?? null },
+    resolvedStateKey,
+    { selectedPath: initialSelectedPath ?? null, expandedPaths: {} },
   );
 
   React.useEffect(() => {
     if (!initialSelectedPath) return;
-    if (state?.selectedPath) return;
-    setState({ selectedPath: initialSelectedPath });
-  }, [initialSelectedPath, setState, state?.selectedPath]);
+    if (!state) return;
+    if (state.selectedPath) return;
+
+    setState({
+      selectedPath: initialSelectedPath,
+      expandedPaths: state.expandedPaths,
+    });
+  }, [initialSelectedPath, setState, state]);
 
   const items = React.useMemo(() => sortTree(tree), [tree]);
   const selectedPath = state?.selectedPath ?? null;
+  const expandedPaths = state?.expandedPaths ?? {};
+
+  type TreeNode = {
+    name: string;
+    path: string;
+    type: RepoTreeItem["type"];
+    size?: number;
+    children: TreeNode[];
+  };
+
+  const root = React.useMemo(() => {
+    const rootNode: TreeNode = {
+      name: "",
+      path: "",
+      type: "dir",
+      children: [],
+    };
+
+    const nodesByPath = new Map<string, TreeNode>();
+    nodesByPath.set("", rootNode);
+
+    const ensureNode = (parent: TreeNode, node: TreeNode) => {
+      parent.children.push(node);
+      nodesByPath.set(node.path, node);
+      return node;
+    };
+
+    for (const item of items) {
+      if (!item.path) continue;
+      const parts = item.path.split("/").filter(Boolean);
+      if (parts.length === 0) continue;
+
+      let parent = rootNode;
+      let currentPath = "";
+
+      for (let index = 0; index < parts.length; index++) {
+        const part = parts[index] ?? "";
+        const isLeaf = index === parts.length - 1;
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+
+        const existing = nodesByPath.get(currentPath);
+        if (existing) {
+          if (isLeaf && item.type === "file") {
+            existing.type = "file";
+            existing.size = item.size;
+          }
+          parent = existing;
+          continue;
+        }
+
+        const nodeType = isLeaf ? item.type : "dir";
+        const next = ensureNode(parent, {
+          name: part,
+          path: currentPath,
+          type: nodeType,
+          size: nodeType === "file" ? item.size : undefined,
+          children: [],
+        });
+        parent = next;
+      }
+    }
+
+    const sortChildren = (node: TreeNode) => {
+      node.children.sort((a, b) => {
+        if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+      for (const child of node.children) sortChildren(child);
+    };
+
+    sortChildren(rootNode);
+    return rootNode;
+  }, [items]);
+
+  const toggleExpanded = (path: string) => {
+    if (!state) return;
+
+    const isExpanded = expandedPaths[path] ?? true;
+    setState({
+      selectedPath: state.selectedPath,
+      expandedPaths: {
+        ...expandedPaths,
+        [path]: !isExpanded,
+      },
+    });
+  };
+
+  const selectPath = (path: string) => {
+    if (!state) return;
+    setState({ selectedPath: path, expandedPaths });
+  };
+
+  const renderNode = (node: TreeNode, depth: number) => {
+    const label = node.name || getRowLabel(node.path);
+    const isSelected = node.type === "file" && node.path === selectedPath;
+    const isExpanded = expandedPaths[node.path] ?? true;
+    const paddingLeft = 12 + depth * 16;
+
+    if (node.type === "dir") {
+      return (
+        <div key={node.path}>
+          <button
+            type="button"
+            onClick={() => toggleExpanded(node.path)}
+            className={cn(
+              "flex w-full items-center gap-2 py-2 pr-3 text-left",
+              "hover:bg-muted/40 transition-colors",
+            )}
+            style={{ paddingLeft }}
+            aria-expanded={isExpanded}
+          >
+            {isExpanded ? (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )}
+            <Folder className="size-4 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-foreground">
+                {label}
+              </div>
+              <div className="truncate font-mono text-xs text-muted-foreground">
+                {node.path}
+              </div>
+            </div>
+          </button>
+          {isExpanded ? node.children.map((child) => renderNode(child, depth + 1)) : null}
+        </div>
+      );
+    }
+
+    return (
+      <button
+        key={node.path}
+        type="button"
+        onClick={() => selectPath(node.path)}
+        className={cn(
+          "flex w-full items-center gap-2 py-2 pr-3 text-left",
+          "hover:bg-muted/40 transition-colors",
+          isSelected && "bg-muted/60",
+        )}
+        style={{ paddingLeft }}
+      >
+        <FileText className="size-4 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium text-foreground">{label}</div>
+          <div className="truncate font-mono text-xs text-muted-foreground">
+            {node.path}
+          </div>
+        </div>
+        {typeof node.size === "number" ? (
+          <div className="shrink-0 font-mono text-xs text-muted-foreground">
+            {node.size.toLocaleString("en-US")}B
+          </div>
+        ) : null}
+      </button>
+    );
+  };
 
   return (
     <div
@@ -115,41 +286,7 @@ export function GitHubRepoTree({
       ) : (
         <div className="mt-3 max-h-96 overflow-auto rounded-md border border-border">
           <div className="divide-y divide-border">
-            {items.map((item, index) => {
-              const path = item.path;
-              const isSelected = path === selectedPath;
-              const label = getRowLabel(path);
-
-              const Icon = item.type === "dir" ? Folder : FileText;
-
-              return (
-                <button
-                  key={`${path}-${index}`}
-                  type="button"
-                  onClick={() => setState({ selectedPath: path })}
-                  className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 text-left",
-                    "hover:bg-muted/40 transition-colors",
-                    isSelected && "bg-muted/60",
-                  )}
-                >
-                  <Icon className="size-4 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-foreground">
-                      {label}
-                    </div>
-                    <div className="truncate font-mono text-xs text-muted-foreground">
-                      {path}
-                    </div>
-                  </div>
-                  {typeof item.size === "number" ? (
-                    <div className="shrink-0 font-mono text-xs text-muted-foreground">
-                      {item.size.toLocaleString("en-US")}B
-                    </div>
-                  ) : null}
-                </button>
-              );
-            })}
+            {root.children.map((child) => renderNode(child, 0))}
           </div>
         </div>
       )}
