@@ -2,7 +2,7 @@
 
 import { Workspace, useWorkspaces } from "@/hooks/useWorkspaces";
 import { WorkspaceCard } from "./WorkspaceCard";
-import { Plus, FolderGit2, Sparkles } from "lucide-react";
+import { Plus, FolderGit2 } from "lucide-react";
 
 interface WorkspaceListProps {
     workspaces: Workspace[];
@@ -23,14 +23,14 @@ export function WorkspaceList({
                 {[...Array(3)].map((_, i) => (
                     <div
                         key={i}
-                        className="glass-dark rounded-2xl border border-violet-500/10 p-6 animate-pulse"
+                        className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse"
                     >
-                        <div className="h-5 bg-violet-500/20 rounded w-2/3 mb-3" />
-                        <div className="h-4 bg-gray-700/50 rounded w-1/3 mb-4" />
-                        <div className="h-12 bg-gray-700/30 rounded mb-4" />
+                        <div className="h-5 bg-gray-200 rounded w-2/3 mb-3" />
+                        <div className="h-4 bg-gray-100 rounded w-1/3 mb-4" />
+                        <div className="h-12 bg-gray-100 rounded mb-4" />
                         <div className="flex gap-2">
-                            <div className="h-6 bg-violet-500/20 rounded-full w-20" />
-                            <div className="h-6 bg-cyan-500/20 rounded-full w-16" />
+                            <div className="h-6 bg-gray-100 rounded-full w-20" />
+                            <div className="h-6 bg-gray-100 rounded-full w-16" />
                         </div>
                     </div>
                 ))}
@@ -41,20 +41,19 @@ export function WorkspaceList({
     if (workspaces.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 px-4 animate-fade-in-up">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 flex items-center justify-center mb-6 animate-float">
-                    <FolderGit2 className="w-10 h-10 text-violet-400" />
+                <div className="w-20 h-20 rounded-2xl bg-white border border-gray-200 flex items-center justify-center mb-6 shadow-sm">
+                    <FolderGit2 className="w-10 h-10 text-gray-700" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     No workspaces yet
-                    <Sparkles className="w-5 h-5 text-violet-400" />
                 </h3>
-                <p className="text-gray-400 text-center mb-8 max-w-md">
+                <p className="text-gray-600 text-center mb-8 max-w-md">
                     Add a GitHub repository to start chatting with AI about issues, PRs,
                     and contributions.
                 </p>
                 <button
                     onClick={onAddClick}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02]"
+                    className="flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
                 >
                     <Plus className="w-5 h-5" />
                     Add Your First Workspace
