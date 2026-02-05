@@ -72,23 +72,6 @@ export default function WorkspacePage() {
         );
     }
 
-    // Build context for the AI based on workspace
-    const workspaceContext = `
-You are helping with the GitHub repository: ${workspace.repo_owner}/${workspace.repo_name}
-Repository URL: ${workspace.repo_url}
-${workspace.repo_description ? `Description: ${workspace.repo_description}` : ""}
-${workspace.repo_language ? `Primary Language: ${workspace.repo_language}` : ""}
-Stars: ${workspace.repo_stars || 0}
-
-User's role: ${workspace.role}
-${workspace.role === "contributor" ?
-            "As a contributor, help them find good first issues, understand the codebase, and prepare contributions." :
-            workspace.role === "maintainer" ?
-                "As a maintainer, help them triage issues, review PRs, and manage the project." :
-                "As both contributor and maintainer, provide full assistance for contributing and maintaining the project."
-        }
-`;
-
     return (
         <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Workspace Header */}
@@ -120,7 +103,7 @@ ${workspace.role === "contributor" ?
                         github_credentials: () => ({
                             owner: workspace.repo_owner,
                             repo: workspace.repo_name,
-                            token: session?.provider_token || session?.access_token || undefined,
+                            token: session?.provider_token ?? undefined,
                             instructions: "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles), always use these credentials. This gives you full access to the repository's files and structure to answer questions about the codebase.",
                         }),
                     }}
