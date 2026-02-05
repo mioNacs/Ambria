@@ -84,12 +84,12 @@ export function WorkflowRunsList({
         <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
         <div className="mt-3 space-y-2">
-          {items.map((run, index) => {
+          {items.map((run) => {
             const dateText = formatDate(run.createdAt);
             const statusText = run.conclusion ?? run.status ?? "unknown";
             return (
               <div
-                key={`${run.id ?? "run"}-${index}`}
+                key={run.id}
                 className="rounded-lg border border-border bg-background px-3 py-2"
               >
                 <div className="flex items-start justify-between gap-4">

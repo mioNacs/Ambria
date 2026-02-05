@@ -167,7 +167,9 @@ export function GitHubFileViewer({
     }
 
     try {
-      const html = inferredLanguage
+      const hasLanguage =
+        inferredLanguage && Boolean(hljs.getLanguage(inferredLanguage));
+      const html = hasLanguage
         ? hljs.highlight(deferredContent, { language: inferredLanguage }).value
         : hljs.highlightAuto(deferredContent).value;
 

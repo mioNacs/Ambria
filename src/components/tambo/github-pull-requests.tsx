@@ -238,9 +238,9 @@ export function PullRequestList({
         <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
         <div className="mt-3 space-y-3">
-          {items.map((pr, index) => (
+          {items.map((pr) => (
             <PullRequestCard
-              key={`${pr.number ?? "pr"}-${index}`}
+              key={pr.number}
               {...pr}
               {...bodyPreviewProps}
             />

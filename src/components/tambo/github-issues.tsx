@@ -202,9 +202,9 @@ export function IssueList({
         <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
         <div className="mt-3 space-y-3">
-          {items.map((issue, index) => (
+          {items.map((issue) => (
             <IssueCard
-              key={`${issue.number ?? "issue"}-${index}`}
+              key={issue.number}
               {...issue}
               {...bodyPreviewProps}
             />
