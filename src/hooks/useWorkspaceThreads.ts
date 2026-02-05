@@ -83,50 +83,55 @@ export function useWorkspaceThreads(workspaceId: string) {
         return (allTamboThreads as { items?: Array<{ id: string; name?: string }> } | undefined)?.items ?? [];
     }, [allTamboThreads]);
 
+    const threadTitleUpdates = useMemo(() => {
+        if (tamboThreadsArray.length === 0 || workspaceThreads.length === 0) {
+            return [] as Array<{ tamboThreadId: string; title: string }>;
+        }
+
+        const tamboNameById = new Map(
+            tamboThreadsArray.map((t: { id: string; name?: string }) => [
+                t.id,
+                t.name,
+            ]),
+        );
+
+        return workspaceThreads
+            .map((wsThread) => {
+                const tamboName = tamboNameById.get(wsThread.tambo_thread_id);
+                const meaningfulName = getMeaningfulThreadName(
+                    wsThread.tambo_thread_id,
+                    tamboName,
+                );
+
+                if (!meaningfulName) {
+                    return null;
+                }
+
+                if (meaningfulName === wsThread.title) {
+                    return null;
+                }
+
+                return {
+                    tamboThreadId: wsThread.tambo_thread_id,
+                    title: meaningfulName,
+                };
+            })
+            .filter(Boolean) as Array<{ tamboThreadId: string; title: string }>;
+    }, [tamboThreadsArray, workspaceThreads]);
+
     // Sync Tambo thread names to workspace thread titles
     useEffect(() => {
         const syncTitles = async () => {
             if (!supabase) return;
-            if (tamboThreadsArray.length === 0 || workspaceThreads.length === 0) return;
-
-            const tamboNameById = new Map(
-                tamboThreadsArray.map((t: { id: string; name?: string }) => [
-                    t.id,
-                    t.name,
-                ]),
-            );
-
-            const updates = workspaceThreads
-                .map((wsThread) => {
-                    const tamboName = tamboNameById.get(wsThread.tambo_thread_id);
-
-                    const meaningfulName = getMeaningfulThreadName(
-                        wsThread.tambo_thread_id,
-                        tamboName,
-                    );
-
-                    if (!meaningfulName) {
-                        return null;
-                    }
-
-                    if (meaningfulName === wsThread.title) {
-                        return null;
-                    }
-
-                    return {
-                        tamboThreadId: wsThread.tambo_thread_id,
-                        title: meaningfulName,
-                    };
-                })
-                .filter(Boolean) as Array<{ tamboThreadId: string; title: string }>;
-
-            if (updates.length === 0) {
-                return;
-            }
+            if (threadTitleUpdates.length === 0) return;
 
             try {
+                const updatesById = new Map(
+                    threadTitleUpdates.map((u) => [u.tamboThreadId, u.title]),
+                );
+
                 await Promise.all(
-                    updates.map(({ tamboThreadId, title }) =>
+                    threadTitleUpdates.map(({ tamboThreadId, title }) =>
                         supabase
                             .from("workspace_threads")
                             .update({ title })
@@ -136,10 +141,8 @@ export function useWorkspaceThreads(workspaceId: string) {
                 );
                 setWorkspaceThreads((prev) =>
                     prev.map((t) => {
-                        const match = updates.find(
-                            (u) => u.tamboThreadId === t.tambo_thread_id,
-                        );
-                        return match ? { ...t, title: match.title } : t;
+                        const nextTitle = updatesById.get(t.tambo_thread_id);
+                        return nextTitle ? { ...t, title: nextTitle } : t;
                     }),
                 );
             } catch (err) {
@@ -147,13 +150,8 @@ export function useWorkspaceThreads(workspaceId: string) {
             }
         };
 
-        syncTitles();
-    }, [
-        tamboThreadsArray,
-        workspaceThreads,
-        supabase,
-        workspaceId,
-    ]);
+        void syncTitles();
+    }, [supabase, workspaceId, threadTitleUpdates]);
 
     useEffect(() => {
         const upsertCurrentThread = async () => {
@@ -161,8 +159,9 @@ export function useWorkspaceThreads(workspaceId: string) {
             if (!currentThread?.id || !workspaceId) return;
 
             if (currentMessageCount === 0) return;
-            const lastActivityAt =
-                lastMessageCreatedAt ?? new Date().toISOString();
+            const lastActivityAt = lastMessageCreatedAt
+                ? new Date(lastMessageCreatedAt).toISOString()
+                : currentWorkspaceThreadLastActivityAt || new Date().toISOString();
 
             const existingTitle = currentWorkspaceThreadTitle;
 

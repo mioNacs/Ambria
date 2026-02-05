@@ -238,6 +238,7 @@ function ThreadItem({
                     "p-1 rounded-lg transition-colors",
                     "opacity-0 pointer-events-none",
                     "group-hover:opacity-100 group-hover:pointer-events-auto",
+                    "group-focus-within:opacity-100 group-focus-within:pointer-events-auto",
                     "focus-visible:opacity-100 focus-visible:pointer-events-auto",
                     "hover:bg-red-100 focus-visible:bg-red-100",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1 focus-visible:ring-offset-white",
