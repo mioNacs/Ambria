@@ -36,15 +36,13 @@ export async function updateSession(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname;
 
-    // Public routes
-    const isAuthRoute = pathname === "/" ||
-        pathname.startsWith("/login") ||
-        pathname.startsWith("/auth");
-    const bypassAuthRedirect = request.nextUrl.pathname.startsWith("/chat") ||
-        request.nextUrl.pathname.startsWith("/interactables");
+    const isAuthRoute = pathname.startsWith("/auth");
+    const isPublicRoute = pathname === "/" || pathname.startsWith("/login") || isAuthRoute;
+    const bypassAuthRedirect = pathname.startsWith("/chat") ||
+        pathname.startsWith("/interactables");
 
     // Protected routes - redirect to landing if not authenticated
-    if (!user && !isAuthRoute && !bypassAuthRedirect) {
+    if (!user && !isPublicRoute && !bypassAuthRedirect) {
         const url = request.nextUrl.clone();
         url.pathname = "/";
         return NextResponse.redirect(url);

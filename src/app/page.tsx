@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
-import { useRef, useState } from "react";
+import { Suspense, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
@@ -45,13 +46,25 @@ function FeatureCard({
   );
 }
 
+function AuthErrorBanner() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  if (!error) return null;
+
+  const message =
+    error === "auth_callback_error"
+      ? "We couldn't complete GitHub sign-in. Please try again."
+      : "Sign in failed. Please try again.";
+
+  return (
+    <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+      <span className="font-semibold">{message}</span>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [authError] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return Boolean(params.get("error"));
-  });
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"],
@@ -127,12 +140,9 @@ export default function LandingPage() {
                 triage issues, and understand unfamiliar projects quicker.
               </p>
 
-              {authError && (
-                <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-                  <span className="font-semibold">Sign in failed.</span> Please try
-                  again.
-                </div>
-              )}
+              <Suspense fallback={null}>
+                <AuthErrorBanner />
+              </Suspense>
 
               <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="sm:w-72">
