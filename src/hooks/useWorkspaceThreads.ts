@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTamboThreadList, useTamboThread } from "@tambo-ai/react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -43,10 +43,13 @@ export function useWorkspaceThreads(workspaceId: string) {
         [workspaceThreads],
     );
 
-    const workspaceThreadsRef = useRef(workspaceThreads);
-    useEffect(() => {
-        workspaceThreadsRef.current = workspaceThreads;
-    }, [workspaceThreads]);
+    const currentWorkspaceThreadTitle = useMemo(() => {
+        if (!currentThread?.id) return null;
+        return (
+            workspaceThreads.find((t) => t.tambo_thread_id === currentThread.id)
+                ?.title ?? null
+        );
+    }, [currentThread?.id, workspaceThreads]);
 
     // Fetch workspace threads from Supabase
     const fetchWorkspaceThreads = useCallback(async () => {
@@ -90,16 +93,20 @@ export function useWorkspaceThreads(workspaceId: string) {
             if (!supabase) return;
             if (tamboThreadsArray.length === 0 || workspaceThreads.length === 0) return;
 
+            const tamboNameById = new Map(
+                tamboThreadsArray.map((t: { id: string; name?: string }) => [
+                    t.id,
+                    t.name,
+                ]),
+            );
+
             const updates = workspaceThreads
                 .map((wsThread) => {
-                    const tamboThread = tamboThreadsArray.find(
-                        (t: { id: string; name?: string }) =>
-                            t.id === wsThread.tambo_thread_id,
-                    );
+                    const tamboName = tamboNameById.get(wsThread.tambo_thread_id);
 
                     const meaningfulName = getMeaningfulThreadName(
                         wsThread.tambo_thread_id,
-                        tamboThread?.name,
+                        tamboName,
                     );
 
                     if (!meaningfulName) {
@@ -160,10 +167,7 @@ export function useWorkspaceThreads(workspaceId: string) {
             const messageCount = currentThread.messages?.length ?? 0;
             if (messageCount === 0) return;
 
-            const existingTitle =
-                workspaceThreadsRef.current.find(
-                    (t) => t.tambo_thread_id === currentThread.id,
-                )?.title ?? null;
+            const existingTitle = currentWorkspaceThreadTitle;
 
             const fallbackTitle = getFallbackThreadTitle(currentThread.id);
             const meaningfulName = getMeaningfulThreadName(
@@ -221,6 +225,7 @@ export function useWorkspaceThreads(workspaceId: string) {
         currentThread?.id,
         currentThread?.messages?.length,
         currentThread?.name,
+        currentWorkspaceThreadTitle,
         supabase,
         workspaceId,
     ]);
@@ -237,12 +242,18 @@ export function useWorkspaceThreads(workspaceId: string) {
                     .eq("tambo_thread_id", tamboThreadId);
 
                 if (error) throw error;
-                await fetchWorkspaceThreads();
+                setWorkspaceThreads((prev) =>
+                    prev.map((t) =>
+                        t.tambo_thread_id === tamboThreadId
+                            ? { ...t, title }
+                            : t,
+                    ),
+                );
             } catch (err) {
                 console.error("Error updating thread title:", err);
             }
         },
-        [supabase, fetchWorkspaceThreads, workspaceId]
+        [supabase, workspaceId]
     );
 
     // Delete thread
@@ -257,12 +268,14 @@ export function useWorkspaceThreads(workspaceId: string) {
                     .eq("tambo_thread_id", tamboThreadId);
 
                 if (error) throw error;
-                await fetchWorkspaceThreads();
+                setWorkspaceThreads((prev) =>
+                    prev.filter((t) => t.tambo_thread_id !== tamboThreadId),
+                );
             } catch (err) {
                 console.error("Error deleting thread:", err);
             }
         },
-        [supabase, fetchWorkspaceThreads, workspaceId]
+        [supabase, workspaceId]
     );
 
     // Switch to a specific thread

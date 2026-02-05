@@ -152,6 +152,7 @@ export function WorkspaceThreadHistory({
                             <ThreadItem
                                 key={thread.id}
                                 thread={thread}
+                                threadLabel={getThreadLabel(thread)}
                                 isActive={currentThread?.id === thread.tambo_thread_id}
                                 onSelect={() => switchToThread(thread.tambo_thread_id)}
                                 onDelete={() => deleteThread(thread.tambo_thread_id)}
@@ -174,13 +175,21 @@ export function WorkspaceThreadHistory({
 
 interface ThreadItemProps {
     thread: WorkspaceThread;
+    threadLabel: string;
     isActive: boolean;
     onSelect: () => void;
     onDelete: () => void;
     formatDate: (date: string) => string;
 }
 
-function ThreadItem({ thread, isActive, onSelect, onDelete, formatDate }: ThreadItemProps) {
+function ThreadItem({
+    thread,
+    threadLabel,
+    isActive,
+    onSelect,
+    onDelete,
+    formatDate,
+}: ThreadItemProps) {
     return (
         <div
             className={cn(
@@ -205,7 +214,7 @@ function ThreadItem({ thread, isActive, onSelect, onDelete, formatDate }: Thread
             />
             <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">
-                    {thread.title || `Thread ${thread.tambo_thread_id.slice(-6)}`}
+                    {threadLabel}
                 </div>
                 <div className="text-xs text-gray-400">
                     {formatDate(thread.last_activity_at)}
@@ -223,6 +232,7 @@ function ThreadItem({ thread, isActive, onSelect, onDelete, formatDate }: Thread
                     "group-hover:opacity-100 group-hover:pointer-events-auto",
                     "focus-visible:opacity-100 focus-visible:pointer-events-auto",
                     "hover:bg-red-100 focus-visible:bg-red-100",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1 focus-visible:ring-offset-white",
                 )}
                 title="Delete thread"
                 aria-label="Delete thread"
