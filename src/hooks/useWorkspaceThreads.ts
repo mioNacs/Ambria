@@ -13,13 +13,15 @@ export interface WorkspaceThread {
     created_at: string;
 }
 
-function isMeaningfulThreadName(name: string | null | undefined): name is string {
-    const trimmed = name?.trim();
-    return !!trimmed && !trimmed.toLowerCase().startsWith("thread ");
-}
-
 function getFallbackThreadTitle(threadId: string) {
     return `Thread ${threadId.slice(-6)}`;
+}
+
+function getMeaningfulThreadName(threadId: string, name: string | null | undefined) {
+    const trimmed = name?.trim();
+    if (!trimmed) return null;
+    if (trimmed === getFallbackThreadTitle(threadId)) return null;
+    return trimmed;
 }
 
 /**
@@ -36,7 +38,10 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     const [workspaceThreads, setWorkspaceThreads] = useState<WorkspaceThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [linkedThreadIds, setLinkedThreadIds] = useState<Set<string>>(new Set());
+    const linkedThreadIds = useMemo(
+        () => new Set(workspaceThreads.map((t) => t.tambo_thread_id)),
+        [workspaceThreads],
+    );
 
     const workspaceThreadsRef = useRef(workspaceThreads);
     useEffect(() => {
@@ -58,7 +63,6 @@ export function useWorkspaceThreads(workspaceId: string) {
             if (error) throw error;
 
             setWorkspaceThreads(data || []);
-            setLinkedThreadIds(new Set((data || []).map((t: WorkspaceThread) => t.tambo_thread_id)));
         } catch (err) {
             console.error("Error fetching workspace threads:", err);
         } finally {
@@ -93,17 +97,22 @@ export function useWorkspaceThreads(workspaceId: string) {
                             t.id === wsThread.tambo_thread_id,
                     );
 
-                    if (!isMeaningfulThreadName(tamboThread?.name)) {
+                    const meaningfulName = getMeaningfulThreadName(
+                        wsThread.tambo_thread_id,
+                        tamboThread?.name,
+                    );
+
+                    if (!meaningfulName) {
                         return null;
                     }
 
-                    if (tamboThread.name === wsThread.title) {
+                    if (meaningfulName === wsThread.title) {
                         return null;
                     }
 
                     return {
                         tamboThreadId: wsThread.tambo_thread_id,
-                        title: tamboThread.name,
+                        title: meaningfulName,
                     };
                 })
                 .filter(Boolean) as Array<{ tamboThreadId: string; title: string }>;
@@ -122,7 +131,14 @@ export function useWorkspaceThreads(workspaceId: string) {
                             .eq("tambo_thread_id", tamboThreadId),
                     ),
                 );
-                fetchWorkspaceThreads();
+                setWorkspaceThreads((prev) =>
+                    prev.map((t) => {
+                        const match = updates.find(
+                            (u) => u.tamboThreadId === t.tambo_thread_id,
+                        );
+                        return match ? { ...t, title: match.title } : t;
+                    }),
+                );
             } catch (err) {
                 console.error("Error syncing thread titles:", err);
             }
@@ -133,7 +149,6 @@ export function useWorkspaceThreads(workspaceId: string) {
         tamboThreadsArray,
         workspaceThreads,
         supabase,
-        fetchWorkspaceThreads,
         workspaceId,
     ]);
 
@@ -151,9 +166,12 @@ export function useWorkspaceThreads(workspaceId: string) {
                 )?.title ?? null;
 
             const fallbackTitle = getFallbackThreadTitle(currentThread.id);
-            const title = isMeaningfulThreadName(currentThread.name)
-                ? currentThread.name
-                : existingTitle || currentThread.name || fallbackTitle;
+            const meaningfulName = getMeaningfulThreadName(
+                currentThread.id,
+                currentThread.name,
+            );
+            const title =
+                meaningfulName || existingTitle || currentThread.name || fallbackTitle;
 
             try {
                 const { data, error } = await supabase
@@ -189,9 +207,6 @@ export function useWorkspaceThreads(workspaceId: string) {
                             (a, b) =>
                                 new Date(b.last_activity_at).getTime() -
                                 new Date(a.last_activity_at).getTime(),
-                        );
-                        setLinkedThreadIds(
-                            new Set(next.map((t) => t.tambo_thread_id)),
                         );
                         return next;
                     });

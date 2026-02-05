@@ -212,16 +212,20 @@ function ThreadItem({ thread, isActive, onSelect, onDelete, formatDate }: Thread
                 </div>
             </div>
             <button
+                type="button"
                 onClick={(e) => {
                     e.stopPropagation();
                     onDelete();
                 }}
                 className={cn(
                     "p-1 rounded-lg transition-colors",
-                    "opacity-0 group-hover:opacity-100 focus:opacity-100",
-                    "hover:bg-red-100",
+                    "opacity-0 pointer-events-none",
+                    "group-hover:opacity-100 group-hover:pointer-events-auto",
+                    "focus-visible:opacity-100 focus-visible:pointer-events-auto",
+                    "hover:bg-red-100 focus-visible:bg-red-100",
                 )}
                 title="Delete thread"
+                aria-label="Delete thread"
             >
                 <Trash2 className="w-3.5 h-3.5 text-red-500" />
             </button>
