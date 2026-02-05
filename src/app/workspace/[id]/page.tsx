@@ -65,7 +65,7 @@ export default function WorkspacePage() {
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
                 <p className="text-red-500 mb-4">{error || "Workspace not found"}</p>
                 <button
-                    onClick={() => router.push("/")}
+                    onClick={() => router.push("/dashboard")}
                     className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
                 >
                     Go to Dashboard
