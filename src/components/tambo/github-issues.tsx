@@ -89,7 +89,9 @@ export function IssueCard({
 }: IssueCardProps) {
   const header = number ? `#${number}` : "Issue";
   const created = formatDate(createdAt);
-  const normalizedLabels = (labels ?? []).filter(Boolean).slice(0, 8);
+  const allLabels = (labels ?? []).filter(Boolean);
+  const normalizedLabels = allLabels.slice(0, 8);
+  const extraLabelsCount = allLabels.length - normalizedLabels.length;
 
   return (
     <div
@@ -140,6 +142,11 @@ export function IssueCard({
           {normalizedLabels.map((label) => (
             <LabelPill key={label} label={label} />
           ))}
+          {extraLabelsCount > 0 ? (
+            <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              +{extraLabelsCount} more
+            </span>
+          ) : null}
         </div>
       ) : null}
 

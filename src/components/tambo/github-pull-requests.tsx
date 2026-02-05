@@ -108,7 +108,9 @@ export function PullRequestCard({
   const created = formatDate(createdAt);
   const updated = formatDate(updatedAt);
   const merged = formatDate(mergedAt ?? undefined);
-  const normalizedLabels = (labels ?? []).filter(Boolean).slice(0, 8);
+  const allLabels = (labels ?? []).filter(Boolean);
+  const normalizedLabels = allLabels.slice(0, 8);
+  const extraLabelsCount = allLabels.length - normalizedLabels.length;
 
   return (
     <div
@@ -173,6 +175,11 @@ export function PullRequestCard({
           {normalizedLabels.map((label) => (
             <LabelPill key={label} label={label} />
           ))}
+          {extraLabelsCount > 0 ? (
+            <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              +{extraLabelsCount} more
+            </span>
+          ) : null}
         </div>
       ) : null}
 

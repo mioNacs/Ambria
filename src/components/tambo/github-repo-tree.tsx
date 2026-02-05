@@ -54,12 +54,8 @@ function getRowLabel(path?: string) {
 
 function sortTree(items: RepoTreeItem[]) {
   return [...items].sort((a, b) => {
-    const aType = a.type ?? "file";
-    const bType = b.type ?? "file";
-    if (aType !== bType) return aType === "dir" ? -1 : 1;
-    const aPath = a.path ?? "";
-    const bPath = b.path ?? "";
-    return aPath.localeCompare(bPath);
+    if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
+    return a.path.localeCompare(b.path);
   });
 }
 

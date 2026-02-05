@@ -41,9 +41,8 @@ export function CommunityHealth({
   className,
   ...props
 }: CommunityHealthProps) {
-  const normalizedFiles = files;
-  const presentCount = normalizedFiles.filter((f) => f.exists).length;
-  const missingCount = normalizedFiles.filter((f) => f.exists === false).length;
+  const presentCount = files.filter((f) => f.exists).length;
+  const missingCount = files.filter((f) => f.exists === false).length;
 
   return (
     <div
@@ -62,11 +61,11 @@ export function CommunityHealth({
         </div>
       </div>
 
-      {normalizedFiles.length === 0 ? (
+      {files.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No results.</p>
       ) : (
         <div className="mt-3 space-y-2">
-          {normalizedFiles.map((file, index) => {
+          {files.map((file, index) => {
             const name = file.name ?? file.path ?? "(unknown)";
             const path = file.path ?? "";
 

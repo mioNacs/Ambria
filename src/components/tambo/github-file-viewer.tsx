@@ -123,6 +123,10 @@ function CodeHeader({
     : error
       ? "text-destructive"
       : "text-muted-foreground";
+  const label = error ? "Copy failed" : copied ? "Copied" : "Copy";
+  const title = error
+    ? "Copy is not available in this environment or was blocked."
+    : "Copy file contents to clipboard";
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-t-md bg-muted/30 px-3 py-2">
@@ -132,10 +136,11 @@ function CodeHeader({
       <button
         type="button"
         onClick={copyToClipboard}
+        title={title}
         className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted/40"
       >
         <Icon className={cn("size-3.5", iconColor)} />
-        {copied ? "Copied" : "Copy"}
+        {label}
       </button>
     </div>
   );
@@ -148,7 +153,7 @@ export function GitHubFileViewer({
   size,
   encoding,
   language,
-  maxHeight = 420,
+  maxHeight,
   className,
   ...props
 }: GitHubFileViewerProps) {
@@ -205,7 +210,7 @@ export function GitHubFileViewer({
             "[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-md",
             "[&::-webkit-scrollbar:horizontal]:h-[4px]",
           )}
-          style={{ maxHeight }}
+          style={{ maxHeight: maxHeight ?? 420 }}
         >
           <pre className="p-3 text-xs leading-relaxed">
             <code
