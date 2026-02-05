@@ -9,6 +9,38 @@
  */
 
 import { Graph, graphSchema } from "@/components/tambo/graph";
+import {
+  CommunityHealth,
+  communityHealthSchema,
+} from "@/components/tambo/github-community-health";
+import {
+  GitHubFileViewer,
+  githubFileViewerSchema,
+} from "@/components/tambo/github-file-viewer";
+import {
+  IssueCard,
+  IssueList,
+  issueCardSchema,
+  issueListSchema,
+} from "@/components/tambo/github-issues";
+import {
+  PullRequestCard,
+  PullRequestList,
+  pullRequestCardSchema,
+  pullRequestListSchema,
+} from "@/components/tambo/github-pull-requests";
+import {
+  GitHubRepoMetadataCard,
+  githubRepoMetadataCardSchema,
+} from "@/components/tambo/github-repo-metadata-card";
+import {
+  GitHubRepoTree,
+  githubRepoTreeSchema,
+} from "@/components/tambo/github-repo-tree";
+import {
+  WorkflowRunsList,
+  workflowRunsListSchema,
+} from "@/components/tambo/github-workflow-runs";
 import { DataCard, dataCardSchema } from "@/components/ui/card-data";
 import {
   getCountryPopulations,
@@ -669,5 +701,68 @@ export const components: TamboComponent[] = [
       "A component that displays options as clickable cards with links and summaries with the ability to select multiple items.",
     component: DataCard,
     propsSchema: dataCardSchema,
+  },
+  {
+    name: "GitHubRepoMetadataCard",
+    description:
+      "A summary card showing key GitHub repository metadata (stars, forks, topics, language, etc.). Use after calling getRepoMetadata.",
+    component: GitHubRepoMetadataCard,
+    propsSchema: githubRepoMetadataCardSchema,
+  },
+  {
+    name: "GitHubRepoTree",
+    description:
+      "Displays a GitHub repository file tree. Useful after calling getRepoTree or getRepoOverview.",
+    component: GitHubRepoTree,
+    propsSchema: githubRepoTreeSchema,
+  },
+  {
+    name: "GitHubFileViewer",
+    description:
+      "Displays file contents with syntax highlighting. Useful after calling getFileContent, getPRFileContent, or getMultipleFiles.",
+    component: GitHubFileViewer,
+    propsSchema: githubFileViewerSchema,
+  },
+  {
+    name: "IssueCard",
+    description:
+      "Shows a single GitHub issue as a card. Useful after calling getRepoIssues.",
+    component: IssueCard,
+    propsSchema: issueCardSchema,
+  },
+  {
+    name: "IssueList",
+    description:
+      "Shows a list of GitHub issues as cards. Useful after calling getRepoIssues.",
+    component: IssueList,
+    propsSchema: issueListSchema,
+  },
+  {
+    name: "PullRequestCard",
+    description:
+      "Shows a single GitHub pull request as a card. Useful after calling getRepoPullRequests.",
+    component: PullRequestCard,
+    propsSchema: pullRequestCardSchema,
+  },
+  {
+    name: "PullRequestList",
+    description:
+      "Shows a list of GitHub pull requests as cards. Useful after calling getRepoPullRequests.",
+    component: PullRequestList,
+    propsSchema: pullRequestListSchema,
+  },
+  {
+    name: "WorkflowRunsList",
+    description:
+      "Shows recent GitHub Actions workflow runs. Useful after calling getWorkflowRuns.",
+    component: WorkflowRunsList,
+    propsSchema: workflowRunsListSchema,
+  },
+  {
+    name: "CommunityHealth",
+    description:
+      "Shows a repository community health checklist (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, etc.). Useful after calling getCommunityFiles.",
+    component: CommunityHealth,
+    propsSchema: communityHealthSchema,
   },
 ];
