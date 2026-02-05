@@ -118,7 +118,7 @@ export default function LandingPage() {
                 href="#signin"
                 className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-white transition-colors"
               >
-                Sign in
+                Get started
               </Link>
             </div>
           </div>
@@ -219,8 +219,10 @@ export default function LandingPage() {
                         description: "Get answers grounded in the files you reference.",
                       },
                     ].map((item) => (
-                      <div
+                      <motion.div
                         key={item.title}
+                        whileHover={{ y: -4 }}
+                        transition={{ type: "spring", stiffness: 320, damping: 24 }}
                         className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4"
                       >
                         <div className="flex items-start gap-3">
@@ -236,7 +238,7 @@ export default function LandingPage() {
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -257,8 +259,11 @@ export default function LandingPage() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     {[
                       { icon: <FolderKanban className="w-4 h-4" />, label: "Issues" },
-                      { icon: <GitPullRequest className="w-4 h-4" />, label: "PRs" },
-                      { icon: <Search className="w-4 h-4" />, label: "Code" },
+                      {
+                        icon: <GitPullRequest className="w-4 h-4" />,
+                        label: "Pull requests",
+                      },
+                      { icon: <Search className="w-4 h-4" />, label: "Code search" },
                     ].map((chip) => (
                       <div
                         key={chip.label}
@@ -344,15 +349,20 @@ export default function LandingPage() {
                   description:
                     "Ask about issues, PRs, or code. Get answers tied to the repo you’re in.",
                 },
-              ].map((step) => (
+              ].map((step, idx) => (
                 <motion.div
                   key={step.title}
                   whileHover={{ y: -6 }}
                   transition={{ type: "spring", stiffness: 320, damping: 24 }}
                   className="rounded-2xl border border-gray-200 bg-white px-6 py-6"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                    {step.icon}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                      {step.icon}
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                      Step {idx + 1}
+                    </span>
                   </div>
                   <div className="mt-4 text-base font-semibold text-gray-900">
                     {step.title}
