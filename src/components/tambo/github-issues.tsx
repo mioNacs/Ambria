@@ -186,6 +186,8 @@ export function IssueList({
   ...props
 }: IssueListProps) {
   const items = issues;
+  const bodyPreviewProps =
+    typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
   return (
     <div className={cn("w-full", className)} {...props}>
@@ -204,7 +206,7 @@ export function IssueList({
             <IssueCard
               key={`${issue.number ?? "issue"}-${index}`}
               {...issue}
-              showBodyPreview={showBodyPreview}
+              {...bodyPreviewProps}
             />
           ))}
         </div>

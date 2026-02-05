@@ -34,6 +34,7 @@ export const githubFileViewerSchema = z
       ),
     maxHeight: z
       .number()
+      .optional()
       .describe("Max code block height in pixels (default 420)")
       .default(420),
   })
@@ -160,15 +161,19 @@ export function GitHubFileViewer({
   const deferredContent = React.useDeferredValue(content ?? "");
   const inferredLanguage = language ?? inferHljsLanguage(path);
 
-  const highlightedHtml = React.useMemo(() => {
-    if (!deferredContent) return "";
+  const highlight = React.useMemo(() => {
+    if (!deferredContent) {
+      return { kind: "text" as const, text: "" };
+    }
+
     try {
-      if (inferredLanguage) {
-        return hljs.highlight(deferredContent, { language: inferredLanguage }).value;
-      }
-      return hljs.highlightAuto(deferredContent).value;
+      const html = inferredLanguage
+        ? hljs.highlight(deferredContent, { language: inferredLanguage }).value
+        : hljs.highlightAuto(deferredContent).value;
+
+      return { kind: "html" as const, html };
     } catch {
-      return deferredContent;
+      return { kind: "text" as const, text: deferredContent };
     }
   }, [deferredContent, inferredLanguage]);
 
@@ -213,12 +218,26 @@ export function GitHubFileViewer({
           style={{ maxHeight: maxHeight ?? 420 }}
         >
           <pre className="p-3 text-xs leading-relaxed">
-            <code
-              className={cn("hljs", inferredLanguage && `language-${inferredLanguage}`)}
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(highlightedHtml || ""),
-              }}
-            />
+            {highlight.kind === "html" ? (
+              <code
+                className={cn(
+                  "hljs",
+                  inferredLanguage && `language-${inferredLanguage}`,
+                )}
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(highlight.html),
+                }}
+              />
+            ) : (
+              <code
+                className={cn(
+                  "hljs",
+                  inferredLanguage && `language-${inferredLanguage}`,
+                )}
+              >
+                {highlight.text}
+              </code>
+            )}
           </pre>
         </div>
       </div>

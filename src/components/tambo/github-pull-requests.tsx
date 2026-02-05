@@ -222,6 +222,8 @@ export function PullRequestList({
   ...props
 }: PullRequestListProps) {
   const items = pullRequests;
+  const bodyPreviewProps =
+    typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
   return (
     <div className={cn("w-full", className)} {...props}>
@@ -240,7 +242,7 @@ export function PullRequestList({
             <PullRequestCard
               key={`${pr.number ?? "pr"}-${index}`}
               {...pr}
-              showBodyPreview={showBodyPreview}
+              {...bodyPreviewProps}
             />
           ))}
         </div>
