@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
@@ -47,7 +47,11 @@ function FeatureCard({
 
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [authError, setAuthError] = useState(false);
+  const [authError] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get("error"));
+  });
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"],
@@ -55,11 +59,6 @@ export default function LandingPage() {
 
   const bgY = useTransform(scrollYProgress, [0, 1], [0, 140]);
   const bgOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.6]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setAuthError(Boolean(params.get("error")));
-  }, []);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-gray-50 overflow-x-hidden">
