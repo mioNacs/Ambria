@@ -34,22 +34,26 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // Protected routes - redirect to login if not authenticated
-    const isAuthRoute = request.nextUrl.pathname.startsWith("/login") ||
-        request.nextUrl.pathname.startsWith("/auth");
+    const pathname = request.nextUrl.pathname;
+
+    // Public routes
+    const isAuthRoute = pathname === "/" ||
+        pathname.startsWith("/login") ||
+        pathname.startsWith("/auth");
     const bypassAuthRedirect = request.nextUrl.pathname.startsWith("/chat") ||
         request.nextUrl.pathname.startsWith("/interactables");
 
+    // Protected routes - redirect to landing if not authenticated
     if (!user && !isAuthRoute && !bypassAuthRedirect) {
         const url = request.nextUrl.clone();
-        url.pathname = "/login";
+        url.pathname = "/";
         return NextResponse.redirect(url);
     }
 
-    // Redirect authenticated users from login to dashboard
-    if (user && request.nextUrl.pathname === "/login") {
+    // Redirect authenticated users away from public pages to dashboard
+    if (user && (pathname === "/" || pathname.startsWith("/login"))) {
         const url = request.nextUrl.clone();
-        url.pathname = "/";
+        url.pathname = "/dashboard";
         return NextResponse.redirect(url);
     }
 

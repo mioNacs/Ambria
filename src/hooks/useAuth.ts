@@ -65,7 +65,7 @@ export function useAuth() {
     }, [supabase]);
 
     /**
-     * Signs the user out and navigates to `/login`.
+     * Signs the user out and navigates to `/`.
      * Throws on any error (including if the Supabase client isn't initialized).
      * Callers should wrap in `try/catch` to show user-facing feedback.
      */
@@ -75,7 +75,7 @@ export function useAuth() {
         }
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        router.push("/login");
+        router.push("/");
     }, [supabase, router]);
 
     return {
