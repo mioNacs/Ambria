@@ -130,58 +130,6 @@ export default function LandingPage() {
         <section id="signin" className="pt-14 pb-12 lg:pt-20 lg:pb-20">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease: "easeOut" }}
-            >
-              <div className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1 text-sm text-gray-700">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Open source workspace assistant
-              </div>
-
-              <h1 className="mt-6 text-4xl sm:text-5xl font-semibold tracking-tight text-gray-900">
-                Move faster across issues, PRs, and codebase context with{" "}
-                <span className="gradient-text">AI</span>
-              </h1>
-              <p className="mt-4 text-lg text-gray-600 max-w-xl">
-                Connect a repo, keep context separated by workspace, and get answers that
-                stay tied to the code you’re looking at.
-              </p>
-
-              <Suspense fallback={null}>
-                <AuthErrorBanner />
-              </Suspense>
-
-              <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <div className="sm:w-72">
-                  <LoginButton />
-                </div>
-                <Link
-                  href="#features"
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-gray-200 bg-white/80 hover:bg-white text-gray-900 font-medium transition-colors"
-                >
-                  Explore features
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-
-              <ul className="mt-8 space-y-3 text-gray-600">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <span>Find good first issues and understand context faster</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <span>Pull file snippets, search code, and summarize changes quickly</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <span>Keep threads and tokens separated by workspace</span>
-                </li>
-              </ul>
-            </motion.div>
-
-            <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: "easeOut", delay: 0.05 }}
@@ -276,6 +224,58 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1 text-sm text-gray-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Open source workspace assistant
+              </div>
+
+              <h1 className="mt-6 text-4xl sm:text-5xl font-semibold tracking-tight text-gray-900">
+                Move faster across issues, PRs, and codebase context{" "} <br/>
+                <span className="gradient-text">with AI</span>
+              </h1>
+              <p className="mt-4 text-lg text-gray-600 max-w-xl">
+                Connect a repo, keep context separated by workspace, and get answers that
+                stay tied to the code you’re looking at.
+              </p>
+
+              <Suspense fallback={null}>
+                <AuthErrorBanner />
+              </Suspense>
+
+              <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="sm:w-72">
+                  <LoginButton />
+                </div>
+                <Link
+                  href="#features"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-gray-200 bg-white/80 hover:bg-white text-gray-900 font-medium transition-colors"
+                >
+                  Explore features
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              <ul className="mt-8 space-y-3 text-gray-600">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <span>Find good first issues and understand context faster</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <span>Pull file snippets, search code, and summarize changes quickly</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <span>Keep threads and tokens separated by workspace</span>
+                </li>
+              </ul>
             </motion.div>
           </div>
         </section>
