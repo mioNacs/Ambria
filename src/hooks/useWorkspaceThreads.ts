@@ -18,7 +18,10 @@ export interface WorkspaceThread {
  * Links Tambo threads to specific workspaces via Supabase.
  */
 export function useWorkspaceThreads(workspaceId: string) {
-    const supabase = createClient();
+    const supabase = useMemo(() => {
+        if (typeof window === "undefined") return null;
+        return createClient();
+    }, []);
     const { data: allTamboThreads, isPending: isLoadingTambo } = useTamboThreadList();
     const { thread: currentThread, switchCurrentThread, startNewThread } = useTamboThread();
 
@@ -28,7 +31,7 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     // Fetch workspace threads from Supabase
     const fetchWorkspaceThreads = useCallback(async () => {
-        if (!workspaceId) return;
+        if (!supabase || !workspaceId) return;
 
         try {
             setIsLoading(true);
@@ -51,8 +54,9 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     // Load workspace threads on mount
     useEffect(() => {
+        if (!supabase) return;
         fetchWorkspaceThreads();
-    }, [fetchWorkspaceThreads]);
+    }, [supabase, fetchWorkspaceThreads]);
 
     // Track synced threads to prevent infinite loops
     const syncedThreadsRef = useRef<Set<string>>(new Set());
@@ -68,6 +72,7 @@ export function useWorkspaceThreads(workspaceId: string) {
     // Sync Tambo thread names to workspace thread titles
     useEffect(() => {
         const syncTitles = async () => {
+            if (!supabase) return;
             if (tamboThreadsArray.length === 0 || workspaceThreads.length === 0) return;
 
             let hasUpdates = false;
@@ -111,6 +116,7 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     // Link current thread to workspace when it has messages
     const linkCurrentThread = useCallback(async () => {
+        if (!supabase) return;
         if (!currentThread?.id || !workspaceId) return;
         if (linkedThreadIds.has(currentThread.id)) return;
 
@@ -146,6 +152,7 @@ export function useWorkspaceThreads(workspaceId: string) {
     const updateThreadTitle = useCallback(
         async (tamboThreadId: string, title: string) => {
             try {
+                if (!supabase) return;
                 const { error } = await supabase
                     .from("workspace_threads")
                     .update({ title })
@@ -164,6 +171,7 @@ export function useWorkspaceThreads(workspaceId: string) {
     const deleteThread = useCallback(
         async (tamboThreadId: string) => {
             try {
+                if (!supabase) return;
                 const { error } = await supabase
                     .from("workspace_threads")
                     .delete()

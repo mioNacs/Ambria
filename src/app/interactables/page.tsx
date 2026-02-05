@@ -11,6 +11,7 @@ import {
   ThreadContent,
   ThreadContentMessages,
 } from "@/components/tambo/thread-content";
+import { ApiKeyCheck } from "@/components/ApiKeyCheck";
 import { components, tools } from "@/lib/tambo";
 import { TamboProvider } from "@tambo-ai/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -18,11 +19,20 @@ import { useState } from "react";
 import { SettingsPanel } from "./components/settings-panel";
 
 export default function InteractablesPage() {
+  const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
   const [isChatOpen, setIsChatOpen] = useState(true);
+
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen p-6">
+        <ApiKeyCheck />
+      </div>
+    );
+  }
 
   return (
     <TamboProvider
-      apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
+      apiKey={apiKey}
       components={components}
       tools={tools}
       tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}

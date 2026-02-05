@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TamboProvider } from "@tambo-ai/react";
+import { ApiKeyCheck } from "@/components/ApiKeyCheck";
 import { WorkspaceChat } from "@/components/workspace/WorkspaceChat";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { useWorkspaces, Workspace } from "@/hooks/useWorkspaces";
@@ -19,6 +20,7 @@ export default function WorkspacePage() {
     const { session, isLoading: authLoading } = useAuth();
     const { getWorkspace } = useWorkspaces();
     const mcpServers = useMcpServers();
+    const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
 
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +74,14 @@ export default function WorkspacePage() {
         );
     }
 
+    if (!apiKey) {
+        return (
+            <div className="min-h-screen bg-gray-50 p-6">
+                <ApiKeyCheck />
+            </div>
+        );
+    }
+
     return (
         <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Workspace Header */}
@@ -80,7 +90,7 @@ export default function WorkspacePage() {
             {/* Chat Interface */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <TamboProvider
-                    apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
+                    apiKey={apiKey}
                     components={components}
                     tools={tools}
                     tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}

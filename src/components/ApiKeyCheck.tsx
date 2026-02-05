@@ -1,9 +1,10 @@
 "use client";
 
+import { CircleCheck, CircleX } from "lucide-react";
 import { useState } from "react";
 
 interface ApiKeyCheckProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const ApiKeyMissingAlert = () => (
@@ -88,7 +89,16 @@ export function ApiKeyCheck({ children }: ApiKeyCheckProps) {
     <div className="flex items-start gap-4">
       <div className="flex-grow">
         <div className="flex items-center gap-1">
-          <div className="min-w-6">{isApiKeyMissing ? "❌" : "✅"}</div>
+          <div className="min-w-6">
+            {isApiKeyMissing ? (
+              <CircleX className="w-4 h-4 text-red-500" aria-hidden="true" />
+            ) : (
+              <CircleCheck
+                className="w-4 h-4 text-emerald-600"
+                aria-hidden="true"
+              />
+            )}
+          </div>
           <p>
             {isApiKeyMissing ? "Tambo not initialized" : "Tambo initialized"}
           </p>

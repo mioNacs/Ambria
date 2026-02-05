@@ -2,17 +2,22 @@
 
 import { createClient } from "@/lib/supabase/client";
 import type { AuthChangeEvent, User, Session } from "@supabase/supabase-js";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
+    const supabase = useMemo(() => {
+        if (typeof window === "undefined") return null;
+        return createClient();
+    }, []);
     const router = useRouter();
 
     useEffect(() => {
+        if (!supabase) return;
+
         // Get initial session
         const getInitialSession = async () => {
             const {
@@ -38,6 +43,8 @@ export function useAuth() {
     }, [supabase]);
 
     const signInWithGitHub = useCallback(async () => {
+        if (!supabase) return;
+
         const scopes = process.env.NEXT_PUBLIC_GITHUB_OAUTH_SCOPES || "repo read:user";
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "github",
@@ -52,6 +59,7 @@ export function useAuth() {
     }, [supabase]);
 
     const signOut = useCallback(async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         router.push("/login");
     }, [supabase, router]);
