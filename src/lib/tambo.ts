@@ -14,6 +14,13 @@ import {
   getCountryPopulations,
   getGlobalPopulationTrend,
 } from "@/services/population-stats";
+import {
+  getRepoTree,
+  getFileContent,
+  getRepoOverview,
+  searchFiles,
+  getMultipleFiles,
+} from "@/services/github-repo";
 import type { TamboComponent } from "@tambo-ai/react";
 import { TamboTool } from "@tambo-ai/react";
 import { z } from "zod";
@@ -27,6 +34,119 @@ import { z } from "zod";
  */
 
 export const tools: TamboTool[] = [
+  // GitHub Repository Tools
+  {
+    name: "getRepoTree",
+    description:
+      "Get the file tree structure of the current GitHub repository. Use this to understand what files and folders exist in the project. Returns a list of file paths and their types (file or directory).",
+    tool: getRepoTree,
+    inputSchema: z.object({
+      owner: z.string().describe("GitHub repository owner/organization name"),
+      repo: z.string().describe("GitHub repository name"),
+      path: z.string().optional().describe("Optional path to filter the tree (e.g., 'src' to only show files in src folder)"),
+      token: z.string().optional().describe("GitHub access token for private repos"),
+    }),
+    outputSchema: z.object({
+      tree: z.array(
+        z.object({
+          path: z.string(),
+          type: z.enum(["file", "dir"]),
+          size: z.number().optional(),
+        })
+      ),
+      truncated: z.boolean(),
+    }),
+  },
+  {
+    name: "getFileContent",
+    description:
+      "Get the content of a specific file from the GitHub repository. Use this to read source code files, configuration files, or documentation. Provide the full file path from the repository root.",
+    tool: getFileContent,
+    inputSchema: z.object({
+      owner: z.string().describe("GitHub repository owner/organization name"),
+      repo: z.string().describe("GitHub repository name"),
+      path: z.string().describe("Full path to the file (e.g., 'src/index.ts' or 'README.md')"),
+      token: z.string().optional().describe("GitHub access token for private repos"),
+    }),
+    outputSchema: z.object({
+      path: z.string(),
+      content: z.string(),
+      size: z.number(),
+      encoding: z.string(),
+    }),
+  },
+  {
+    name: "getRepoOverview",
+    description:
+      "Get a quick overview of the repository including README, package.json (if present), and top-level folder structure. Use this first to understand the project before diving into specific files.",
+    tool: getRepoOverview,
+    inputSchema: z.object({
+      owner: z.string().describe("GitHub repository owner/organization name"),
+      repo: z.string().describe("GitHub repository name"),
+      token: z.string().optional().describe("GitHub access token for private repos"),
+    }),
+    outputSchema: z.object({
+      readme: z.object({
+        path: z.string(),
+        content: z.string(),
+        size: z.number(),
+        encoding: z.string(),
+      }).optional(),
+      packageJson: z.object({
+        path: z.string(),
+        content: z.string(),
+        size: z.number(),
+        encoding: z.string(),
+      }).optional(),
+      structure: z.array(
+        z.object({
+          path: z.string(),
+          type: z.enum(["file", "dir"]),
+          size: z.number().optional(),
+        })
+      ),
+    }),
+  },
+  {
+    name: "searchFiles",
+    description:
+      "Search for files in the repository by name pattern. Use this to find specific files like test files, configuration files, or files containing certain keywords in their names.",
+    tool: searchFiles,
+    inputSchema: z.object({
+      owner: z.string().describe("GitHub repository owner/organization name"),
+      repo: z.string().describe("GitHub repository name"),
+      pattern: z.string().describe("Pattern to search for in file names (e.g., 'test', '.config', 'util')"),
+      token: z.string().optional().describe("GitHub access token for private repos"),
+    }),
+    outputSchema: z.array(
+      z.object({
+        path: z.string(),
+        type: z.enum(["file", "dir"]),
+        size: z.number().optional(),
+      })
+    ),
+  },
+  {
+    name: "getMultipleFiles",
+    description:
+      "Get the content of multiple files at once. Use this to read related files together, like a component and its styles, or a function and its tests. Limited to 5 files maximum.",
+    tool: getMultipleFiles,
+    inputSchema: z.object({
+      owner: z.string().describe("GitHub repository owner/organization name"),
+      repo: z.string().describe("GitHub repository name"),
+      paths: z.array(z.string()).describe("Array of file paths to fetch (max 5)"),
+      token: z.string().optional().describe("GitHub access token for private repos"),
+    }),
+    outputSchema: z.array(
+      z.object({
+        path: z.string(),
+        content: z.string(),
+        size: z.number(),
+        encoding: z.string(),
+      })
+    ),
+  },
+  // Population Tools (existing)
   {
     name: "countryPopulation",
     description:
@@ -73,7 +193,6 @@ export const tools: TamboTool[] = [
       }),
     ),
   },
-  // Add more tools here
 ];
 
 /**
@@ -98,5 +217,4 @@ export const components: TamboComponent[] = [
     component: DataCard,
     propsSchema: dataCardSchema,
   },
-  // Add more components here
 ];
