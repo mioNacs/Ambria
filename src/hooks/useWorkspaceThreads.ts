@@ -142,9 +142,8 @@ export function useWorkspaceThreads(workspaceId: string) {
             if (!supabase) return;
             if (!currentThread?.id || !workspaceId) return;
 
-            const hasMessages =
-                currentThread.messages && currentThread.messages.length > 0;
-            if (!hasMessages) return;
+            const messageCount = currentThread.messages?.length ?? 0;
+            if (messageCount === 0) return;
 
             const existingTitle =
                 workspaceThreadsRef.current.find(
