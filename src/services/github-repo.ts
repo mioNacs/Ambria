@@ -1004,17 +1004,21 @@ export async function getCommunityFiles(params: {
     const dirListings = new Map<string, Map<string, { type: string; path: string }>>();
     dirListings.set("", rootListing);
 
-    const maybeAddListing = async (dirPath: string) => {
+    const ensureListing = async (dirPath: string) => {
+        if (!dirPath) return;
         if (dirListings.has(dirPath)) return;
+
         const parent = dirPath.split("/").slice(0, -1).join("/");
         const name = dirPath.split("/").pop() ?? "";
+
+        await ensureListing(parent);
+
         const parentListing = dirListings.get(parent);
         const entry = parentListing?.get(name);
         if (!entry || entry.type !== "dir") return;
+
         dirListings.set(dirPath, await listDirectory(dirPath));
     };
-
-    await maybeAddListing(".github");
 
     const results: CommunityFile[] = [];
 
@@ -1026,7 +1030,7 @@ export async function getCommunityFiles(params: {
             const parentDir = parts.slice(0, -1).join("/");
             const name = parts[parts.length - 1] ?? "";
 
-            await maybeAddListing(parentDir);
+            await ensureListing(parentDir);
 
             const listing = dirListings.get(parentDir);
             const entry = listing?.get(name);

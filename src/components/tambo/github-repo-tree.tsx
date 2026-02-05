@@ -75,7 +75,8 @@ export function GitHubRepoTree({
   className,
   ...props
 }: GitHubRepoTreeProps) {
-  const resolvedStateKey = stateKey ?? `github-repo-tree:${title}`;
+  const instanceId = React.useId();
+  const resolvedStateKey = stateKey ?? `github-repo-tree:${instanceId}`;
   const [state, setState] = useTamboComponentState<RepoTreeState>(
     resolvedStateKey,
     { selectedPath: initialSelectedPath ?? null, expandedPaths: {} },
