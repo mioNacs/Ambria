@@ -26,9 +26,17 @@ export function WorkspaceThreadHistory({
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState("");
 
-    const filteredThreads = threads.filter((t) =>
-        t.title?.toLowerCase().includes(searchQuery.toLowerCase())
+    const getThreadLabel = React.useCallback(
+        (t: WorkspaceThread) => t.title || `Thread ${t.tambo_thread_id.slice(-6)}`,
+        [],
     );
+
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const filteredThreads = normalizedQuery
+        ? threads.filter((t) =>
+            getThreadLabel(t).toLowerCase().includes(normalizedQuery)
+        )
+        : threads;
 
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -51,8 +59,8 @@ export function WorkspaceThreadHistory({
         return (
             <div
                 className={cn(
-                    "flex flex-col items-center py-4 bg-gray-50 border-gray-200",
-                    position === "left" ? "border-r" : "border-l"
+                    "w-14 flex flex-col items-center py-4 bg-white/80 backdrop-blur border-gray-200",
+                    position === "left" ? "border-r" : "border-l",
                 )}
             >
                 <button
@@ -71,7 +79,7 @@ export function WorkspaceThreadHistory({
                     className="p-2 mt-2 hover:bg-gray-100 rounded-lg transition-colors"
                     title="New thread"
                 >
-                    <Plus className="w-5 h-5 text-emerald-600" />
+                    <Plus className="w-5 h-5 text-gray-900" />
                 </button>
             </div>
         );
@@ -80,13 +88,16 @@ export function WorkspaceThreadHistory({
     return (
         <div
             className={cn(
-                "w-64 flex flex-col bg-gray-50 border-gray-200",
-                position === "left" ? "border-r" : "border-l"
+                "w-72 flex flex-col bg-white/80 backdrop-blur border-gray-200",
+                position === "left" ? "border-r" : "border-l",
             )}
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                <span className="font-medium text-gray-700 text-sm">Conversations</span>
+                <div className="min-w-0">
+                    <div className="font-medium text-gray-900 text-sm truncate">Conversations</div>
+                    <div className="text-xs text-gray-500">{threads.length} threads</div>
+                </div>
                 <button
                     onClick={() => setIsCollapsed(true)}
                     className="p-1 hover:bg-gray-200 rounded transition-colors"
@@ -104,7 +115,7 @@ export function WorkspaceThreadHistory({
             <div className="px-3 py-2">
                 <button
                     onClick={createNewThread}
-                    className="flex items-center gap-2 w-full px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
                 >
                     <Plus className="w-4 h-4" />
                     New Thread
@@ -120,7 +131,7 @@ export function WorkspaceThreadHistory({
                         placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                 </div>
             </div>
@@ -150,6 +161,13 @@ export function WorkspaceThreadHistory({
                     </div>
                 )}
             </div>
+
+            {/* Footer */}
+            <div className="px-4 py-3 border-t border-gray-200 text-xs text-gray-500">
+                Tip: Press <span className="font-medium text-gray-700">Alt</span>+
+                <span className="font-medium text-gray-700">Shift</span>+
+                <span className="font-medium text-gray-700">N</span> to start a new thread.
+            </div>
         </div>
     );
 }
@@ -163,21 +181,28 @@ interface ThreadItemProps {
 }
 
 function ThreadItem({ thread, isActive, onSelect, onDelete, formatDate }: ThreadItemProps) {
-    const [showDelete, setShowDelete] = React.useState(false);
-
     return (
         <div
             className={cn(
-                "group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors",
+                "group flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors",
                 isActive
-                    ? "bg-emerald-100 text-emerald-900"
-                    : "hover:bg-gray-100 text-gray-700"
+                    ? "bg-emerald-50 text-gray-900"
+                    : "hover:bg-gray-100 text-gray-700",
             )}
             onClick={onSelect}
-            onMouseEnter={() => setShowDelete(true)}
-            onMouseLeave={() => setShowDelete(false)}
         >
-            <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-50" />
+            <div
+                className={cn(
+                    "h-8 w-1 rounded-full",
+                    isActive ? "bg-emerald-500" : "bg-transparent",
+                )}
+            />
+            <MessageSquare
+                className={cn(
+                    "w-4 h-4 flex-shrink-0",
+                    isActive ? "text-emerald-700" : "text-gray-400",
+                )}
+            />
             <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">
                     {thread.title || `Thread ${thread.tambo_thread_id.slice(-6)}`}
@@ -186,18 +211,20 @@ function ThreadItem({ thread, isActive, onSelect, onDelete, formatDate }: Thread
                     {formatDate(thread.last_activity_at)}
                 </div>
             </div>
-            {showDelete && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete();
-                    }}
-                    className="p-1 hover:bg-red-100 rounded transition-colors"
-                    title="Delete thread"
-                >
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                </button>
-            )}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                }}
+                className={cn(
+                    "p-1 rounded-lg transition-colors",
+                    "opacity-0 group-hover:opacity-100 focus:opacity-100",
+                    "hover:bg-red-100",
+                )}
+                title="Delete thread"
+            >
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+            </button>
         </div>
     );
 }

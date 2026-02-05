@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTamboThreadList, useTamboThread } from "@tambo-ai/react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -11,6 +11,15 @@ export interface WorkspaceThread {
     title: string | null;
     last_activity_at: string;
     created_at: string;
+}
+
+function isMeaningfulThreadName(name: string | null | undefined): name is string {
+    const trimmed = name?.trim();
+    return !!trimmed && !trimmed.toLowerCase().startsWith("thread ");
+}
+
+function getFallbackThreadTitle(threadId: string) {
+    return `Thread ${threadId.slice(-6)}`;
 }
 
 /**
@@ -28,6 +37,11 @@ export function useWorkspaceThreads(workspaceId: string) {
     const [workspaceThreads, setWorkspaceThreads] = useState<WorkspaceThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [linkedThreadIds, setLinkedThreadIds] = useState<Set<string>>(new Set());
+
+    const workspaceThreadsRef = useRef(workspaceThreads);
+    useEffect(() => {
+        workspaceThreadsRef.current = workspaceThreads;
+    }, [workspaceThreads]);
 
     // Fetch workspace threads from Supabase
     const fetchWorkspaceThreads = useCallback(async () => {
@@ -58,9 +72,6 @@ export function useWorkspaceThreads(workspaceId: string) {
         fetchWorkspaceThreads();
     }, [supabase, fetchWorkspaceThreads]);
 
-    // Track synced threads to prevent infinite loops
-    const syncedThreadsRef = useRef<Set<string>>(new Set());
-
     const tamboThreadsArray = useMemo(() => {
         if (Array.isArray(allTamboThreads)) {
             return allTamboThreads;
@@ -75,78 +86,130 @@ export function useWorkspaceThreads(workspaceId: string) {
             if (!supabase) return;
             if (tamboThreadsArray.length === 0 || workspaceThreads.length === 0) return;
 
-            let hasUpdates = false;
+            const updates = workspaceThreads
+                .map((wsThread) => {
+                    const tamboThread = tamboThreadsArray.find(
+                        (t: { id: string; name?: string }) =>
+                            t.id === wsThread.tambo_thread_id,
+                    );
 
-            for (const wsThread of workspaceThreads) {
-                // Skip if already synced
-                if (syncedThreadsRef.current.has(wsThread.tambo_thread_id)) continue;
-
-                const tamboThread = tamboThreadsArray.find(
-                    (t: { id: string; name?: string }) => t.id === wsThread.tambo_thread_id
-                );
-
-                // If Tambo has a real name (not just the ID fallback) and it differs from stored title
-                if (tamboThread?.name &&
-                    tamboThread.name !== wsThread.title &&
-                    !tamboThread.name.startsWith('Thread ')) {
-                    try {
-                        await supabase
-                            .from("workspace_threads")
-                            .update({ title: tamboThread.name })
-                            .eq("tambo_thread_id", wsThread.tambo_thread_id);
-                        hasUpdates = true;
-                        // Mark as synced
-                        syncedThreadsRef.current.add(wsThread.tambo_thread_id);
-                    } catch (err) {
-                        console.error("Error syncing thread title:", err);
+                    if (!isMeaningfulThreadName(tamboThread?.name)) {
+                        return null;
                     }
-                } else {
-                    // Mark as synced (no update needed)
-                    syncedThreadsRef.current.add(wsThread.tambo_thread_id);
-                }
+
+                    if (tamboThread.name === wsThread.title) {
+                        return null;
+                    }
+
+                    return {
+                        tamboThreadId: wsThread.tambo_thread_id,
+                        title: tamboThread.name,
+                    };
+                })
+                .filter(Boolean) as Array<{ tamboThreadId: string; title: string }>;
+
+            if (updates.length === 0) {
+                return;
             }
-            // Only refresh if we made updates
-            if (hasUpdates) {
+
+            try {
+                await Promise.all(
+                    updates.map(({ tamboThreadId, title }) =>
+                        supabase
+                            .from("workspace_threads")
+                            .update({ title })
+                            .eq("workspace_id", workspaceId)
+                            .eq("tambo_thread_id", tamboThreadId),
+                    ),
+                );
                 fetchWorkspaceThreads();
+            } catch (err) {
+                console.error("Error syncing thread titles:", err);
             }
         };
 
         syncTitles();
-    }, [tamboThreadsArray, workspaceThreads, supabase, fetchWorkspaceThreads]);
+    }, [
+        tamboThreadsArray,
+        workspaceThreads,
+        supabase,
+        fetchWorkspaceThreads,
+        workspaceId,
+    ]);
 
-    // Link current thread to workspace when it has messages
-    const linkCurrentThread = useCallback(async () => {
-        if (!supabase) return;
-        if (!currentThread?.id || !workspaceId) return;
-        if (linkedThreadIds.has(currentThread.id)) return;
-
-        const hasMessages = currentThread.messages && currentThread.messages.length > 0;
-        if (!hasMessages) return;
-
-        try {
-            const { error } = await supabase.from("workspace_threads").upsert(
-                {
-                    workspace_id: workspaceId,
-                    tambo_thread_id: currentThread.id,
-                    title: currentThread.name || `Thread ${currentThread.id.slice(-6)}`,
-                    last_activity_at: new Date().toISOString(),
-                },
-                { onConflict: "tambo_thread_id" }
-            );
-
-            if (error) throw error;
-
-            // Refresh the list
-            await fetchWorkspaceThreads();
-        } catch (err) {
-            console.error("Error linking thread to workspace:", err);
-        }
-    }, [currentThread, workspaceId, linkedThreadIds, supabase, fetchWorkspaceThreads]);
-
-    // Auto-link when thread gets messages
     useEffect(() => {
-        linkCurrentThread();
-    }, [currentThread?.messages?.length, linkCurrentThread]);
+        const upsertCurrentThread = async () => {
+            if (!supabase) return;
+            if (!currentThread?.id || !workspaceId) return;
+
+            const hasMessages =
+                currentThread.messages && currentThread.messages.length > 0;
+            if (!hasMessages) return;
+
+            const existingTitle =
+                workspaceThreadsRef.current.find(
+                    (t) => t.tambo_thread_id === currentThread.id,
+                )?.title ?? null;
+
+            const fallbackTitle = getFallbackThreadTitle(currentThread.id);
+            const title = isMeaningfulThreadName(currentThread.name)
+                ? currentThread.name
+                : existingTitle || currentThread.name || fallbackTitle;
+
+            try {
+                const { data, error } = await supabase
+                    .from("workspace_threads")
+                    .upsert(
+                        {
+                            workspace_id: workspaceId,
+                            tambo_thread_id: currentThread.id,
+                            title,
+                            last_activity_at: new Date().toISOString(),
+                        },
+                        { onConflict: "tambo_thread_id" },
+                    )
+                    .select("*")
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                if (data) {
+                    setWorkspaceThreads((prev) => {
+                        const existingIndex = prev.findIndex(
+                            (t) => t.tambo_thread_id === data.tambo_thread_id,
+                        );
+                        const next = [...prev];
+                        if (existingIndex >= 0) {
+                            next[existingIndex] = data as WorkspaceThread;
+                        } else {
+                            next.unshift(data as WorkspaceThread);
+                        }
+                        next.sort(
+                            (a, b) =>
+                                new Date(b.last_activity_at).getTime() -
+                                new Date(a.last_activity_at).getTime(),
+                        );
+                        setLinkedThreadIds(
+                            new Set(next.map((t) => t.tambo_thread_id)),
+                        );
+                        return next;
+                    });
+                }
+            } catch (err) {
+                console.error("Error linking thread to workspace:", err);
+            }
+        };
+
+        void upsertCurrentThread();
+    }, [
+        currentThread?.id,
+        currentThread?.messages?.length,
+        currentThread?.name,
+        supabase,
+        workspaceId,
+    ]);
 
     // Update thread title
     const updateThreadTitle = useCallback(
@@ -156,6 +219,7 @@ export function useWorkspaceThreads(workspaceId: string) {
                 const { error } = await supabase
                     .from("workspace_threads")
                     .update({ title })
+                    .eq("workspace_id", workspaceId)
                     .eq("tambo_thread_id", tamboThreadId);
 
                 if (error) throw error;
@@ -164,7 +228,7 @@ export function useWorkspaceThreads(workspaceId: string) {
                 console.error("Error updating thread title:", err);
             }
         },
-        [supabase, fetchWorkspaceThreads]
+        [supabase, fetchWorkspaceThreads, workspaceId]
     );
 
     // Delete thread
@@ -175,6 +239,7 @@ export function useWorkspaceThreads(workspaceId: string) {
                 const { error } = await supabase
                     .from("workspace_threads")
                     .delete()
+                    .eq("workspace_id", workspaceId)
                     .eq("tambo_thread_id", tamboThreadId);
 
                 if (error) throw error;
@@ -183,7 +248,7 @@ export function useWorkspaceThreads(workspaceId: string) {
                 console.error("Error deleting thread:", err);
             }
         },
-        [supabase, fetchWorkspaceThreads]
+        [supabase, fetchWorkspaceThreads, workspaceId]
     );
 
     // Switch to a specific thread

@@ -86,7 +86,7 @@ export const WorkspaceChat = React.forwardRef<
                 {/* Message input */}
                 <div className="px-4 pb-4">
                     <MessageInput>
-                        <MessageInputTextarea placeholder={`Ask about ${repoName || 'this repository'}...`} />
+                        <MessageInputTextarea placeholder={`Ask about ${repoName || "this repository"}...`} />
                         <MessageInputToolbar>
                             <MessageInputFileButton />
                             <MessageInputMcpPromptButton />
@@ -95,6 +95,10 @@ export const WorkspaceChat = React.forwardRef<
                         </MessageInputToolbar>
                         <MessageInputError />
                     </MessageInput>
+                    <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                        <span className="truncate">Threads are scoped to this workspace.</span>
+                        <span className="flex-shrink-0">Alt+Shift+N</span>
+                    </div>
                 </div>
 
                 {/* Message suggestions */}
