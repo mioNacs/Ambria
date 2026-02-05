@@ -7,15 +7,14 @@ import { z } from "zod";
 
 const communityFileSchema = z
   .object({
-    name: z.string().describe("Display name of the community file"),
+    name: z.string().optional().describe("Display name of the community file"),
     path: z.string().describe("Repository path to the file"),
     exists: z.boolean().describe("Whether the file exists in the repository"),
     content: z
       .string()
       .optional()
       .describe("Optional preview snippet of the file contents"),
-  })
-  .partial();
+  });
 
 export const communityHealthSchema = z
   .object({
@@ -25,12 +24,10 @@ export const communityHealthSchema = z
       .describe("Title shown above the community health checklist"),
     files: z
       .array(communityFileSchema)
-      .optional()
       .describe(
         "Array of community files and whether they exist (e.g., CONTRIBUTING.md, SECURITY.md)",
       ),
   })
-  .partial()
   .describe(
     "Shows a repository community health checklist (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, etc.)",
   );
@@ -40,11 +37,11 @@ export type CommunityHealthProps = z.infer<typeof communityHealthSchema> &
 
 export function CommunityHealth({
   title = "Community health",
-  files,
+  files = [],
   className,
   ...props
 }: CommunityHealthProps) {
-  const normalizedFiles = files ?? [];
+  const normalizedFiles = files;
   const presentCount = normalizedFiles.filter((f) => f.exists).length;
   const missingCount = normalizedFiles.filter((f) => f.exists === false).length;
 

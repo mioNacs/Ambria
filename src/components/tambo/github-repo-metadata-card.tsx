@@ -72,7 +72,6 @@ export const githubRepoMetadataCardSchema = z
       .optional()
       .describe("Last push date (ISO string)"),
   })
-  .partial()
   .describe(
     "A summary card showing key GitHub repository metadata (stars, forks, topics, language, etc.)",
   );

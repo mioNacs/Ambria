@@ -17,7 +17,6 @@ export const githubFileViewerSchema = z
       .describe("Repository path to the file (e.g. 'src/index.ts')"),
     content: z
       .string()
-      .optional()
       .describe("The file contents as UTF-8 text (may be truncated)"),
     size: z
       .number()
@@ -35,11 +34,9 @@ export const githubFileViewerSchema = z
       ),
     maxHeight: z
       .number()
-      .optional()
       .describe("Max code block height in pixels (default 420)")
       .default(420),
   })
-  .partial()
   .describe(
     "Displays the contents of a repository file with syntax highlighting and a copy-to-clipboard button.",
   );
@@ -89,6 +86,14 @@ function CodeHeader({
   const [copied, setCopied] = React.useState(false);
   const [error, setError] = React.useState(false);
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const copyToClipboard = async () => {
     if (!code) return;

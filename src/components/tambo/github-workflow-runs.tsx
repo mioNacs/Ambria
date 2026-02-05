@@ -18,8 +18,7 @@ export const githubWorkflowRunSchema = z
     updatedAt: z.string().optional().describe("Updated time as ISO string"),
     htmlUrl: z.string().optional().describe("GitHub URL for the workflow run"),
     runNumber: z.number().optional().describe("Run number"),
-  })
-  .partial();
+  });
 
 export const workflowRunsListSchema = z
   .object({
@@ -29,14 +28,12 @@ export const workflowRunsListSchema = z
       .describe("Title displayed above the workflow runs list"),
     runs: z
       .array(githubWorkflowRunSchema)
-      .optional()
       .describe("Workflow runs to display"),
     emptyMessage: z
       .string()
       .optional()
       .describe("Message shown when there are no workflow runs"),
   })
-  .partial()
   .describe("Shows recent GitHub Actions workflow runs");
 
 export type WorkflowRunsListProps = z.infer<typeof workflowRunsListSchema> &
@@ -67,12 +64,12 @@ function getConclusionTone(conclusion?: string | null) {
 
 export function WorkflowRunsList({
   title = "Workflow runs",
-  runs,
+  runs = [],
   emptyMessage = "No workflow runs.",
   className,
   ...props
 }: WorkflowRunsListProps) {
-  const items = runs ?? [];
+  const items = runs;
 
   return (
     <div className={cn("w-full", className)} {...props}>

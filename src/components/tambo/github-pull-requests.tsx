@@ -9,11 +9,14 @@ export const githubPullRequestSchema = z
   .object({
     number: z.number().describe("Pull request number"),
     title: z.string().describe("Pull request title"),
-    state: z.string().optional().describe("PR state (open/closed)"),
+    state: z
+      .enum(["open", "closed"])
+      .optional()
+      .describe("PR state (open/closed)"),
     author: z.string().optional().describe("PR author username"),
     labels: z
       .array(z.string())
-      .optional()
+      .default([])
       .describe("Label names applied to the pull request"),
     createdAt: z
       .string()
@@ -48,8 +51,7 @@ export const githubPullRequestSchema = z
       .string()
       .optional()
       .describe("Base branch name (target)"),
-  })
-  .partial();
+  });
 
 export const pullRequestCardSchema = githubPullRequestSchema
   .extend({
@@ -58,7 +60,6 @@ export const pullRequestCardSchema = githubPullRequestSchema
       .optional()
       .describe("Whether to show a short preview of the PR description"),
   })
-  .partial()
   .describe(
     "Shows a GitHub pull request as a compact card (number, title, branches, labels, etc.)",
   );
@@ -190,7 +191,6 @@ export const pullRequestListSchema = z
       .describe("Title displayed above the pull request list"),
     pullRequests: z
       .array(githubPullRequestSchema)
-      .optional()
       .describe("Pull requests to display"),
     showBodyPreview: z
       .boolean()
@@ -201,7 +201,6 @@ export const pullRequestListSchema = z
       .optional()
       .describe("Message shown when there are no pull requests"),
   })
-  .partial()
   .describe("Shows a list of GitHub pull requests as cards");
 
 export type PullRequestListProps = z.infer<typeof pullRequestListSchema> &
@@ -209,13 +208,13 @@ export type PullRequestListProps = z.infer<typeof pullRequestListSchema> &
 
 export function PullRequestList({
   title = "Pull requests",
-  pullRequests,
+  pullRequests = [],
   showBodyPreview,
   emptyMessage = "No pull requests.",
   className,
   ...props
 }: PullRequestListProps) {
-  const items = pullRequests ?? [];
+  const items = pullRequests;
 
   return (
     <div className={cn("w-full", className)} {...props}>

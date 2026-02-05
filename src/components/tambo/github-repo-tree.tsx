@@ -13,8 +13,7 @@ const repoTreeItemSchema = z
       .enum(["file", "dir"])
       .describe("Whether the item is a file or directory"),
     size: z.number().optional().describe("Optional file size in bytes"),
-  })
-  .partial();
+  });
 
 export const githubRepoTreeSchema = z
   .object({
@@ -22,10 +21,7 @@ export const githubRepoTreeSchema = z
       .string()
       .optional()
       .describe("Title displayed above the repository tree"),
-    tree: z
-      .array(repoTreeItemSchema)
-      .optional()
-      .describe("Repository tree items"),
+    tree: z.array(repoTreeItemSchema).describe("Repository tree items"),
     truncated: z
       .boolean()
       .optional()
@@ -37,7 +33,6 @@ export const githubRepoTreeSchema = z
       .optional()
       .describe("Optional initial selected file path"),
   })
-  .partial()
   .describe(
     "Shows a GitHub repository file tree. Users can click to select a file path.",
   );
@@ -70,7 +65,7 @@ function sortTree(items: RepoTreeItem[]) {
 
 export function GitHubRepoTree({
   title = "Repository tree",
-  tree,
+  tree = [],
   truncated,
   initialSelectedPath,
   className,
@@ -88,7 +83,7 @@ export function GitHubRepoTree({
     setState({ selectedPath: initialSelectedPath });
   }, [initialSelectedPath, setState, state?.selectedPath]);
 
-  const items = React.useMemo(() => sortTree(tree ?? []), [tree]);
+  const items = React.useMemo(() => sortTree(tree), [tree]);
   const selectedPath = state?.selectedPath ?? null;
 
   return (
@@ -125,8 +120,8 @@ export function GitHubRepoTree({
         <div className="mt-3 max-h-96 overflow-auto rounded-md border border-border">
           <div className="divide-y divide-border">
             {items.map((item, index) => {
-              const path = item.path ?? "";
-              const isSelected = !!path && path === selectedPath;
+              const path = item.path;
+              const isSelected = path === selectedPath;
               const label = getRowLabel(path);
 
               const Icon = item.type === "dir" ? Folder : FileText;
@@ -135,9 +130,7 @@ export function GitHubRepoTree({
                 <button
                   key={`${path}-${index}`}
                   type="button"
-                  onClick={() =>
-                    setState({ selectedPath: path || selectedPath || null })
-                  }
+                  onClick={() => setState({ selectedPath: path })}
                   className={cn(
                     "flex w-full items-center gap-2 px-3 py-2 text-left",
                     "hover:bg-muted/40 transition-colors",

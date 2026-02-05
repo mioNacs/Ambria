@@ -9,11 +9,14 @@ export const githubIssueSchema = z
   .object({
     number: z.number().describe("Issue number"),
     title: z.string().describe("Issue title"),
-    state: z.string().optional().describe("Issue state (open/closed)"),
+    state: z
+      .enum(["open", "closed"])
+      .optional()
+      .describe("Issue state (open/closed)"),
     author: z.string().optional().describe("Issue author username"),
     labels: z
       .array(z.string())
-      .optional()
+      .default([])
       .describe("Label names applied to the issue"),
     createdAt: z
       .string()
@@ -35,8 +38,7 @@ export const githubIssueSchema = z
       .nullable()
       .optional()
       .describe("Optional short preview of the issue body"),
-  })
-  .partial();
+  });
 
 export const issueCardSchema = githubIssueSchema
   .extend({
@@ -45,7 +47,6 @@ export const issueCardSchema = githubIssueSchema
       .optional()
       .describe("Whether to show a short preview of the issue body"),
   })
-  .partial()
   .describe(
     "Shows a GitHub issue as a compact card (number, title, labels, author, etc.)",
   );
@@ -154,7 +155,6 @@ export const issueListSchema = z
     title: z.string().optional().describe("Title displayed above the issue list"),
     issues: z
       .array(githubIssueSchema)
-      .optional()
       .describe("Issues to display"),
     showBodyPreview: z
       .boolean()
@@ -165,7 +165,6 @@ export const issueListSchema = z
       .optional()
       .describe("Message shown when there are no issues"),
   })
-  .partial()
   .describe("Shows a list of GitHub issues as cards");
 
 export type IssueListProps = z.infer<typeof issueListSchema> &
@@ -173,13 +172,13 @@ export type IssueListProps = z.infer<typeof issueListSchema> &
 
 export function IssueList({
   title = "Issues",
-  issues,
+  issues = [],
   showBodyPreview,
   emptyMessage = "No issues.",
   className,
   ...props
 }: IssueListProps) {
-  const items = issues ?? [];
+  const items = issues;
 
   return (
     <div className={cn("w-full", className)} {...props}>
