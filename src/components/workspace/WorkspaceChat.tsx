@@ -26,6 +26,7 @@ import { WorkspaceThreadHistory } from "./WorkspaceThreadHistory";
 import type { Suggestion } from "@tambo-ai/react";
 import type { VariantProps } from "class-variance-authority";
 import * as React from "react";
+import { NEW_THREAD_SHORTCUT } from "@/lib/shortcuts";
 
 export interface WorkspaceChatProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: VariantProps<typeof messageVariants>["variant"];
@@ -84,7 +85,7 @@ export const WorkspaceChat = React.forwardRef<
                 </MessageSuggestions>
 
                 {/* Message input */}
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-2">
                     <MessageInput>
                         <MessageInputTextarea placeholder={`Ask about ${repoName || 'this repository'}...`} />
                         <MessageInputToolbar>
