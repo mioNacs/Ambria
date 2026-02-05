@@ -5,6 +5,26 @@
 
 import { Octokit } from "@octokit/rest";
 
+function toErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function decodeBase64Utf8(base64: string) {
+    const normalized = base64.replace(/\s/g, "");
+
+    if (typeof Buffer !== "undefined") {
+        return Buffer.from(normalized, "base64").toString("utf-8");
+    }
+
+    if (typeof globalThis.atob !== "function") {
+        throw new Error("Base64 decoding is not supported in this environment");
+    }
+
+    const binary = globalThis.atob(normalized);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
+}
+
 export interface RepoTreeItem {
     path: string;
     type: "file" | "dir";
@@ -18,6 +38,12 @@ export interface RepoFileContent {
     encoding: string;
 }
 
+type GitTreeEntry = {
+    path?: string | null;
+    type?: string | null;
+    size?: number | null;
+};
+
 /**
  * Get the file tree structure of a GitHub repository
  */
@@ -29,6 +55,9 @@ export async function getRepoTree(params: {
     token?: string;
 }): Promise<{ tree: RepoTreeItem[]; truncated: boolean }> {
     const { owner, repo, path = "", ref, token } = params;
+
+    const normalizedPath = path.replace(/^\/+/, "").replace(/\/+$/, "");
+    const pathPrefix = normalizedPath ? `${normalizedPath}/` : "";
 
     const octokit = new Octokit({
         auth: token,
@@ -54,25 +83,26 @@ export async function getRepoTree(params: {
         });
 
         // Filter by path if provided
-        let items = treeData.tree.filter((item) => {
-            if (!path) return true;
-            return item.path?.startsWith(path);
+        let items = treeData.tree.filter((item: GitTreeEntry) => {
+            if (!normalizedPath) return true;
+            return item.path === normalizedPath || item.path?.startsWith(pathPrefix);
         });
 
         // Limit to 100 items to avoid overwhelming the AI
         const truncated = items.length > 100;
         items = items.slice(0, 100);
 
-        const tree: RepoTreeItem[] = items.map((item) => ({
+        const tree: RepoTreeItem[] = items.map((item: GitTreeEntry) => ({
             path: item.path || "",
             type: item.type === "tree" ? "dir" : "file",
-            size: item.size,
+            size: item.size ?? undefined,
         }));
 
         return { tree, truncated };
     } catch (error) {
-        console.error("Error fetching repo tree:", error);
-        throw new Error(`Failed to fetch repository tree: ${error}`);
+        const message = toErrorMessage(error);
+        console.error("Error fetching repo tree:", message);
+        throw new Error(`Failed to fetch repository tree: ${message}`);
     }
 }
 
@@ -109,7 +139,7 @@ export async function getFileContent(params: {
         }
 
         // Decode base64 content
-        const content = Buffer.from(data.content, "base64").toString("utf-8");
+        const content = decodeBase64Utf8(data.content);
 
         // Truncate if too large
         const maxLength = 50000; // 50KB limit
@@ -125,8 +155,9 @@ export async function getFileContent(params: {
             encoding: "utf-8",
         };
     } catch (error) {
-        console.error("Error fetching file content:", error);
-        throw new Error(`Failed to fetch file content: ${error}`);
+        const message = toErrorMessage(error);
+        console.error("Error fetching file content:", message);
+        throw new Error(`Failed to fetch file content: ${message}`);
     }
 }
 
@@ -151,7 +182,7 @@ export async function getMultipleFiles(params: {
             const content = await getFileContent({ owner, repo, path, ref, token });
             results.push(content);
         } catch (error) {
-            console.warn(`Failed to fetch ${path}:`, error);
+            console.warn(`Failed to fetch ${path}:`, toErrorMessage(error));
         }
     }
 

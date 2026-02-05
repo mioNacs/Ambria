@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTamboThreadList, useTamboThread } from "@tambo-ai/react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -20,7 +20,7 @@ export interface WorkspaceThread {
 export function useWorkspaceThreads(workspaceId: string) {
     const supabase = createClient();
     const { data: allTamboThreads, isPending: isLoadingTambo } = useTamboThreadList();
-    const { thread: currentThread, switchCurrentThread } = useTamboThread();
+    const { thread: currentThread, switchCurrentThread, startNewThread } = useTamboThread();
 
     const [workspaceThreads, setWorkspaceThreads] = useState<WorkspaceThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -57,14 +57,17 @@ export function useWorkspaceThreads(workspaceId: string) {
     // Track synced threads to prevent infinite loops
     const syncedThreadsRef = useRef<Set<string>>(new Set());
 
+    const tamboThreadsArray = useMemo(() => {
+        if (Array.isArray(allTamboThreads)) {
+            return allTamboThreads;
+        }
+
+        return (allTamboThreads as { items?: Array<{ id: string; name?: string }> } | undefined)?.items ?? [];
+    }, [allTamboThreads]);
+
     // Sync Tambo thread names to workspace thread titles
     useEffect(() => {
         const syncTitles = async () => {
-            // Get threads array from Tambo data (handle both array and object formats)
-            const tamboThreadsArray = Array.isArray(allTamboThreads)
-                ? allTamboThreads
-                : allTamboThreads?.items || [];
-
             if (tamboThreadsArray.length === 0 || workspaceThreads.length === 0) return;
 
             let hasUpdates = false;
@@ -104,7 +107,7 @@ export function useWorkspaceThreads(workspaceId: string) {
         };
 
         syncTitles();
-    }, [allTamboThreads, workspaceThreads, supabase, fetchWorkspaceThreads]);
+    }, [tamboThreadsArray, workspaceThreads, supabase, fetchWorkspaceThreads]);
 
     // Link current thread to workspace when it has messages
     const linkCurrentThread = useCallback(async () => {
@@ -185,12 +188,10 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     // Create new thread (clears current for fresh start)
     const createNewThread = useCallback(async () => {
-        // Switch to undefined to start fresh thread
-        await switchCurrentThread(undefined as unknown as string);
-    }, [switchCurrentThread]);
+        startNewThread();
+    }, [startNewThread]);
 
     // Filter Tambo threads to only show workspace threads
-    const tamboThreadsArray = Array.isArray(allTamboThreads) ? allTamboThreads : [];
     const filteredThreads = tamboThreadsArray.filter((t: { id: string }) =>
         linkedThreadIds.has(t.id)
     );
