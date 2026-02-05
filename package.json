@@ -36,7 +36,7 @@
     "highlight.js": "^11.11.1",
     "json-stringify-pretty-compact": "^4.0.0",
     "lucide-react": "^0.554.0",
-    "next": "^15.5.12",
+    "next": "^16.1.6",
     "radix-ui": "^1.4.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -54,11 +54,19 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.22",
     "clsx": "^2.1.1",
-    "eslint": "^9",
-    "eslint-config-next": "^16.0.4",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.6",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "lodash-es": "4.17.23",
+    "chevrotain": "11.1.1",
+    "@chevrotain/gast": "11.1.1",
+    "@chevrotain/cst-dts-gen": "11.1.1",
+    "langium": "4.2.0"
   }
 }

@@ -1,15 +1,20 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
 export function useGitHubToken() {
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const supabase = createClient();
+    const supabase = useMemo(() => {
+        if (typeof window === "undefined") return null;
+        return createClient();
+    }, []);
 
     const fetchToken = useCallback(async () => {
+        if (!supabase) return;
+
         try {
             setIsLoading(true);
             setError(null);
@@ -44,6 +49,8 @@ export function useGitHubToken() {
     }, [supabase]);
 
     useEffect(() => {
+        if (!supabase) return;
+
         fetchToken();
 
         // Refresh token when auth state changes

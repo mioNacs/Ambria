@@ -43,8 +43,7 @@ import {
   getPullRequestFiles,
   getPRFileContent,
 } from "@/services/github-repo";
-import type { TamboComponent } from "@tambo-ai/react";
-import { TamboTool } from "@tambo-ai/react";
+import type { TamboComponent, TamboTool } from "@tambo-ai/react";
 import { z } from "zod";
 
 /**

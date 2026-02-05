@@ -1,17 +1,29 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+
+const emptyModuleAlias = "@/lib/stubs/empty-module";
+const emptyModulePath = path.join(
+  process.cwd(),
+  "src",
+  "lib",
+  "stubs",
+  "empty-module.ts",
+);
 
 const nextConfig: NextConfig = {
-  // Run ESLint separately via `npm run lint` (avoids deprecated next lint)
-  eslint: {
-    ignoreDuringBuilds: true,
+  turbopack: {
+    resolveAlias: {
+      effect: emptyModuleAlias,
+      sury: emptyModuleAlias,
+      "@valibot/to-json-schema": emptyModuleAlias,
+    },
   },
-  // Stub optional peer deps from @standard-community/standard-json
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      effect: false,
-      sury: false,
-      "@valibot/to-json-schema": false,
+      effect: emptyModulePath,
+      sury: emptyModulePath,
+      "@valibot/to-json-schema": emptyModulePath,
     };
     return config;
   },

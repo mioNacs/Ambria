@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
 export interface Workspace {
     id: string;
@@ -32,9 +32,14 @@ export function useWorkspaces() {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const supabase = createClient();
+    const supabase = useMemo(() => {
+        if (typeof window === "undefined") return null;
+        return createClient();
+    }, []);
 
     const fetchWorkspaces = useCallback(async () => {
+        if (!supabase) return;
+
         try {
             setIsLoading(true);
             setError(null);
@@ -57,11 +62,16 @@ export function useWorkspaces() {
     }, [supabase]);
 
     useEffect(() => {
+        if (!supabase) return;
         fetchWorkspaces();
-    }, [fetchWorkspaces]);
+    }, [supabase, fetchWorkspaces]);
 
     const createWorkspace = useCallback(
         async (input: CreateWorkspaceInput): Promise<Workspace> => {
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
@@ -92,6 +102,10 @@ export function useWorkspaces() {
 
     const deleteWorkspace = useCallback(
         async (id: string) => {
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+
             const { error: deleteError } = await supabase
                 .from("workspaces")
                 .delete()
@@ -108,6 +122,10 @@ export function useWorkspaces() {
 
     const getWorkspace = useCallback(
         async (id: string): Promise<Workspace | null> => {
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+
             const { data, error: fetchError } = await supabase
                 .from("workspaces")
                 .select("*")
