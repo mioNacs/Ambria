@@ -99,7 +99,7 @@ export const MessageThreadFull = React.forwardRef<
         className={className}
         {...props}
       >
-        <ScrollableMessageContainer className="p-4">
+        <ScrollableMessageContainer className="p-3 sm:p-4">
           <ThreadContent variant={variant}>
             <ThreadContentMessages />
           </ThreadContent>
@@ -111,7 +111,7 @@ export const MessageThreadFull = React.forwardRef<
         </MessageSuggestions>
 
         {/* Message input */}
-        <div className="px-4 pb-4">
+        <div className="px-3 sm:px-4 pb-4">
           <MessageInput>
             <MessageInputTextarea placeholder="Type your message or paste images..." />
             <MessageInputToolbar>

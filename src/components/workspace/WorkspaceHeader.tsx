@@ -17,7 +17,7 @@ const roleColors = {
 export function WorkspaceHeader({ workspace }: WorkspaceHeaderProps) {
     return (
         <header className="bg-white/80 backdrop-blur border-b border-gray-200 px-4">
-            <div className="mx-auto flex items-center justify-between h-16">
+            <div className="mx-auto w-full max-w-7xl flex items-center justify-between h-16">
                 {/* Left: Back + Repo Info */}
                 <div className="flex items-center gap-4 min-w-0">
                     <Link
@@ -59,7 +59,7 @@ export function WorkspaceHeader({ workspace }: WorkspaceHeaderProps) {
                     <div className="flex items-center gap-3">
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <h1 className="font-semibold text-gray-900 truncate">
+                                <h1 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                                     {workspace.repo_owner}/{workspace.repo_name}
                                 </h1>
                                 <a
@@ -71,7 +71,7 @@ export function WorkspaceHeader({ workspace }: WorkspaceHeaderProps) {
                                     <ExternalLink className="w-4 h-4" />
                                 </a>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                            <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                     <Star className="w-3.5 h-3.5" />
                                     {workspace.repo_stars?.toLocaleString() || 0}
@@ -90,7 +90,7 @@ export function WorkspaceHeader({ workspace }: WorkspaceHeaderProps) {
                 {/* Right: Role Badge */}
                 <div className="flex items-center gap-3">
                     <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${roleColors[workspace.role]}`}
+                        className={`inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium ${roleColors[workspace.role]}`}
                     >
                         {workspace.role.charAt(0).toUpperCase() + workspace.role.slice(1)}
                     </span>

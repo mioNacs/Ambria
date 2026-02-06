@@ -97,14 +97,16 @@ export const WorkspaceChat = React.forwardRef<
     return (
         <div className="flex h-full min-w-0 flex-1" ref={ref} {...props}>
             {/* Workspace-scoped Thread History Sidebar */}
-            <WorkspaceThreadHistory workspaceId={workspaceId} position="left" />
+            <div className="hidden lg:block">
+                <WorkspaceThreadHistory workspaceId={workspaceId} position="left" />
+            </div>
 
             {/* Main Chat Area */}
             <ThreadContainer
                 disableSidebarSpacing
                 className={cn("flex-1 min-w-0", className)}
             >
-                <ScrollableMessageContainer className="p-4">
+                <ScrollableMessageContainer className="p-3 sm:p-4">
                     <ThreadContent variant={variant}>
                         <ThreadContentMessages />
                     </ThreadContent>
@@ -116,7 +118,7 @@ export const WorkspaceChat = React.forwardRef<
                 </MessageSuggestions>
 
                 {/* Message input */}
-                <div className="px-4 pb-2">
+                <div className="px-3 sm:px-4 pb-2">
                     <MessageInput>
                         <MessageInputTextarea placeholder={`Ask about ${repoName || 'this repository'}...`} />
                         <MessageInputToolbar>

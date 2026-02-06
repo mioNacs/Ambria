@@ -94,7 +94,7 @@ export default function LandingPage() {
 
       {/* Top nav */}
       <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/70 backdrop-blur">
-        <div className="mx-auto w-full max-w-6xl px-6">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
               <Logo className="w-9 h-9 text-gray-900" />
@@ -124,7 +124,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-6">
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         {/* Hero */}
         <section id="signin" className="pt-14 pb-12 lg:pt-20 lg:pb-20">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
@@ -135,7 +135,7 @@ export default function LandingPage() {
               className="relative"
             >
               <div className="rounded-3xl border border-gray-200 bg-white/75 backdrop-blur shadow-sm overflow-hidden">
-                <div className="p-8">
+                <div className="p-6 sm:p-8">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                       <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -190,7 +190,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 bg-gray-50 px-8 py-6">
+                <div className="border-t border-gray-200 bg-gray-50 px-6 sm:px-8 py-6">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-xs text-gray-500">Next</div>
@@ -235,7 +235,7 @@ export default function LandingPage() {
                 Open source workspace assistant
               </div>
 
-              <h1 className="mt-6 text-4xl sm:text-5xl font-semibold tracking-tight text-gray-900">
+              <h1 className="mt-6 text-3xl sm:text-5xl font-semibold tracking-tight text-gray-900">
                 Move faster across issues, PRs, and codebase context{" "} <br/>
                 <span className="gradient-text">with AI</span>
               </h1>

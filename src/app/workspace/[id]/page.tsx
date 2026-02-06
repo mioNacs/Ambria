@@ -12,6 +12,8 @@ import { useWorkspaces, Workspace } from "@/hooks/useWorkspaces";
 import { useAuth } from "@/hooks/useAuth";
 import { getComponentsForRole, getToolsForRole } from "@/lib/tambo";
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
+import { cn } from "@/lib/utils";
+import { WorkspaceThreadHistory } from "@/components/workspace/WorkspaceThreadHistory";
 
 export default function WorkspacePage() {
     const params = useParams();
@@ -26,6 +28,8 @@ export default function WorkspacePage() {
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [mobileView, setMobileView] = useState<"chat" | "board">("chat");
+    const [isThreadDrawerOpen, setIsThreadDrawerOpen] = useState(false);
 
     useEffect(() => {
         async function loadWorkspace() {
@@ -98,9 +102,51 @@ export default function WorkspacePage() {
             : configuredRole;
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+        <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
             {/* Workspace Header */}
             <WorkspaceHeader workspace={workspace} />
+
+            {/* Mobile toolbar */}
+            <div className="lg:hidden border-b border-gray-200 bg-white/80 backdrop-blur">
+                <div className="flex items-center gap-3 px-4 py-2">
+                    <button
+                        type="button"
+                        onClick={() => setIsThreadDrawerOpen(true)}
+                        className="px-3 py-2 text-sm font-medium rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 transition-colors"
+                    >
+                        Threads
+                    </button>
+
+                    <div className="flex-1" />
+
+                    <div className="inline-flex items-center rounded-xl bg-gray-100 p-1">
+                        <button
+                            type="button"
+                            onClick={() => setMobileView("chat")}
+                            className={cn(
+                                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+                                mobileView === "chat"
+                                    ? "bg-white text-gray-900 shadow-sm"
+                                    : "text-gray-600 hover:text-gray-900",
+                            )}
+                        >
+                            Chat
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileView("board")}
+                            className={cn(
+                                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+                                mobileView === "board"
+                                    ? "bg-white text-gray-900 shadow-sm"
+                                    : "text-gray-600 hover:text-gray-900",
+                            )}
+                        >
+                            Board
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* Chat Interface */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -140,15 +186,50 @@ export default function WorkspacePage() {
                         }),
                     }}
                 >
-                    <div className="flex-1 min-h-0 overflow-hidden flex relative">
-                        <WorkspaceChat
-                            role={effectiveRole}
-                            workspaceId={workspace.id}
-                            repoName={`${workspace.repo_owner}/${workspace.repo_name}`}
-                        />
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col lg:flex-row relative">
+                        <div
+                            className={cn(
+                                "flex-1 min-h-0 overflow-hidden",
+                                mobileView === "chat" ? "flex" : "hidden",
+                                "lg:flex",
+                            )}
+                        >
+                            <WorkspaceChat
+                                role={effectiveRole}
+                                workspaceId={workspace.id}
+                                repoName={`${workspace.repo_owner}/${workspace.repo_name}`}
+                            />
+                        </div>
 
-                        <WorkspaceCanvasPanel role={effectiveRole} workspaceId={workspace.id} />
+                        <div
+                            className={cn(
+                                "flex-1 min-h-0 overflow-hidden",
+                                mobileView === "board" ? "flex" : "hidden",
+                                "lg:flex lg:flex-none",
+                            )}
+                        >
+                            <WorkspaceCanvasPanel role={effectiveRole} workspaceId={workspace.id} />
+                        </div>
                     </div>
+
+                    {isThreadDrawerOpen ? (
+                        <div className="fixed inset-0 z-[60] lg:hidden">
+                            <button
+                                type="button"
+                                className="absolute inset-0 bg-black/40"
+                                onClick={() => setIsThreadDrawerOpen(false)}
+                                aria-label="Close threads"
+                            />
+                            <div className="absolute inset-y-0 left-0 w-[min(24rem,90vw)] bg-white shadow-xl">
+                                <WorkspaceThreadHistory
+                                    workspaceId={workspace.id}
+                                    position="left"
+                                    mode="overlay"
+                                    onClose={() => setIsThreadDrawerOpen(false)}
+                                />
+                            </div>
+                        </div>
+                    ) : null}
                 </TamboProvider>
             </div>
         </div>
