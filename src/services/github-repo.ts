@@ -937,49 +937,157 @@ export async function getCommunityFiles(params: {
     const { owner, repo, token } = params;
     const octokit = new Octokit({ auth: token });
 
-    const filesToCheck = [
-        "CODE_OF_CONDUCT.md",
-        "CONTRIBUTING.md",
-        "CODEOWNERS",
-        "SECURITY.md",
-        "FUNDING.yml",
-        ".github/ISSUE_TEMPLATE",
-        ".github/PULL_REQUEST_TEMPLATE.md",
-        "LICENSE",
+    const checks: Array<{
+        label: string;
+        candidates: string[];
+        preview?: boolean;
+    }> = [
+        {
+            label: "CODE_OF_CONDUCT.md",
+            candidates: ["CODE_OF_CONDUCT.md", ".github/CODE_OF_CONDUCT.md"],
+            preview: true,
+        },
+        {
+            label: "CONTRIBUTING.md",
+            candidates: ["CONTRIBUTING.md", ".github/CONTRIBUTING.md"],
+            preview: true,
+        },
+        {
+            label: "CODEOWNERS",
+            candidates: ["CODEOWNERS", ".github/CODEOWNERS"],
+        },
+        {
+            label: "SECURITY.md",
+            candidates: ["SECURITY.md"],
+            preview: true,
+        },
+        {
+            label: "FUNDING.yml",
+            candidates: [".github/FUNDING.yml", "FUNDING.yml"],
+        },
+        {
+            label: "ISSUE_TEMPLATE",
+            candidates: [".github/ISSUE_TEMPLATE"],
+        },
+        {
+            label: "PULL_REQUEST_TEMPLATE.md",
+            candidates: [
+                ".github/PULL_REQUEST_TEMPLATE.md",
+                "PULL_REQUEST_TEMPLATE.md",
+            ],
+            preview: true,
+        },
+        {
+            label: "LICENSE",
+            candidates: ["LICENSE", "LICENSE.md", "LICENSE.txt"],
+            preview: true,
+        },
     ];
+
+    const listDirectory = async (path: string) => {
+        try {
+            const { data } = path
+                ? await octokit.rest.repos.getContent({
+                      owner,
+                      repo,
+                      path,
+                  })
+                : await octokit.request("GET /repos/{owner}/{repo}/contents", {
+                      owner,
+                      repo,
+                  });
+
+            if (!Array.isArray(data)) {
+                return new Map<string, { type: string; path: string }>();
+            }
+
+            const entries = new Map<string, { type: string; path: string }>();
+            for (const entry of data) {
+                entries.set(entry.name, { type: entry.type, path: entry.path });
+            }
+            return entries;
+        } catch {
+            return new Map<string, { type: string; path: string }>();
+        }
+    };
+
+    const rootListing = await listDirectory("");
+
+    const dirListings = new Map<string, Map<string, { type: string; path: string }>>();
+    dirListings.set("", rootListing);
+
+    const ensureListing = async (dirPath: string) => {
+        if (!dirPath) return;
+        if (dirListings.has(dirPath)) return;
+
+        const parent = dirPath.split("/").slice(0, -1).join("/");
+        const name = dirPath.split("/").pop() ?? "";
+
+        await ensureListing(parent);
+
+        const parentListing = dirListings.get(parent);
+        const entry = parentListing?.get(name);
+        if (!entry || entry.type !== "dir") return;
+
+        dirListings.set(dirPath, await listDirectory(dirPath));
+    };
 
     const results: CommunityFile[] = [];
 
-    for (const filePath of filesToCheck) {
-        try {
-            const { data } = await octokit.rest.repos.getContent({
-                owner,
-                repo,
-                path: filePath,
-            });
+    for (const check of checks) {
+        let found: { path: string; type: string } | null = null;
 
-            if (!Array.isArray(data) && data.type === "file") {
-                const content = Buffer.from(data.content, "base64").toString("utf-8");
-                results.push({
-                    name: filePath.split("/").pop() || filePath,
-                    path: filePath,
-                    exists: true,
-                    content: content.slice(0, 1000),
-                });
-            } else {
-                results.push({
-                    name: filePath.split("/").pop() || filePath,
-                    path: filePath,
-                    exists: true,
-                });
-            }
-        } catch {
+        for (const candidate of check.candidates) {
+            const parts = candidate.split("/").filter(Boolean);
+            const parentDir = parts.slice(0, -1).join("/");
+            const name = parts[parts.length - 1] ?? "";
+
+            await ensureListing(parentDir);
+
+            const listing = dirListings.get(parentDir);
+            const entry = listing?.get(name);
+            if (!entry) continue;
+
+            found = { path: entry.path, type: entry.type };
+            break;
+        }
+
+        const outputPath = found?.path ?? check.candidates[0] ?? check.label;
+        const outputName = outputPath.split("/").pop() || outputPath;
+
+        if (!found) {
             results.push({
-                name: filePath.split("/").pop() || filePath,
-                path: filePath,
+                name: outputName,
+                path: outputPath,
                 exists: false,
             });
+            continue;
         }
+
+        const file: CommunityFile = {
+            name: outputName,
+            path: outputPath,
+            exists: true,
+        };
+
+        if (check.preview && found.type === "file") {
+            try {
+                const { data } = await octokit.rest.repos.getContent({
+                    owner,
+                    repo,
+                    path: outputPath,
+                });
+
+                if (!Array.isArray(data) && data.type === "file") {
+                    const decoded = decodeBase64Utf8(data.content);
+                    file.content = decoded.slice(0, 1000);
+                }
+            } catch {
+                // Ignore preview errors and still mark the file as present.
+            }
+        }
+
+        results.push(file);
     }
 
     return results;

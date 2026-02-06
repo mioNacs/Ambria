@@ -8,12 +8,46 @@
  * Read more about Tambo at https://tambo.co/docs
  */
 
-import { Graph, graphSchema } from "@/components/tambo/graph";
-import { DataCard, dataCardSchema } from "@/components/ui/card-data";
 import {
-  getCountryPopulations,
-  getGlobalPopulationTrend,
-} from "@/services/population-stats";
+  CommunityHealth,
+  communityHealthSchema,
+} from "@/components/tambo/github-community-health";
+import {
+  GitHubFileViewer,
+  githubFileViewerSchema,
+} from "@/components/tambo/github-file-viewer";
+import {
+  IssueCard,
+  IssueList,
+  issueCardSchema,
+  issueListSchema,
+} from "@/components/tambo/github-issues";
+import {
+  PullRequestCard,
+  PullRequestList,
+  pullRequestCardSchema,
+  pullRequestListSchema,
+} from "@/components/tambo/github-pull-requests";
+import {
+  GitHubPullRequestFiles,
+  githubPullRequestFilesSchema,
+} from "@/components/tambo/github-pull-request-files";
+import {
+  GitHubPullRequestOverview,
+  githubPullRequestOverviewSchema,
+} from "@/components/tambo/github-pull-request-overview";
+import {
+  GitHubRepoMetadataCard,
+  githubRepoMetadataCardSchema,
+} from "@/components/tambo/github-repo-metadata-card";
+import {
+  GitHubRepoTree,
+  githubRepoTreeSchema,
+} from "@/components/tambo/github-repo-tree";
+import {
+  WorkflowRunsList,
+  workflowRunsListSchema,
+} from "@/components/tambo/github-workflow-runs";
 import {
   getRepoTree,
   getFileContent,
@@ -598,54 +632,6 @@ export const tools: TamboTool[] = [
       encoding: z.string(),
     }),
   },
-
-  // Population Tools (existing)
-  {
-    name: "countryPopulation",
-    description:
-      "A tool to get population statistics by country with advanced filtering options",
-    tool: getCountryPopulations,
-    inputSchema: z.object({
-      continent: z.string().optional(),
-      sortBy: z.enum(["population", "growthRate"]).optional(),
-      limit: z.number().optional(),
-      order: z.enum(["asc", "desc"]).optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        countryCode: z.string(),
-        countryName: z.string(),
-        continent: z.enum([
-          "Asia",
-          "Africa",
-          "Europe",
-          "North America",
-          "South America",
-          "Oceania",
-        ]),
-        population: z.number(),
-        year: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
-  {
-    name: "globalPopulation",
-    description:
-      "A tool to get global population trends with optional year range filtering",
-    tool: getGlobalPopulationTrend,
-    inputSchema: z.object({
-      startYear: z.number().optional(),
-      endYear: z.number().optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        year: z.number(),
-        population: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
 ];
 
 /**
@@ -657,17 +643,80 @@ export const tools: TamboTool[] = [
  */
 export const components: TamboComponent[] = [
   {
-    name: "Graph",
+    name: "GitHubRepoMetadataCard",
     description:
-      "A component that renders various types of charts (bar, line, pie) using Recharts. Supports customizable data visualization with labels, datasets, and styling options.",
-    component: Graph,
-    propsSchema: graphSchema,
+      "A summary card showing key GitHub repository metadata (stars, forks, topics, language, etc.). Use after calling getRepoMetadata.",
+    component: GitHubRepoMetadataCard,
+    propsSchema: githubRepoMetadataCardSchema,
   },
   {
-    name: "DataCard",
+    name: "GitHubRepoTree",
     description:
-      "A component that displays options as clickable cards with links and summaries with the ability to select multiple items.",
-    component: DataCard,
-    propsSchema: dataCardSchema,
+      "Displays a GitHub repository file tree. Useful after calling getRepoTree or getRepoOverview.",
+    component: GitHubRepoTree,
+    propsSchema: githubRepoTreeSchema,
+  },
+  {
+    name: "GitHubFileViewer",
+    description:
+      "Displays file contents with syntax highlighting. Useful after calling getFileContent, getPRFileContent, or getMultipleFiles.",
+    component: GitHubFileViewer,
+    propsSchema: githubFileViewerSchema,
+  },
+  {
+    name: "IssueCard",
+    description:
+      "Shows a single GitHub issue as a card. Useful after calling getRepoIssues.",
+    component: IssueCard,
+    propsSchema: issueCardSchema,
+  },
+  {
+    name: "IssueList",
+    description:
+      "Shows a list of GitHub issues as cards. Useful after calling getRepoIssues.",
+    component: IssueList,
+    propsSchema: issueListSchema,
+  },
+  {
+    name: "PullRequestCard",
+    description:
+      "Shows a single GitHub pull request as a card. Useful after calling getRepoPullRequests.",
+    component: PullRequestCard,
+    propsSchema: pullRequestCardSchema,
+  },
+  {
+    name: "PullRequestList",
+    description:
+      "Shows a list of GitHub pull requests as cards. Useful after calling getRepoPullRequests.",
+    component: PullRequestList,
+    propsSchema: pullRequestListSchema,
+  },
+  {
+    name: "GitHubPullRequestOverview",
+    description:
+      "Shows a compact pull request overview (title, branches, and diff stats). Useful after calling getPullRequestDiff.",
+    component: GitHubPullRequestOverview,
+    propsSchema: githubPullRequestOverviewSchema,
+  },
+  {
+    name: "GitHubPullRequestFiles",
+    description:
+      "Shows a pull request's changed files grouped by folder path with basic change stats. Useful after calling getPullRequestFiles.",
+    component: GitHubPullRequestFiles,
+    propsSchema: githubPullRequestFilesSchema,
+  },
+  {
+    name: "WorkflowRunsList",
+    description:
+      "Shows recent GitHub Actions workflow runs. Useful after calling getWorkflowRuns.",
+    component: WorkflowRunsList,
+    propsSchema: workflowRunsListSchema,
+  },
+  {
+    name: "CommunityHealth",
+    description:
+      "Shows a repository community health checklist (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, etc.). Useful after calling getCommunityFiles.",
+    component: CommunityHealth,
+    propsSchema: communityHealthSchema,
   },
 ];
