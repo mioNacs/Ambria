@@ -88,6 +88,8 @@ export function GitHubPullRequestOverview({
   className,
   ...props
 }: GitHubPullRequestOverviewProps) {
+  const safeBody =
+    body && body.length > 600 ? `${body.slice(0, 600)}…` : (body ?? null);
   const createdText = formatDate(createdAt);
   const updatedText = formatDate(updatedAt);
 
@@ -211,9 +213,9 @@ export function GitHubPullRequestOverview({
           ))}
         </div>
 
-        {body ? (
+        {safeBody ? (
           <p className="mt-4 line-clamp-4 text-sm text-muted-foreground">
-            {body}
+            {safeBody}
           </p>
         ) : null}
       </div>

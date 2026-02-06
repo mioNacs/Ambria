@@ -107,6 +107,11 @@ export function GitHubPullRequestFiles({
   className,
   ...props
 }: GitHubPullRequestFilesProps) {
+  const normalizedRepoUrl = React.useMemo(() => {
+    if (!repoUrl) return undefined;
+    return repoUrl.replace(/\/+$/, "");
+  }, [repoUrl]);
+
   const grouped = React.useMemo(() => {
     const groups = new Map<string, z.infer<typeof pullRequestFileSchema>[]>();
     for (const file of files ?? []) {
@@ -165,8 +170,8 @@ export function GitHubPullRequestFiles({
                 {groupFiles.map((file) => {
                   const link =
                     file.htmlUrl ??
-                    (repoUrl && ref
-                      ? `${repoUrl}/blob/${ref}/${file.filename}`
+                    (normalizedRepoUrl && ref
+                      ? `${normalizedRepoUrl}/blob/${ref}/${file.filename}`
                       : undefined);
 
                   const statsParts: string[] = [];

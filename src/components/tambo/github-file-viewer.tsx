@@ -36,7 +36,7 @@ export const githubFileViewerSchema = z
     maxHeight: z
       .number()
       .optional()
-      .describe("Max code block height in pixels (default 420)"),
+      .describe("Max code block height in pixels (defaults to 420 when omitted)"),
   })
   .describe(
     "Displays the contents of a repository file with syntax highlighting and a copy-to-clipboard button.",
@@ -187,6 +187,9 @@ export function GitHubFileViewer({
 
   const sanitizedHighlightHtml = React.useMemo(() => {
     if (highlight.kind !== "html") return "";
+
+    // highlight.js produces HTML like `<span class="hljs-keyword">...</span>`.
+    // We intentionally allow only highlight markup and strip everything else.
     return DOMPurify.sanitize(highlight.html, {
       ALLOWED_TAGS: ["span"],
       ALLOWED_ATTR: ["class"],
