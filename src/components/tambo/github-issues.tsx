@@ -309,6 +309,7 @@ export function IssueList({
   );
 
   React.useEffect(() => {
+    // Precedence: explicit issues props override issuesRequest (no client-side pagination).
     if ((issuesProp?.length ?? 0) > 0) {
       setItems(issuesProp ?? []);
       setError(null);

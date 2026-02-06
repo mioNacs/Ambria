@@ -336,6 +336,7 @@ export function PullRequestList({
   );
 
   React.useEffect(() => {
+    // Precedence: explicit pullRequests props override pullRequestsRequest (no client-side pagination).
     if ((pullRequestsProp?.length ?? 0) > 0) {
       setItems(pullRequestsProp ?? []);
       setError(null);

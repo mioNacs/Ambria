@@ -638,14 +638,19 @@ export async function getRepoIssues(params: {
     const { owner, repo, state = "open", labels, limit = 20, page = 1, token } = params;
     const octokit = new Octokit({ auth: token });
 
+    const normalizedLimit = Number.isFinite(limit)
+        ? Math.max(1, Math.min(Math.trunc(limit), 50))
+        : 20;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+
     try {
         const { data } = await octokit.rest.issues.listForRepo({
             owner,
             repo,
             state,
             labels,
-            per_page: Math.min(limit, 50),
-            page,
+            per_page: normalizedLimit,
+            page: normalizedPage,
         });
 
         // Filter out pull requests (they appear in issues API)
@@ -743,13 +748,18 @@ export async function getRepoPullRequests(params: {
     const { owner, repo, state = "open", limit = 20, page = 1, token } = params;
     const octokit = new Octokit({ auth: token });
 
+    const normalizedLimit = Number.isFinite(limit)
+        ? Math.max(1, Math.min(Math.trunc(limit), 50))
+        : 20;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+
     try {
         const { data } = await octokit.rest.pulls.list({
             owner,
             repo,
             state,
-            per_page: Math.min(limit, 50),
-            page,
+            per_page: normalizedLimit,
+            page: normalizedPage,
         });
 
         return data.map((pr) => ({

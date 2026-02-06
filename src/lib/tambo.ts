@@ -399,8 +399,20 @@ export const tools: TamboTool[] = [
       repo: z.string().describe("GitHub repository name"),
       state: z.enum(["open", "closed", "all"]).optional().describe("Issue state filter"),
       labels: z.string().optional().describe("Comma-separated list of label names"),
-      limit: z.number().optional().describe("Number of issues to fetch (default 20, max 50)"),
-      page: z.number().optional().describe("Page number (1-indexed, default 1)"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe("Number of issues to fetch (default 20, max 50)"),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe("Page number (1-indexed, default 1)"),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),
     outputSchema: z.array(
@@ -451,8 +463,20 @@ export const tools: TamboTool[] = [
       owner: z.string().describe("GitHub repository owner/organization name"),
       repo: z.string().describe("GitHub repository name"),
       state: z.enum(["open", "closed", "all"]).optional().describe("PR state filter"),
-      limit: z.number().optional().describe("Number of PRs to fetch (default 20, max 50)"),
-      page: z.number().optional().describe("Page number (1-indexed, default 1)"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe("Number of PRs to fetch (default 20, max 50)"),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe("Page number (1-indexed, default 1)"),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),
     outputSchema: z.array(
