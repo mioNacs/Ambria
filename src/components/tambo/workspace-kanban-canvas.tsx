@@ -2,8 +2,22 @@
 
 import * as React from "react";
 import { z } from "zod";
-import { ExternalLink, GripVertical, Plus, Trash2, Cloud, CloudOff, Loader2, X, Maximize2 } from "lucide-react";
-import { useTamboComponentState, withInteractable } from "@tambo-ai/react";
+import {
+  Cloud,
+  CloudOff,
+  ExternalLink,
+  GripVertical,
+  Loader2,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import type { InteractableConfig, TamboThreadMessage } from "@tambo-ai/react";
+import {
+  TamboMessageProvider,
+  useTamboComponentState,
+  useTamboInteractable,
+} from "@tambo-ai/react";
 import { cn } from "@/lib/utils";
 import { useKanbanPersistence, BoardType } from "@/hooks/useKanbanPersistence";
 
@@ -36,6 +50,119 @@ export const kanbanCanvasStateSchema = z.object({
 type KanbanCanvasProps = z.infer<typeof kanbanCanvasPropsSchema>;
 type KanbanCard = z.infer<typeof kanbanCardSchema>;
 type KanbanColumn = z.infer<typeof kanbanColumnSchema>;
+
+const interactableKeyToId = new Map<string, string>();
+
+function createStableInteractableComponent<ComponentProps extends object>(
+  WrappedComponent: React.ComponentType<ComponentProps>,
+  config: InteractableConfig<ComponentProps>,
+  stableKeyFn: (props: ComponentProps) => string,
+) {
+  const displayName =
+    WrappedComponent.displayName ?? WrappedComponent.name ?? "Component";
+
+  const StableInteractableWrapper: React.FC<ComponentProps> = (props) => {
+    const {
+      addInteractableComponent,
+      updateInteractableComponentProps,
+      getInteractableComponent,
+    } = useTamboInteractable();
+
+    const stableKey = stableKeyFn(props);
+    const [interactableId, setInteractableId] = React.useState<string | null>(
+      null,
+    );
+    const lastSerializedProps = React.useRef<Record<string, unknown>>({});
+
+    React.useEffect(() => {
+      const cachedId = interactableKeyToId.get(stableKey);
+      const cachedComponent = cachedId
+        ? getInteractableComponent(cachedId)
+        : undefined;
+
+      if (cachedId && cachedComponent) {
+        setInteractableId(cachedId);
+        return;
+      }
+
+      const id = addInteractableComponent({
+        name: config.componentName,
+        description: config.description,
+        component: WrappedComponent,
+        props,
+        propsSchema: config.propsSchema,
+        stateSchema: config.stateSchema,
+      });
+
+      interactableKeyToId.set(stableKey, id);
+      lastSerializedProps.current = props as Record<string, unknown>;
+      setInteractableId(id);
+    }, [
+      addInteractableComponent,
+      config.componentName,
+      config.description,
+      config.propsSchema,
+      config.stateSchema,
+      getInteractableComponent,
+      props,
+      stableKey,
+    ]);
+
+    const currentInteractable = interactableId
+      ? getInteractableComponent(interactableId)
+      : undefined;
+
+    const effectiveProps =
+      (currentInteractable?.props as ComponentProps | undefined) ?? props;
+
+    React.useEffect(() => {
+      if (!interactableId) return;
+
+      const lastPropsString = JSON.stringify(lastSerializedProps.current);
+      const currentPropsString = JSON.stringify(props);
+      if (lastPropsString !== currentPropsString) {
+        updateInteractableComponentProps(interactableId, props);
+        lastSerializedProps.current = props as Record<string, unknown>;
+      }
+    }, [interactableId, props, updateInteractableComponentProps]);
+
+    if (!interactableId) {
+      return null;
+    }
+
+    const minimalMessage: TamboThreadMessage = {
+      id: interactableId,
+      role: "assistant",
+      content: [],
+      threadId: "",
+      createdAt: new Date().toISOString(),
+      component: {
+        componentName: config.componentName,
+        componentState: {},
+        message: "",
+        props: effectiveProps,
+      },
+      componentState: {},
+    };
+
+    return (
+      <TamboMessageProvider
+        message={minimalMessage}
+        interactableMetadata={{
+          id: interactableId,
+          componentName: config.componentName,
+          description: config.description,
+        }}
+      >
+        <WrappedComponent {...effectiveProps} />
+      </TamboMessageProvider>
+    );
+  };
+
+  StableInteractableWrapper.displayName =
+    `StableInteractable(${config.componentName}:${displayName})`;
+  return StableInteractableWrapper;
+}
 
 const KANBAN_DND_TYPE = "application/x-tambo-kanban-card";
 
@@ -172,12 +299,21 @@ function KanbanBoard({
   
   // Sync Supabase -> Tambo on initial load
   React.useEffect(() => {
-    if (usePersistence && !persistedState.isLoading && !hasSyncedFromDbRef.current) {
+    if (
+      usePersistence &&
+      !persistedState.isLoading &&
+      !hasSyncedFromDbRef.current
+    ) {
       setTamboColumns(persistedState.columns);
       prevTamboColumnsRef.current = JSON.stringify(persistedState.columns);
       hasSyncedFromDbRef.current = true;
     }
-  }, [usePersistence, persistedState.isLoading]);
+  }, [
+    persistedState.columns,
+    persistedState.isLoading,
+    setTamboColumns,
+    usePersistence,
+  ]);
   
   // Sync Tambo -> Supabase when AI updates the state externally
   React.useEffect(() => {
@@ -220,7 +356,10 @@ function KanbanBoard({
 
   const applyColumnsUpdate = React.useCallback(
     (updater: (current: KanbanColumn[]) => KanbanColumn[]) => {
-      setColumns(updater(columnsRef.current));
+      const current = columnsRef.current;
+      const next = updater(current);
+      if (next === current) return;
+      setColumns(next);
     },
     [setColumns],
   );
@@ -725,24 +864,32 @@ function MaintainerTriageCanvasBase(props: KanbanCanvasProps) {
   );
 }
 
-export const ContributorPlanningCanvas = withInteractable(
+const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
+  componentName: "ContributorPlanningCanvas",
+  description:
+    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks.",
+  propsSchema: kanbanCanvasPropsSchema,
+  stateSchema: kanbanCanvasStateSchema,
+};
+
+const maintainerCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
+  componentName: "MaintainerTriageCanvas",
+  description:
+    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed).",
+  propsSchema: kanbanCanvasPropsSchema,
+  stateSchema: kanbanCanvasStateSchema,
+};
+
+export const ContributorPlanningCanvas = createStableInteractableComponent(
   ContributorPlanningCanvasBase,
-  {
-    componentName: "ContributorPlanningCanvas",
-    description:
-      "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks.",
-    propsSchema: kanbanCanvasPropsSchema,
-    stateSchema: kanbanCanvasStateSchema,
-  },
+  contributorCanvasConfig,
+  (props) =>
+    `${contributorCanvasConfig.componentName}:${props.workspaceId ?? "local"}`,
 );
 
-export const MaintainerTriageCanvas = withInteractable(
+export const MaintainerTriageCanvas = createStableInteractableComponent(
   MaintainerTriageCanvasBase,
-  {
-    componentName: "MaintainerTriageCanvas",
-    description:
-      "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed).",
-    propsSchema: kanbanCanvasPropsSchema,
-    stateSchema: kanbanCanvasStateSchema,
-  },
+  maintainerCanvasConfig,
+  (props) =>
+    `${maintainerCanvasConfig.componentName}:${props.workspaceId ?? "local"}`,
 );

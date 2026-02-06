@@ -1,7 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, LayoutDashboard } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WorkspaceRole } from "@/lib/tambo";
 import {
@@ -18,6 +24,7 @@ type CanvasTab = "contributor" | "maintainer";
 
 export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [tab, setTab] = React.useState<CanvasTab>(() =>
     role === "maintainer" ? "maintainer" : "contributor",
   );
@@ -35,14 +42,40 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     }
   }, [role]);
 
+  React.useEffect(() => {
+    if (!isFullscreen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isFullscreen]);
+
   return (
-    <div
-      className={cn(
-        "flex flex-col bg-card backdrop-blur border-l border-muted-foreground/20",
-        "shadow-sm",
-        isCollapsed ? "w-14" : "w-120",
-      )}
-    >
+    <>
+      {isFullscreen ? (
+        <button
+          type="button"
+          aria-label="Exit full screen"
+          className="absolute inset-0 z-40 bg-black/10"
+          onClick={() => setIsFullscreen(false)}
+        />
+      ) : null}
+
+      <div
+        className={cn(
+          "flex flex-col bg-card backdrop-blur",
+          "shadow-sm",
+          isFullscreen
+            ? "absolute inset-0 z-50 border border-muted-foreground/20"
+            : "border-l border-muted-foreground/20",
+          isFullscreen ? "w-full" : isCollapsed ? "w-14" : "w-[30rem]",
+        )}
+      >
       <div
         className={cn(
           "flex items-center justify-between border-b border-muted-foreground/20",
@@ -73,13 +106,34 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                 Drag cards to track progress
               </div>
             </div>
-            <button
-              onClick={() => setIsCollapsed(true)}
-              className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
-              title="Collapse canvas"
-            >
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCollapsed(false);
+                  setIsFullscreen((v) => !v);
+                }}
+                className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
+                title={isFullscreen ? "Exit full screen" : "Full screen"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-5 h-5 text-muted-foreground" />
+                ) : (
+                  <Maximize2 className="w-5 h-5 text-muted-foreground" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreen(false);
+                  setIsCollapsed(true);
+                }}
+                className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
+                title="Collapse canvas"
+              >
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -159,6 +213,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
           ) : null}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -119,7 +119,7 @@ export default function WorkspacePage() {
                         }),
                     }}
                 >
-                    <div className="flex-1 min-h-0 overflow-hidden flex">
+                    <div className="flex-1 min-h-0 overflow-hidden flex relative">
                         <WorkspaceChat
                             role={workspace.role}
                             workspaceId={workspace.id}
