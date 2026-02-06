@@ -41,10 +41,12 @@ export const kanbanCanvasPropsSchema = z.object({
   title: z.string(),
   instructions: z.string().optional(),
   workspaceId: z.string().optional(),
+  defaultOpen: z.boolean().optional(),
 });
 
 export const kanbanCanvasStateSchema = z.object({
   columns: kanbanColumnsSchema,
+  isOpen: z.boolean().optional(),
 });
 
 type KanbanCanvasProps = z.infer<typeof kanbanCanvasPropsSchema>;
@@ -310,11 +312,14 @@ function KanbanBoard({
   accentClass,
   workspaceId,
   boardType,
+  defaultOpen,
 }: KanbanCanvasProps & { 
   initialColumns: KanbanColumn[]; 
   accentClass: string;
   boardType: BoardType;
 }) {
+  const [isOpen] = useTamboComponentState("isOpen", defaultOpen ?? true);
+
   // Use persisted state if workspaceId is provided, otherwise fall back to Tambo state
   const persistedState = useKanbanPersistence(workspaceId, boardType, initialColumns);
   const [tamboColumns, setTamboColumns] = useTamboComponentState("columns", initialColumns);
@@ -404,6 +409,10 @@ function KanbanBoard({
   const [expandedCard, setExpandedCard] = React.useState<
     { card: KanbanCard; columnId: string } | null
   >(null);
+
+  if (!isOpen) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -923,7 +932,7 @@ function MaintainerTriageCanvasBase(props: KanbanCanvasProps) {
 const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
   componentName: "ContributorPlanningCanvas",
   description:
-    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks.",
+    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks. Set state.isOpen to show/hide this panel.",
   propsSchema: kanbanCanvasPropsSchema,
   stateSchema: kanbanCanvasStateSchema,
 };
@@ -931,7 +940,7 @@ const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
 const maintainerCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
   componentName: "MaintainerTriageCanvas",
   description:
-    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed).",
+    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed). Set state.isOpen to show/hide this panel.",
   propsSchema: kanbanCanvasPropsSchema,
   stateSchema: kanbanCanvasStateSchema,
 };
