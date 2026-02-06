@@ -699,7 +699,7 @@ export const components: TamboComponent[] = [
   {
     name: "IssueList",
     description:
-      "Shows a list of GitHub issues as cards. Prefer passing issuesRequest so the component can fetch and render long lists without large JSON payloads.",
+      "Shows a list of GitHub issues as cards. Prefer passing issuesRequest so the component can fetch and render long lists without large JSON payloads. If issues are provided, issuesRequest is ignored.",
     component: IssueList,
     propsSchema: issueListSchema,
   },
@@ -713,7 +713,7 @@ export const components: TamboComponent[] = [
   {
     name: "PullRequestList",
     description:
-      "Shows a list of GitHub pull requests as cards. Prefer passing pullRequestsRequest so the component can fetch and render long lists without large JSON payloads.",
+      "Shows a list of GitHub pull requests as cards. Prefer passing pullRequestsRequest so the component can fetch and render long lists without large JSON payloads. If pullRequests are provided, pullRequestsRequest is ignored.",
     component: PullRequestList,
     propsSchema: pullRequestListSchema,
   },

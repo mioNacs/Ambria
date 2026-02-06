@@ -246,7 +246,9 @@ export const pullRequestListSchema = z
       .array(githubPullRequestSchema)
       .optional()
       .default([])
-      .describe("Pull requests to display"),
+      .describe(
+        "Pull requests to display. If provided, pullRequestsRequest will be ignored.",
+      ),
     pullRequestsRequest: pullRequestsRequestSchema
       .optional()
       .describe(

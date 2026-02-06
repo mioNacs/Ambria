@@ -219,7 +219,7 @@ export const issueListSchema = z
       .array(githubIssueSchema)
       .optional()
       .default([])
-      .describe("Issues to display"),
+      .describe("Issues to display. If provided, issuesRequest will be ignored."),
     issuesRequest: issuesRequestSchema
       .optional()
       .describe(
