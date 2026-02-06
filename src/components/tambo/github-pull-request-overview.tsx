@@ -61,10 +61,16 @@ function formatDate(value?: string) {
 
 function getStateTone(state?: string) {
   const normalized = state?.toLowerCase();
-  if (normalized === "open") return "bg-emerald-500/10 text-emerald-700";
-  if (normalized === "merged") return "bg-purple-500/10 text-purple-700";
-  if (normalized === "closed") return "bg-muted/30 text-muted-foreground";
-  return "bg-muted/30 text-muted-foreground";
+  if (normalized === "open") {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  }
+  if (normalized === "merged") {
+    return "bg-purple-500/10 text-purple-700 dark:text-purple-300";
+  }
+  if (normalized === "closed") {
+    return "bg-muted/40 text-foreground/70";
+  }
+  return "bg-muted/40 text-foreground/70";
 }
 
 export function GitHubPullRequestOverview({
@@ -103,7 +109,7 @@ export function GitHubPullRequestOverview({
       label: "Additions",
       value: additions,
       icon: <Plus className="size-4" />, 
-      tone: "text-emerald-700",
+      tone: "text-emerald-700 dark:text-emerald-300",
     },
     {
       label: "Deletions",
@@ -131,7 +137,12 @@ export function GitHubPullRequestOverview({
         </div>
       ) : null}
 
-      <div className="w-full rounded-lg border border-border bg-background p-4">
+      <div
+        className={cn(
+          "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
+          "shadow-sm shadow-black/5 dark:shadow-black/30",
+        )}
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -142,7 +153,7 @@ export function GitHubPullRequestOverview({
                 </div>
               ) : null}
               {draft ? (
-                <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5 text-xs text-muted-foreground">
+                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-xs text-foreground/80">
                   Draft
                 </span>
               ) : null}
@@ -171,7 +182,7 @@ export function GitHubPullRequestOverview({
             )}
 
             {head || base ? (
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-muted/20 px-2 py-1 font-mono text-xs text-muted-foreground">
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 font-mono text-xs text-muted-foreground">
                 <GitBranch className="size-3.5" />
                 <span className="truncate">{head ?? "?"}</span>
                 <span>→</span>
@@ -185,7 +196,13 @@ export function GitHubPullRequestOverview({
               href={htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-foreground hover:bg-muted/40"
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1 rounded-md",
+                "border border-muted-foreground/20 bg-muted/40",
+                "px-2 py-1 text-xs text-foreground",
+                "hover:bg-muted/60 transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              )}
             >
               Open <ExternalLink className="size-3.5" />
             </a>
@@ -196,7 +213,7 @@ export function GitHubPullRequestOverview({
           {statCards.map((stat) => (
             <div
               key={stat.label}
-              className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2"
+              className="flex items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2"
             >
               <div className={cn("text-muted-foreground", stat.tone)}>
                 {stat.icon}

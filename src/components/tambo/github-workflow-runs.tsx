@@ -55,12 +55,14 @@ function formatDate(value?: string) {
 
 function getConclusionTone(conclusion?: string | null) {
   const c = conclusion?.toLowerCase();
-  if (!c) return "bg-muted/30 text-muted-foreground";
-  if (c === "success") return "bg-emerald-500/10 text-emerald-700";
+  if (!c) return "bg-muted/40 text-foreground/70";
+  if (c === "success") {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  }
   if (c === "failure" || c === "cancelled" || c === "timed_out") {
     return "bg-destructive/10 text-destructive";
   }
-  return "bg-muted/30 text-muted-foreground";
+  return "bg-muted/40 text-foreground/70";
 }
 
 export function WorkflowRunsList({
@@ -91,7 +93,10 @@ export function WorkflowRunsList({
             return (
               <div
                 key={run.id}
-                className="rounded-lg border border-border bg-background px-3 py-2"
+                className={cn(
+                  "rounded-lg border border-muted-foreground/20 bg-card px-3 py-2",
+                  "shadow-sm shadow-black/5 dark:shadow-black/30",
+                )}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -111,7 +116,7 @@ export function WorkflowRunsList({
                         {statusText}
                       </span>
                       {run.branch ? (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/20 px-2 py-0.5 font-mono">
+                        <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-0.5 font-mono">
                           <GitBranch className="size-3.5" /> {run.branch}
                         </span>
                       ) : null}
@@ -128,7 +133,13 @@ export function WorkflowRunsList({
                       href={run.htmlUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-foreground hover:bg-muted/40"
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1 rounded-md",
+                        "border border-muted-foreground/20 bg-muted/40",
+                        "px-2 py-1 text-xs text-foreground",
+                        "hover:bg-muted/60 transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      )}
                     >
                       Open <ExternalLink className="size-3.5" />
                     </a>

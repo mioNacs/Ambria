@@ -57,8 +57,9 @@ export function CommunityHealth({
   return (
     <div
       className={cn(
-        "w-full rounded-lg border border-border bg-background",
+        "w-full rounded-xl border border-muted-foreground/20 bg-card",
         "p-4",
+        "shadow-sm shadow-black/5 dark:shadow-black/30",
         className,
       )}
       {...pickSafeDomProps(props)}
@@ -83,15 +84,17 @@ export function CommunityHealth({
               <div
                 key={path}
                 className={cn(
-                  "rounded-md border border-border",
+                  "rounded-lg border border-muted-foreground/20",
                   "px-3 py-2",
-                  file.exists ? "bg-muted/30" : "bg-background",
+                  file.exists
+                    ? "bg-emerald-500/5 dark:bg-emerald-500/10"
+                    : "bg-destructive/5 dark:bg-destructive/10",
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {file.exists ? (
-                      <CheckCircle2 className="size-4 text-emerald-600" />
+                      <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
                     ) : (
                       <XCircle className="size-4 text-destructive" />
                     )}
@@ -109,7 +112,9 @@ export function CommunityHealth({
                   <div
                     className={cn(
                       "text-xs font-medium",
-                      file.exists ? "text-emerald-700" : "text-destructive",
+                      file.exists
+                        ? "text-emerald-700 dark:text-emerald-300"
+                        : "text-destructive",
                     )}
                   >
                     {file.exists ? "Present" : "Missing"}
@@ -121,7 +126,7 @@ export function CommunityHealth({
                     <summary className="cursor-pointer text-xs text-muted-foreground">
                       Preview
                     </summary>
-                    <pre className="mt-2 max-h-56 overflow-auto rounded bg-background p-2 text-xs text-foreground">
+                    <pre className="mt-2 max-h-56 overflow-auto rounded-md border border-muted-foreground/20 bg-background/40 p-2 text-xs text-foreground">
                       {file.content}
                     </pre>
                   </details>

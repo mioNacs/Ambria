@@ -68,7 +68,7 @@ function formatDate(value?: string | null) {
 
 function LabelPill({ label }: { label: string }) {
   return (
-    <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+    <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-foreground/80">
       {label}
     </span>
   );
@@ -101,7 +101,8 @@ export function IssueCard({
   return (
     <div
       className={cn(
-        "w-full rounded-lg border border-border bg-background p-4",
+        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
+        "shadow-sm shadow-black/5 dark:shadow-black/30",
         className,
       )}
       {...pickSafeDomProps(props)}
@@ -115,7 +116,7 @@ export function IssueCard({
           {(author || state || created) && (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               {state ? (
-                <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5">
+                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-foreground/80">
                   {state}
                 </span>
               ) : null}
@@ -137,7 +138,13 @@ export function IssueCard({
             href={htmlUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-foreground hover:bg-muted/40"
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-md",
+              "border border-muted-foreground/20 bg-muted/40",
+              "px-2 py-1 text-xs text-foreground",
+              "hover:bg-muted/60 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            )}
           >
             Open <ExternalLink className="size-3.5" />
           </a>
@@ -150,7 +157,7 @@ export function IssueCard({
             <LabelPill key={label} label={label} />
           ))}
           {extraLabelsCount > 0 ? (
-            <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-foreground/80">
               +{extraLabelsCount} more
             </span>
           ) : null}
