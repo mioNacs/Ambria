@@ -75,11 +75,16 @@ function createStableInteractableComponent<ComponentProps extends object>(
       null,
     );
     const lastSerializedProps = React.useRef<Record<string, unknown>>({});
-    const createdAtRef = React.useRef<string | null>(null);
-    const createdAtIdRef = React.useRef<string | null>(null);
     const propsRef = React.useRef(props);
 
-    propsRef.current = props;
+    React.useEffect(() => {
+      propsRef.current = props;
+    }, [props]);
+
+    const createdAt = React.useMemo(
+      () => (interactableId ? new Date().toISOString() : ""),
+      [interactableId],
+    );
 
     React.useEffect(() => {
       const cachedId = interactableKeyToId.get(stableKey);
@@ -153,11 +158,6 @@ function createStableInteractableComponent<ComponentProps extends object>(
       return null;
     }
 
-    if (createdAtIdRef.current !== interactableId) {
-      createdAtIdRef.current = interactableId;
-      createdAtRef.current = new Date().toISOString();
-    }
-
     const interactableState =
       (currentInteractable?.state as Record<string, unknown> | undefined) ?? {};
 
@@ -166,7 +166,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
       role: "assistant",
       content: [],
       threadId: "",
-      createdAt: createdAtRef.current ?? new Date().toISOString(),
+      createdAt,
       component: {
         componentName,
         componentState: interactableState,
