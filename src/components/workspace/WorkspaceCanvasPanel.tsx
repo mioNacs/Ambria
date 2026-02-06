@@ -117,22 +117,36 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
         ) : null}
 
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {role !== "maintainer" ? (
-            <div className={cn(visibleTab === "contributor" ? "block" : "hidden")}>
-              <ContributorPlanningCanvas
-                title="Contributor planning"
-                instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
-              />
-            </div>
+          {role === "contributor" ? (
+            <ContributorPlanningCanvas
+              title="Contributor planning"
+              instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
+            />
           ) : null}
 
-          {role !== "contributor" ? (
-            <div className={cn(visibleTab === "maintainer" ? "block" : "hidden")}>
-              <MaintainerTriageCanvas
-                title="Maintainer triage"
-                instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
-              />
-            </div>
+          {role === "maintainer" ? (
+            <MaintainerTriageCanvas
+              title="Maintainer triage"
+              instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
+            />
+          ) : null}
+
+          {role === "both" ? (
+            <>
+              <div className={cn(visibleTab === "contributor" ? "block" : "hidden")}>
+                <ContributorPlanningCanvas
+                  title="Contributor planning"
+                  instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
+                />
+              </div>
+
+              <div className={cn(visibleTab === "maintainer" ? "block" : "hidden")}>
+                <MaintainerTriageCanvas
+                  title="Maintainer triage"
+                  instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
+                />
+              </div>
+            </>
           ) : null}
         </div>
       </div>

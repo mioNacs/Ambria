@@ -42,7 +42,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function createClientId(prefix: string) {
   if (typeof crypto !== "undefined") {
-    const cryptoApi = crypto as Crypto & {
+    const cryptoApi = crypto as {
       randomUUID?: () => string;
       getRandomValues?: (array: Uint8Array) => Uint8Array;
     };
