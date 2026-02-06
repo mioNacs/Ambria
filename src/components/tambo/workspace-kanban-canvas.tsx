@@ -82,6 +82,10 @@ function createStableInteractableComponent<ComponentProps extends object>(
         ? getInteractableComponent(cachedId)
         : undefined;
 
+      if (cachedId && !cachedComponent) {
+        interactableKeyToId.delete(stableKey);
+      }
+
       if (cachedId && cachedComponent) {
         setInteractableId(cachedId);
         return;
@@ -101,11 +105,11 @@ function createStableInteractableComponent<ComponentProps extends object>(
       setInteractableId(id);
     }, [
       addInteractableComponent,
-      config.componentName,
-      config.description,
-      config.propsSchema,
-      config.stateSchema,
       getInteractableComponent,
+      componentName,
+      description,
+      propsSchema,
+      stateSchema,
       props,
       stableKey,
     ]);
@@ -362,8 +366,11 @@ function KanbanBoard({
   const applyColumnsUpdate = React.useCallback(
     (updater: (current: KanbanColumn[]) => KanbanColumn[]) => {
       const current = columnsRef.current;
-      const next = updater(current);
-      if (next === current) return;
+      const input = process.env.NODE_ENV === "development"
+        ? Object.freeze([...current])
+        : current;
+      const next = updater(input as KanbanColumn[]);
+      if (next === input) return;
       setColumns(next);
     },
     [setColumns],
