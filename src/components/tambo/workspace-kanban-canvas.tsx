@@ -586,18 +586,18 @@ function KanbanBoard({
         </div>
       )}
       
-      <section className="h-full bg-card overflow-hidden">
-      <header className="px-4 py-3 border-b border-muted-foreground/20">
+      <section className="h-full bg-gradient-to-br from-card via-card to-muted/20 overflow-hidden">
+      <header className="px-4 py-3 border-b border-muted-foreground/10 bg-card/80 backdrop-blur-sm">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className={cn("h-2.5 w-2.5 rounded-full", accentClass)} />
-              <h2 className="text-sm font-semibold text-foreground truncate">
+            <div className="flex items-center gap-2.5">
+              <div className={cn("h-3 w-3 rounded-full shadow-lg", accentClass)} />
+              <h2 className="text-base font-semibold text-foreground truncate">
                 {title}
               </h2>
             </div>
             {instructions ? (
-              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed max-w-md">
                 {instructions}
               </p>
             ) : null}
@@ -605,7 +605,12 @@ function KanbanBoard({
           
           {/* Sync status indicator */}
           {usePersistence ? (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+              isSaving 
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" 
+                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            )}>
               {isSaving ? (
                 <>
                   <Cloud className="w-3.5 h-3.5 animate-pulse" />
@@ -613,13 +618,13 @@ function KanbanBoard({
                 </>
               ) : (
                 <>
-                  <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-emerald-600">Synced</span>
+                  <Cloud className="w-3.5 h-3.5" />
+                  <span>Synced</span>
                 </>
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground">
               <CloudOff className="w-3.5 h-3.5" />
               <span>Local only</span>
             </div>
@@ -627,8 +632,8 @@ function KanbanBoard({
         </div>
       </header>
 
-      <div className="p-3 overflow-x-auto">
-        <div className="flex gap-3 min-w-max">
+      <div className="p-4 overflow-x-auto">
+        <div className="flex gap-4 min-w-max">
           {columns.map((col) => {
             const isDropTarget = dragState && dragState.fromColumnId !== col.id;
 
@@ -636,11 +641,13 @@ function KanbanBoard({
               <div
                 key={col.id}
                 className={cn(
-                  "w-72 shrink-0 rounded-xl border bg-muted/30",
-                  "shadow-sm shadow-black/5 dark:shadow-black/20",
+                  "w-72 shrink-0 rounded-xl overflow-hidden",
+                  "bg-gradient-to-b from-muted/40 to-muted/20",
+                  "border shadow-lg",
                   isDropTarget
-                    ? "border-primary/50 ring-2 ring-primary/20"
-                    : "border-muted-foreground/20"
+                    ? "border-primary ring-2 ring-primary/30 scale-[1.02]"
+                    : "border-muted-foreground/10",
+                  "transition-all duration-200"
                 )}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -676,36 +683,55 @@ function KanbanBoard({
                   }
                 }}
               >
-                <div className="px-3 py-2.5 border-b border-muted-foreground/10 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-foreground truncate">
-                      {col.title}
+                {/* Column Header */}
+                <div className="px-3 py-3 bg-gradient-to-r from-muted/60 to-transparent border-b border-muted-foreground/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        col.id === "backlog" || col.id === "needs-triage" ? "bg-slate-400" :
+                        col.id === "doing" || col.id === "needs-info" ? "bg-blue-500" :
+                        col.id === "pr" || col.id === "ready" ? "bg-amber-500" :
+                        "bg-emerald-500"
+                      )} />
+                      <span className="text-sm font-semibold text-foreground truncate">
+                        {col.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded-full">
+                        {col.cards.length}
+                      </span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {col.cards.length} card{col.cards.length === 1 ? "" : "s"}
-                    </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      applyColumnsUpdate((current) => addCardToColumn(current, col.id))
-                    }
-                    className={cn(
-                      "p-1.5 rounded-lg border border-muted-foreground/20",
-                      "bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground",
-                      "transition-colors"
-                    )}
-                    title="Add card"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        applyColumnsUpdate((current) => addCardToColumn(current, col.id))
+                      }
+                      className={cn(
+                        "p-1.5 rounded-lg",
+                        "bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground",
+                        "border border-muted-foreground/10 hover:border-muted-foreground/20",
+                        "transition-all duration-150 hover:shadow-sm"
+                      )}
+                      title="Add card"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="p-2 space-y-2 min-h-[100px]">
+                {/* Cards Container */}
+                <div className="p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-280px)] overflow-y-auto">
                   {col.cards.length === 0 ? (
-                    <div className="text-xs text-muted-foreground/60 italic text-center py-4">
-                      Drop cards here
+                    <div className={cn(
+                      "flex flex-col items-center justify-center py-8 px-4",
+                      "text-muted-foreground/50 text-center",
+                      "border-2 border-dashed border-muted-foreground/10 rounded-lg",
+                      "transition-colors",
+                      isDropTarget && "border-primary/30 bg-primary/5"
+                    )}>
+                      <div className="text-xs font-medium">No cards yet</div>
+                      <div className="text-[10px] mt-1">Drop or add cards here</div>
                     </div>
                   ) : null}
 
@@ -723,83 +749,81 @@ function KanbanBoard({
                       }}
                       onDragEnd={() => setDragState(null)}
                       className={cn(
-                        "rounded-lg border border-muted-foreground/20 bg-card",
-                        "shadow-sm shadow-black/5 dark:shadow-black/20",
-                        "hover:shadow-md hover:border-muted-foreground/30 transition-all cursor-grab active:cursor-grabbing",
+                        "rounded-lg bg-card",
+                        "border border-muted-foreground/10",
+                        "shadow-sm hover:shadow-md",
+                        "hover:border-muted-foreground/20 hover:-translate-y-0.5",
+                        "transition-all duration-150 cursor-grab active:cursor-grabbing",
                         "group"
                       )}
                     >
-                      <div className="px-2.5 py-2 flex items-start gap-2">
-                        <GripVertical className="w-4 h-4 text-muted-foreground/40 mt-0.5 shrink-0" />
+                      <div className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <span 
+                            className="text-sm font-medium text-foreground line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedCard({ card, columnId: col.id });
+                            }}
+                            title="Click to expand"
+                          >
+                            {card.title}
+                          </span>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <span 
-                              className="text-sm font-medium text-foreground truncate cursor-pointer hover:underline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedCard({ card, columnId: col.id });
-                              }}
-                              title="Click to expand"
-                            >
-                              {card.title}
-                            </span>
-
-                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {card.url && (
-                                <a
-                                  href={card.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-                                  title="Open link"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  applyColumnsUpdate((current) =>
-                                    removeCard(current, {
-                                      columnId: col.id,
-                                      cardId: card.id,
-                                    }),
-                                  );
-                                }}
-                                className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-destructive transition-colors"
-                                title="Delete card"
+                          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {card.url && (
+                              <a
+                                href={card.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Open link"
                               >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {card.badge && (
-                            <div className="mt-1">
-                              <span className={cn(
-                                "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium",
-                                "border border-muted-foreground/20 bg-muted/60 text-muted-foreground"
-                              )}>
-                                {card.badge}
-                              </span>
-                            </div>
-                          )}
-
-                          {card.description && (
-                            <p 
-                              className="mt-1 text-xs text-muted-foreground line-clamp-2 cursor-pointer"
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setExpandedCard({ card, columnId: col.id });
+                                applyColumnsUpdate((current) =>
+                                  removeCard(current, {
+                                    columnId: col.id,
+                                    cardId: card.id,
+                                  }),
+                                );
                               }}
+                              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Delete card"
                             >
-                              {card.description}
-                            </p>
-                          )}
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
+
+                        {card.badge && (
+                          <div className="mt-2">
+                            <span className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold",
+                              "bg-primary/10 text-primary border border-primary/20"
+                            )}>
+                              {card.badge}
+                            </span>
+                          </div>
+                        )}
+
+                        {card.description && (
+                          <p 
+                            className="mt-2 text-xs text-muted-foreground line-clamp-2 cursor-pointer hover:text-foreground transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedCard({ card, columnId: col.id });
+                            }}
+                          >
+                            {card.description}
+                          </p>
+                        )}
                       </div>
                     </article>
                   ))}
