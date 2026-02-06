@@ -320,6 +320,7 @@ function KanbanBoard({
 }) {
   // `defaultOpen` is only used to seed the initial value; `state.isOpen` is the source of truth after that.
   const [isOpen] = useTamboComponentState("isOpen", defaultOpen ?? true);
+  const effectiveIsOpen = typeof isOpen === "boolean" ? isOpen : (defaultOpen ?? true);
 
   // Use persisted state if workspaceId is provided, otherwise fall back to Tambo state
   const persistedState = useKanbanPersistence(workspaceId, boardType, initialColumns);
@@ -411,7 +412,7 @@ function KanbanBoard({
     { card: KanbanCard; columnId: string } | null
   >(null);
 
-  if (!isOpen) {
+  if (!effectiveIsOpen) {
     return null;
   }
 
@@ -933,7 +934,7 @@ function MaintainerTriageCanvasBase(props: KanbanCanvasProps) {
 const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
   componentName: "ContributorPlanningCanvas",
   description:
-    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks. Set state.isOpen to show/hide this panel.",
+    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks. Use props.defaultOpen for initial visibility; use state.isOpen to show/hide after initialization.",
   propsSchema: kanbanCanvasPropsSchema,
   stateSchema: kanbanCanvasStateSchema,
 };
@@ -941,7 +942,7 @@ const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
 const maintainerCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
   componentName: "MaintainerTriageCanvas",
   description:
-    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed). Set state.isOpen to show/hide this panel.",
+    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed). Use props.defaultOpen for initial visibility; use state.isOpen to show/hide after initialization.",
   propsSchema: kanbanCanvasPropsSchema,
   stateSchema: kanbanCanvasStateSchema,
 };

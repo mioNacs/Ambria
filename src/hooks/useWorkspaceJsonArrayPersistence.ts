@@ -133,9 +133,10 @@ export function useWorkspaceJsonArrayPersistence<Item>(
       saveTimeoutRef.current = null;
 
       // Best-effort flush to reduce the chances of silently dropping the last update.
+      if (!persistenceAvailable) return;
       void saveToDatabase(itemsRef.current);
     };
-  }, [saveToDatabase]);
+  }, [persistenceAvailable, saveToDatabase]);
 
   return {
     items,

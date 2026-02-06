@@ -145,6 +145,7 @@ function RepoPinsCanvasBase({
     "isOpen",
     defaultOpen ?? false,
   );
+  const effectiveIsOpen = typeof isOpen === "boolean" ? isOpen : (defaultOpen ?? false);
 
   const initialPins = React.useMemo<RepoPin[]>(() => [], []);
   const persistedState = useWorkspaceJsonArrayPersistence<RepoPin>(
@@ -228,7 +229,7 @@ function RepoPinsCanvasBase({
     setDraftStatus("todo");
   };
 
-  if (!isOpen) {
+  if (!effectiveIsOpen) {
     return null;
   }
 
@@ -286,7 +287,7 @@ function RepoPinsCanvasBase({
               />
 
               <select
-                value={draftStatus ?? "todo"}
+                value={draftStatus}
                 onChange={(e) =>
                   setDraftStatus(e.target.value as RepoPin["status"]) }
                 className={cn(
@@ -492,7 +493,7 @@ function RepoPinsCanvasBase({
 const repoPinsCanvasConfig: InteractableConfig<RepoPinsCanvasProps> = {
   componentName: "RepoPinsCanvas",
   description:
-    "A persistent pins board for tracking important GitHub items (issues, pull requests, files, discussions) with a status and notes. Tambo can add, edit, or remove pins and update their status. Set state.isOpen to show/hide this panel.",
+    "A persistent pins board for tracking important GitHub items (issues, pull requests, files, discussions) with a status and notes. Tambo can add, edit, or remove pins and update their status. Use props.defaultOpen for initial visibility; use state.isOpen to show/hide after initialization.",
   propsSchema: repoPinsCanvasPropsSchema,
   stateSchema: repoPinsCanvasStateSchema,
 };

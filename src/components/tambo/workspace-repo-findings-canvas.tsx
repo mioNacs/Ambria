@@ -102,6 +102,7 @@ function RepoFindingsCanvasBase({
     "isOpen",
     defaultOpen ?? false,
   );
+  const effectiveIsOpen = typeof isOpen === "boolean" ? isOpen : (defaultOpen ?? false);
 
   const initialFindings = React.useMemo<RepoFinding[]>(() => [], []);
   const persistedState = useWorkspaceJsonArrayPersistence<RepoFinding>(
@@ -194,7 +195,7 @@ function RepoFindingsCanvasBase({
     setDraftRefs("");
   };
 
-  if (!isOpen) {
+  if (!effectiveIsOpen) {
     return null;
   }
 
@@ -253,7 +254,7 @@ function RepoFindingsCanvasBase({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <select
-                value={draftSeverity ?? "info"}
+                value={draftSeverity}
                 onChange={(e) =>
                   setDraftSeverity(e.target.value as RepoFinding["severity"]) }
                 className={cn(
@@ -269,7 +270,7 @@ function RepoFindingsCanvasBase({
               </select>
 
               <select
-                value={draftStatus ?? "open"}
+                value={draftStatus}
                 onChange={(e) =>
                   setDraftStatus(e.target.value as RepoFinding["status"]) }
                 className={cn(
@@ -440,11 +441,12 @@ function RepoFindingsCanvasBase({
 
               {finding.references?.length ? (
                 <div className="flex flex-wrap gap-2">
-                  {finding.references.map((ref) => {
+                  {finding.references.map((ref, idx) => {
                     const isLink = /^https?:\/\//.test(ref);
+                    const key = `${finding.id}:${idx}`;
                     return (
                       <div
-                        key={ref}
+                        key={key}
                         className={cn(
                           "inline-flex items-center gap-1",
                           "px-2 py-1 rounded-lg text-xs",
@@ -480,7 +482,7 @@ function RepoFindingsCanvasBase({
 const repoFindingsCanvasConfig: InteractableConfig<RepoFindingsCanvasProps> = {
   componentName: "RepoFindingsCanvas",
   description:
-    "A persistent findings log for repo analysis. Each finding can have a title, severity, status, summary, and references (file paths or URLs). Tambo can add/update findings and mark them resolved. Set state.isOpen to show/hide this panel.",
+    "A persistent findings log for repo analysis. Each finding can have a title, severity, status, summary, and references (file paths or URLs). Tambo can add/update findings and mark them resolved. Use props.defaultOpen for initial visibility; use state.isOpen to show/hide after initialization.",
   propsSchema: repoFindingsCanvasPropsSchema,
   stateSchema: repoFindingsCanvasStateSchema,
 };
