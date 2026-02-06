@@ -145,7 +145,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
         componentName,
         componentState: {},
         message: "",
-        props: effectiveProps,
+        props: effectiveProps as Record<string, unknown>,
       },
       componentState: {},
     };
@@ -165,7 +165,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
   };
 
   StableInteractableWrapper.displayName =
-    `StableInteractable(${componentName}:${displayName})`;
+    `StableInteractable(${config.componentName}:${displayName})`;
   return StableInteractableWrapper;
 }
 
