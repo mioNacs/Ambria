@@ -29,6 +29,51 @@ import type { WorkspaceRole } from "@/lib/tambo";
 import type { VariantProps } from "class-variance-authority";
 import * as React from "react";
 
+const suggestionTemplates = {
+    goodFirstIssues: {
+        id: "suggestion-good-first-issues",
+        title: "Find good first issues",
+        detailedSuggestion: "What are some good first issues I can work on?",
+        messageId: "good-first-issues",
+    },
+    exploreCodebase: {
+        id: "suggestion-codebase-overview",
+        title: "Explore the codebase",
+        detailedSuggestion: "Give me an overview of the codebase structure",
+        messageId: "codebase-overview",
+    },
+    contributionGuide: {
+        id: "suggestion-contribution-guide",
+        title: "Contribution guide",
+        detailedSuggestion: "How do I contribute to this project?",
+        messageId: "contribution-guide",
+    },
+    triageIssues: {
+        id: "suggestion-triage-issues",
+        title: "Triage new issues",
+        detailedSuggestion: "Show me the newest open issues and what needs triage",
+        messageId: "triage-issues",
+    },
+    reviewPullRequests: {
+        id: "suggestion-review-pull-requests",
+        title: "Review pull requests",
+        detailedSuggestion: "List open pull requests and summarize what needs review",
+        messageId: "review-pull-requests",
+    },
+    workflowRuns: {
+        id: "suggestion-workflow-runs",
+        title: "Check CI health",
+        detailedSuggestion: "Show recent workflow runs and highlight failures",
+        messageId: "workflow-runs",
+    },
+} satisfies Record<string, Suggestion>;
+
+const suggestionKeysByRole: Record<WorkspaceRole, (keyof typeof suggestionTemplates)[]> = {
+    contributor: ["goodFirstIssues", "exploreCodebase", "contributionGuide"],
+    maintainer: ["triageIssues", "reviewPullRequests", "workflowRuns"],
+    both: ["goodFirstIssues", "triageIssues", "reviewPullRequests"],
+};
+
 export interface WorkspaceChatProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: VariantProps<typeof messageVariants>["variant"];
     repoName?: string;
@@ -44,74 +89,10 @@ export const WorkspaceChat = React.forwardRef<
     HTMLDivElement,
     WorkspaceChatProps
 >(({ className, variant, repoName, workspaceId, role, ...props }, ref) => {
-    const defaultSuggestions: Suggestion[] = React.useMemo(() => {
-        if (role === "maintainer") {
-            return [
-                {
-                    id: "suggestion-1",
-                    title: "Triage new issues",
-                    detailedSuggestion: "Show me the newest open issues and what needs triage",
-                    messageId: "triage-issues",
-                },
-                {
-                    id: "suggestion-2",
-                    title: "Review pull requests",
-                    detailedSuggestion: "List open pull requests and summarize what needs review",
-                    messageId: "review-pull-requests",
-                },
-                {
-                    id: "suggestion-3",
-                    title: "Check CI health",
-                    detailedSuggestion: "Show recent workflow runs and highlight failures",
-                    messageId: "workflow-runs",
-                },
-            ];
-        }
-
-        if (role === "both") {
-            return [
-                {
-                    id: "suggestion-1",
-                    title: "Find good first issues",
-                    detailedSuggestion: "What are some good first issues I can work on?",
-                    messageId: "good-first-issues",
-                },
-                {
-                    id: "suggestion-2",
-                    title: "Triage new issues",
-                    detailedSuggestion: "Show me the newest open issues and what needs triage",
-                    messageId: "triage-issues",
-                },
-                {
-                    id: "suggestion-3",
-                    title: "Review pull requests",
-                    detailedSuggestion: "List open pull requests and summarize what needs review",
-                    messageId: "review-pull-requests",
-                },
-            ];
-        }
-
-        return [
-            {
-                id: "suggestion-1",
-                title: "Find good first issues",
-                detailedSuggestion: "What are some good first issues I can work on?",
-                messageId: "good-first-issues",
-            },
-            {
-                id: "suggestion-2",
-                title: "Explore the codebase",
-                detailedSuggestion: "Give me an overview of the codebase structure",
-                messageId: "codebase-overview",
-            },
-            {
-                id: "suggestion-3",
-                title: "Contribution guide",
-                detailedSuggestion: "How do I contribute to this project?",
-                messageId: "contribution-guide",
-            },
-        ];
-    }, [role]);
+    const defaultSuggestions: Suggestion[] = React.useMemo(
+        () => suggestionKeysByRole[role].map((k) => suggestionTemplates[k]),
+        [role],
+    );
 
     return (
         <div className="flex h-full min-w-0 flex-1" ref={ref} {...props}>
