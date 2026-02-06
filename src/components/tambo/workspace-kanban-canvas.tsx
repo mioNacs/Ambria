@@ -133,7 +133,7 @@ function KanbanBoard({
   >(null);
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <section className="border border-gray-200 h-full bg-white shadow-sm overflow-hidden">
       <header className="px-4 py-3 border-b border-gray-200">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -149,20 +149,18 @@ function KanbanBoard({
               </p>
             ) : null}
           </div>
-
-          <div className="text-xs text-gray-400">Drag cards between columns</div>
         </div>
       </header>
 
-      <div className="p-4 overflow-x-auto">
-        <div className="flex gap-4 min-w-max">
+      <div className="p-2 overflow-x-auto h-full">
+        <div className="flex gap-2 min-w-max">
           {resolvedColumns.map((col) => {
             const isDropTarget = dragState && dragState.fromColumnId !== col.id;
 
             return (
               <div
                 key={col.id}
-                className={`w-72 flex-shrink-0 rounded-xl border bg-gray-50/80 ${
+                className={`w-72 shrink-0 rounded-xl border bg-gray-50/80 ${
                   isDropTarget
                     ? "border-gray-300"
                     : "border-gray-200"

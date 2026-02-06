@@ -36,7 +36,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
 
   if (isCollapsed) {
     return (
-      <div className="w-14 flex flex-col items-center py-4 bg-white/90 backdrop-blur border-l border-gray-200 shadow-sm">
+      <div className="w-14 flex flex-col items-center py-2 bg-white/90 backdrop-blur border-l border-gray-200 shadow-sm">
         <button
           onClick={() => setIsCollapsed(false)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -53,18 +53,17 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
   }
 
   return (
-    <div className="w-[26rem] flex flex-col bg-white/80 backdrop-blur border-l border-gray-200">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+    <div className="w-120 flex flex-col bg-white/80 backdrop-blur border-l border-gray-200">
+      <div className="flex items-center justify-between pl-4 pr-2 py-2 border-b border-gray-200">
         <div className="min-w-0">
-          <div className="font-medium text-gray-900 text-sm truncate">Canvas</div>
-          <div className="text-xs text-gray-500">Role-aware interactables</div>
+          <div className="font-medium text-gray-800 text-sm truncate">Role-aware interactables</div>
         </div>
         <button
           onClick={() => setIsCollapsed(true)}
-          className="p-1 hover:bg-gray-200 rounded transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           title="Collapse canvas"
         >
-          <ChevronRight className="w-4 h-4 text-gray-500" />
+          <ChevronRight className="w-5 h-5 text-gray-500" />
         </button>
       </div>
 
@@ -99,7 +98,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
         </div>
       ) : null}
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {visibleTab === "contributor" ? (
           <ContributorPlanningCanvas
             title="Contributor planning"
