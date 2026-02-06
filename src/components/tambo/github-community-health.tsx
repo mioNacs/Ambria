@@ -126,7 +126,7 @@ export function CommunityHealth({
                     <summary className="cursor-pointer text-xs text-muted-foreground">
                       Preview
                     </summary>
-                    <pre className="mt-2 max-h-56 overflow-auto rounded-md border border-muted-foreground/20 bg-background/40 p-2 text-xs text-foreground">
+                    <pre className="mt-2 max-h-56 overflow-auto rounded-md border border-muted-foreground/20 bg-background p-2 text-xs text-foreground">
                       {file.content}
                     </pre>
                   </details>

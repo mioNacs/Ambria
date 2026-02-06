@@ -169,7 +169,7 @@ export function GitHubRepoMetadataCard({
               {(topics ?? []).slice(0, 10).map((topic) => (
                 <span
                   key={topic}
-                  className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-foreground/80"
+                  className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
                 >
                   {topic}
                 </span>

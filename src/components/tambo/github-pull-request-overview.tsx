@@ -68,9 +68,9 @@ function getStateTone(state?: string) {
     return "bg-purple-500/10 text-purple-700 dark:text-purple-300";
   }
   if (normalized === "closed") {
-    return "bg-muted/40 text-foreground/70";
+    return "bg-muted/40 text-muted-foreground";
   }
-  return "bg-muted/40 text-foreground/70";
+  return "bg-muted/40 text-muted-foreground";
 }
 
 export function GitHubPullRequestOverview({
@@ -153,7 +153,7 @@ export function GitHubPullRequestOverview({
                 </div>
               ) : null}
               {draft ? (
-                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-xs text-foreground/80">
+                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
                   Draft
                 </span>
               ) : null}

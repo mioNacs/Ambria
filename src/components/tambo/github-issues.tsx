@@ -68,7 +68,7 @@ function formatDate(value?: string | null) {
 
 function LabelPill({ label }: { label: string }) {
   return (
-    <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-foreground/80">
+    <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
       {label}
     </span>
   );
@@ -116,7 +116,7 @@ export function IssueCard({
           {(author || state || created) && (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               {state ? (
-                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-foreground/80">
+                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-muted-foreground">
                   {state}
                 </span>
               ) : null}
@@ -157,7 +157,7 @@ export function IssueCard({
             <LabelPill key={label} label={label} />
           ))}
           {extraLabelsCount > 0 ? (
-            <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-foreground/80">
+            <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
               +{extraLabelsCount} more
             </span>
           ) : null}

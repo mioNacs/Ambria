@@ -91,9 +91,9 @@ function getStatusTone(status?: string) {
     case "renamed":
       return "bg-blue-500/10 text-blue-700 dark:text-blue-300";
     case "modified":
-      return "bg-muted/40 text-foreground/70";
+      return "bg-muted/40 text-muted-foreground";
     default:
-      return "bg-muted/40 text-foreground/70";
+      return "bg-muted/40 text-muted-foreground";
   }
 }
 
@@ -156,7 +156,7 @@ export function GitHubPullRequestFiles({
       ) : (
         <div className="mt-3 space-y-4">
           {grouped.map(([folder, groupFiles]) => (
-            <div key={folder} className="rounded-lg border border-muted-foreground/20 bg-background/20">
+            <div key={folder} className="rounded-lg border border-muted-foreground/20 bg-muted/10">
               <div className="flex items-center gap-2 border-b border-muted-foreground/20 bg-muted/30 px-3 py-2">
                 <FileDiff className="size-4 text-muted-foreground" />
                 <div className="truncate font-mono text-xs text-muted-foreground">
@@ -256,7 +256,7 @@ export function GitHubPullRequestFiles({
                           <summary className="cursor-pointer text-xs text-muted-foreground">
                             Diff preview
                           </summary>
-                          <pre className="mt-2 max-h-80 overflow-auto rounded-md border border-muted-foreground/20 bg-background/40 p-2 font-mono text-xs text-foreground">
+                          <pre className="mt-2 max-h-80 overflow-auto rounded-md border border-muted-foreground/20 bg-background p-2 font-mono text-xs text-foreground">
                             {file.patch}
                           </pre>
                         </details>

@@ -336,7 +336,7 @@ export function GitHubRepoTree({
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No files.</p>
       ) : (
-        <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-muted-foreground/20 bg-background/30">
+        <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-muted-foreground/20 bg-muted/10">
           <div className="divide-y divide-muted-foreground/15">
             {root.children.map((child) => renderNode(child, 0))}
           </div>

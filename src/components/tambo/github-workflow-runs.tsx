@@ -55,14 +55,14 @@ function formatDate(value?: string) {
 
 function getConclusionTone(conclusion?: string | null) {
   const c = conclusion?.toLowerCase();
-  if (!c) return "bg-muted/40 text-foreground/70";
+  if (!c) return "bg-muted/40 text-muted-foreground";
   if (c === "success") {
     return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   }
   if (c === "failure" || c === "cancelled" || c === "timed_out") {
     return "bg-destructive/10 text-destructive";
   }
-  return "bg-muted/40 text-foreground/70";
+  return "bg-muted/40 text-muted-foreground";
 }
 
 export function WorkflowRunsList({
