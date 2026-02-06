@@ -36,6 +36,25 @@ export function WorkspaceThreadHistory({
     const [searchQuery, setSearchQuery] = React.useState("");
 
     const isOverlay = mode === "overlay";
+    const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
+
+    React.useEffect(() => {
+        if (!isOverlay) return;
+        closeButtonRef.current?.focus();
+    }, [isOverlay]);
+
+    React.useEffect(() => {
+        if (!isOverlay || !onClose || typeof window === "undefined") return;
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [isOverlay, onClose]);
 
     const handleCreateNewThread = React.useCallback(() => {
         createNewThread();
@@ -127,6 +146,7 @@ export function WorkspaceThreadHistory({
                 </div>
                 {isOverlay ? (
                     <button
+                        ref={closeButtonRef}
                         type="button"
                         onClick={onClose}
                         className="p-2 -mr-1 hover:bg-gray-100 rounded-lg transition-colors"

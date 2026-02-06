@@ -15,13 +15,46 @@ import { ApiKeyCheck } from "@/components/ApiKeyCheck";
 import { components, tools } from "@/lib/tambo";
 import { TamboProvider } from "@tambo-ai/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SettingsPanel } from "./components/settings-panel";
 
 export default function InteractablesPage() {
   const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
   const [isDesktopChatOpen, setIsDesktopChatOpen] = useState(true);
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+  const mobileCloseRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!isMobileChatOpen) return;
+    mobileCloseRef.current?.focus();
+  }, [isMobileChatOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(min-width: 1024px)");
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setIsMobileChatOpen(false);
+      }
+    };
+
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileChatOpen || typeof window === "undefined") return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileChatOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isMobileChatOpen]);
 
   if (!apiKey) {
     return (
@@ -113,10 +146,16 @@ export default function InteractablesPage() {
               onClick={() => setIsMobileChatOpen(false)}
               aria-label="Close chat"
             />
-            <div className="absolute inset-y-0 left-0 w-[min(24rem,90vw)] bg-white shadow-xl flex flex-col">
+            <div
+              className="absolute inset-y-0 left-0 w-[min(24rem,90vw)] bg-white shadow-xl flex flex-col"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Chat assistant"
+            >
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Chat Assistant</h2>
                 <button
+                  ref={mobileCloseRef}
                   type="button"
                   onClick={() => setIsMobileChatOpen(false)}
                   className="p-2 -mr-1 hover:bg-gray-100 rounded-lg transition-colors"

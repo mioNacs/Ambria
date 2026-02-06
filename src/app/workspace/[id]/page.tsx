@@ -220,7 +220,12 @@ export default function WorkspacePage() {
                                 onClick={() => setIsThreadDrawerOpen(false)}
                                 aria-label="Close threads"
                             />
-                            <div className="absolute inset-y-0 left-0 w-[min(24rem,90vw)] bg-white shadow-xl">
+                            <div
+                                className="absolute inset-y-0 left-0 w-[min(24rem,90vw)] bg-white shadow-xl"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-label="Threads"
+                            >
                                 <WorkspaceThreadHistory
                                     workspaceId={workspace.id}
                                     position="left"
