@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { z } from "zod";
-import { ExternalLink, GripVertical, Plus } from "lucide-react";
+import { ExternalLink, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useTamboComponentState, withInteractable } from "@tambo-ai/react";
 
 const kanbanCardSchema = z.object({
@@ -41,8 +41,24 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function createClientId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}_${crypto.randomUUID()}`;
+  if (typeof crypto !== "undefined") {
+    const cryptoApi = crypto as Crypto & {
+      randomUUID?: () => string;
+      getRandomValues?: (array: Uint8Array) => Uint8Array;
+    };
+
+    if (typeof cryptoApi.randomUUID === "function") {
+      return `${prefix}_${cryptoApi.randomUUID()}`;
+    }
+
+    if (typeof cryptoApi.getRandomValues === "function") {
+      const bytes = new Uint8Array(16);
+      cryptoApi.getRandomValues(bytes);
+      const hex = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      return `${prefix}_${hex}`;
+    }
   }
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
@@ -63,7 +79,8 @@ function reorderCards(
 
   const card = fromCol.cards.find((c) => c.id === params.cardId);
   if (!card) return columns;
-  if (toCol.cards.length >= 25) return columns;
+  const toCardsWithoutCard = toCol.cards.filter((c) => c.id !== card.id);
+  if (toCardsWithoutCard.length >= 25) return columns;
 
   return columns.map((col) => {
     if (col.id === fromCol.id) {
@@ -75,7 +92,7 @@ function reorderCards(
     if (col.id === toCol.id) {
       return {
         ...col,
-        cards: [...col.cards, card],
+        cards: [...toCardsWithoutCard, card],
       };
     }
     return col;
@@ -115,18 +132,39 @@ function addCardToColumn(columns: KanbanColumn[], columnId: string): KanbanColum
   });
 }
 
+function removeCard(
+  columns: KanbanColumn[],
+  params: { columnId: string; cardId: string },
+): KanbanColumn[] {
+  return columns.map((col) => {
+    if (col.id !== params.columnId) return col;
+    return {
+      ...col,
+      cards: col.cards.filter((c) => c.id !== params.cardId),
+    };
+  });
+}
+
 function KanbanBoard({
   title,
   instructions,
   initialColumns,
   accentClass,
 }: KanbanCanvasProps & { initialColumns: KanbanColumn[]; accentClass: string }) {
-  const [columns, setColumns] = useTamboComponentState(
-    "columns",
-    initialColumns,
-    initialColumns,
-  );
+  const [columns, setColumns] = useTamboComponentState("columns", initialColumns);
   const resolvedColumns = columns ?? initialColumns;
+  const columnsRef = React.useRef(resolvedColumns);
+
+  React.useEffect(() => {
+    columnsRef.current = resolvedColumns;
+  }, [resolvedColumns]);
+
+  const applyColumnsUpdate = React.useCallback(
+    (updater: (current: KanbanColumn[]) => KanbanColumn[]) => {
+      setColumns(updater(columnsRef.current));
+    },
+    [setColumns],
+  );
 
   const [dragState, setDragState] = React.useState<
     { cardId: string; fromColumnId: string } | null
@@ -187,8 +225,8 @@ function KanbanBoard({
                       return;
                     }
 
-                    setColumns(
-                      reorderCards(resolvedColumns, {
+                    applyColumnsUpdate((current) =>
+                      reorderCards(current, {
                         cardId,
                         fromColumnId,
                         toColumnId: col.id,
@@ -211,7 +249,9 @@ function KanbanBoard({
 
                   <button
                     type="button"
-                    onClick={() => setColumns(addCardToColumn(resolvedColumns, col.id))}
+                    onClick={() =>
+                      applyColumnsUpdate((current) => addCardToColumn(current, col.id))
+                    }
                     className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"
                     title="Add card"
                   >
@@ -250,8 +290,8 @@ function KanbanBoard({
                               aria-label={`${col.title}: card title`}
                               value={card.title}
                               onChange={(e) =>
-                                setColumns(
-                                  updateCard(resolvedColumns, {
+                                applyColumnsUpdate((current) =>
+                                  updateCard(current, {
                                     columnId: col.id,
                                     cardId: card.id,
                                     patch: { title: e.target.value },
@@ -261,17 +301,35 @@ function KanbanBoard({
                               className="w-full bg-transparent text-xs font-semibold text-gray-900 focus:outline-none"
                             />
 
-                            {card.url ? (
-                              <a
-                                href={card.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <div className="flex items-center gap-2">
+                              {card.url ? (
+                                <a
+                                  href={card.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-gray-400 hover:text-gray-600"
+                                  title="Open link"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              ) : null}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  applyColumnsUpdate((current) =>
+                                    removeCard(current, {
+                                      columnId: col.id,
+                                      cardId: card.id,
+                                    }),
+                                  )
+                                }
                                 className="text-gray-400 hover:text-gray-600"
-                                title="Open link"
+                                title="Delete card"
                               >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            ) : null}
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           {card.badge ? (
@@ -286,8 +344,8 @@ function KanbanBoard({
                             aria-label={`${col.title}: card description`}
                             value={card.description ?? ""}
                             onChange={(e) =>
-                              setColumns(
-                                updateCard(resolvedColumns, {
+                              applyColumnsUpdate((current) =>
+                                updateCard(current, {
                                   columnId: col.id,
                                   cardId: card.id,
                                   patch: { description: e.target.value },
