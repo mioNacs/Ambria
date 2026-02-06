@@ -81,7 +81,7 @@ function formatDate(value?: string | null) {
 
 function LabelPill({ label }: { label: string }) {
   return (
-    <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+    <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
       {label}
     </span>
   );
@@ -118,7 +118,8 @@ export function PullRequestCard({
   return (
     <div
       className={cn(
-        "w-full rounded-lg border border-border bg-background p-4",
+        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
+        "shadow-sm shadow-black/5 dark:shadow-black/30",
         className,
       )}
       {...pickSafeDomProps(props)}
@@ -132,12 +133,12 @@ export function PullRequestCard({
 
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             {draft ? (
-              <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5">
+              <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-muted-foreground">
                 Draft
               </span>
             ) : null}
             {state ? (
-              <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5">
+              <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-muted-foreground">
                 {state}
               </span>
             ) : null}
@@ -153,7 +154,7 @@ export function PullRequestCard({
           </div>
 
           {head || base ? (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-muted/20 px-2 py-1 font-mono text-xs text-muted-foreground">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 font-mono text-xs text-muted-foreground">
               <GitBranch className="size-3.5" />
               <span className="truncate">{head ?? "?"}</span>
               <span>→</span>
@@ -167,7 +168,13 @@ export function PullRequestCard({
             href={htmlUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-foreground hover:bg-muted/40"
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-md",
+              "border border-muted-foreground/20 bg-muted/40",
+              "px-2 py-1 text-xs text-foreground",
+              "hover:bg-muted/60 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            )}
           >
             Open <ExternalLink className="size-3.5" />
           </a>
@@ -180,7 +187,7 @@ export function PullRequestCard({
             <LabelPill key={label} label={label} />
           ))}
           {extraLabelsCount > 0 ? (
-            <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
               +{extraLabelsCount} more
             </span>
           ) : null}

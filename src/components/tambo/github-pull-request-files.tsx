@@ -85,15 +85,15 @@ function getStatusTone(status?: string) {
   const normalized = status?.toLowerCase();
   switch (normalized) {
     case "added":
-      return "bg-emerald-500/10 text-emerald-700";
+      return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
     case "removed":
       return "bg-destructive/10 text-destructive";
     case "renamed":
-      return "bg-blue-500/10 text-blue-700";
+      return "bg-blue-500/10 text-blue-700 dark:text-blue-300";
     case "modified":
-      return "bg-muted/30 text-muted-foreground";
+      return "bg-muted/40 text-muted-foreground";
     default:
-      return "bg-muted/30 text-muted-foreground";
+      return "bg-muted/40 text-muted-foreground";
   }
 }
 
@@ -137,8 +137,9 @@ export function GitHubPullRequestFiles({
   return (
     <div
       className={cn(
-        "w-full rounded-lg border border-border bg-background",
+        "w-full rounded-xl border border-muted-foreground/20 bg-card",
         "p-4",
+        "shadow-sm shadow-black/5 dark:shadow-black/30",
         className,
       )}
       {...pickSafeDomProps(props)}
@@ -155,8 +156,8 @@ export function GitHubPullRequestFiles({
       ) : (
         <div className="mt-3 space-y-4">
           {grouped.map(([folder, groupFiles]) => (
-            <div key={folder} className="rounded-md border border-border">
-              <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-2">
+            <div key={folder} className="rounded-lg border border-muted-foreground/20 bg-muted/10">
+              <div className="flex items-center gap-2 border-b border-muted-foreground/20 bg-muted/30 px-3 py-2">
                 <FileDiff className="size-4 text-muted-foreground" />
                 <div className="truncate font-mono text-xs text-muted-foreground">
                   {folder}
@@ -166,7 +167,7 @@ export function GitHubPullRequestFiles({
                 </div>
               </div>
 
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-muted-foreground/20">
                 {groupFiles.map((file) => {
                   const link =
                     file.htmlUrl ??
@@ -237,7 +238,13 @@ export function GitHubPullRequestFiles({
                             href={link}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-foreground hover:bg-muted/40"
+                            className={cn(
+                              "inline-flex shrink-0 items-center gap-1 rounded-md",
+                              "border border-muted-foreground/20 bg-muted/40",
+                              "px-2 py-1 text-xs text-foreground",
+                              "hover:bg-muted/60 transition-colors",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                            )}
                           >
                             Open <ExternalLink className="size-3.5" />
                           </a>
@@ -249,7 +256,7 @@ export function GitHubPullRequestFiles({
                           <summary className="cursor-pointer text-xs text-muted-foreground">
                             Diff preview
                           </summary>
-                          <pre className="mt-2 max-h-80 overflow-auto rounded bg-background p-2 font-mono text-xs text-foreground">
+                          <pre className="mt-2 max-h-80 overflow-auto rounded-md border border-muted-foreground/20 bg-background p-2 font-mono text-xs text-foreground">
                             {file.patch}
                           </pre>
                         </details>

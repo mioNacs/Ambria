@@ -249,7 +249,8 @@ export function GitHubRepoTree({
             onClick={() => toggleExpanded(node.path)}
             className={cn(
               "flex w-full items-center gap-2 py-2 pr-3 text-left",
-              "hover:bg-muted/40 transition-colors",
+              "hover:bg-muted/60 active:bg-muted/70 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             )}
             style={{ paddingLeft }}
             aria-expanded={isExpanded}
@@ -281,15 +282,28 @@ export function GitHubRepoTree({
         onClick={() => selectPath(node.path)}
         className={cn(
           "flex w-full items-center gap-2 py-2 pr-3 text-left",
-          "hover:bg-muted/40 transition-colors",
-          isSelected && "bg-muted/60",
+          "hover:bg-muted/60 active:bg-muted/70 transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          isSelected && "bg-primary/10 hover:bg-primary/15",
         )}
         style={{ paddingLeft }}
       >
         <FileText className="size-4 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-foreground">{label}</div>
-          <div className="truncate font-mono text-xs text-muted-foreground">
+          <div
+            className={cn(
+              "truncate text-sm font-medium text-foreground",
+              isSelected && "font-semibold",
+            )}
+          >
+            {label}
+          </div>
+          <div
+            className={cn(
+              "truncate font-mono text-xs text-muted-foreground",
+              isSelected && "text-muted-foreground/90",
+            )}
+          >
             {node.path}
           </div>
         </div>
@@ -305,8 +319,9 @@ export function GitHubRepoTree({
   return (
     <div
       className={cn(
-        "w-full rounded-lg border border-border bg-background",
+        "w-full rounded-xl border border-muted-foreground/20 bg-card",
         "p-4",
+        "shadow-sm shadow-black/5 dark:shadow-black/30",
         className,
       )}
       {...pickSafeDomProps(props)}
@@ -324,7 +339,7 @@ export function GitHubRepoTree({
         </div>
 
         {truncated ? (
-          <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
+          <div className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-xs text-foreground/80">
             <Scissors className="size-3.5" /> Truncated
           </div>
         ) : null}
@@ -333,8 +348,8 @@ export function GitHubRepoTree({
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No files.</p>
       ) : (
-        <div className="mt-3 max-h-96 overflow-auto rounded-md border border-border">
-          <div className="divide-y divide-border">
+        <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-muted-foreground/20 bg-muted/10">
+          <div className="divide-y divide-muted-foreground/15">
             {root.children.map((child) => renderNode(child, 0))}
           </div>
         </div>
