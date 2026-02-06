@@ -720,3 +720,107 @@ export const components: TamboComponent[] = [
     propsSchema: communityHealthSchema,
   },
 ];
+
+export type WorkspaceRole = "contributor" | "maintainer" | "both";
+
+const contributorComponentNames = new Set<string>([
+  "GitHubRepoMetadataCard",
+  "GitHubRepoTree",
+  "GitHubFileViewer",
+  "IssueCard",
+  "IssueList",
+  "CommunityHealth",
+]);
+
+const maintainerComponentNames = new Set<string>([
+  ...contributorComponentNames,
+  "PullRequestCard",
+  "PullRequestList",
+  "GitHubPullRequestOverview",
+  "GitHubPullRequestFiles",
+  "WorkflowRunsList",
+]);
+
+const contributorToolNames = new Set<string>([
+  "getRepoTree",
+  "getFileContent",
+  "getRepoOverview",
+  "searchFiles",
+  "getMultipleFiles",
+  "getRepoMetadata",
+  "getRepoReleases",
+  "getRepoLanguages",
+  "getRepoContributors",
+  "getRepoCommits",
+  "getRepoBranches",
+  "compareBranches",
+  "getRepoIssues",
+  "getIssueComments",
+  "getCommunityFiles",
+]);
+
+const maintainerToolNames = new Set<string>([
+  ...contributorToolNames,
+  "getRepoPullRequests",
+  "getPRReviews",
+  "getPullRequestDiff",
+  "getPullRequestFiles",
+  "getPRFileContent",
+  "getRepoWorkflows",
+  "getWorkflowRuns",
+]);
+
+function warnIfUnknownNames(
+  params: {
+    registry: Array<{ name: string }>;
+    allowed: Set<string>;
+    kind: "component" | "tool";
+  },
+) {
+  if (process.env.NODE_ENV !== "development") return;
+
+  const registryNames = new Set(params.registry.map((r) => r.name));
+  for (const name of params.allowed) {
+    if (!registryNames.has(name)) {
+      console.warn(`[tambo] Unknown ${params.kind} in role allowlist: ${name}`);
+    }
+  }
+}
+
+warnIfUnknownNames({
+  registry: components,
+  allowed: contributorComponentNames,
+  kind: "component",
+});
+warnIfUnknownNames({
+  registry: components,
+  allowed: maintainerComponentNames,
+  kind: "component",
+});
+warnIfUnknownNames({
+  registry: tools,
+  allowed: contributorToolNames,
+  kind: "tool",
+});
+warnIfUnknownNames({
+  registry: tools,
+  allowed: maintainerToolNames,
+  kind: "tool",
+});
+
+export function getComponentsForRole(role: WorkspaceRole): TamboComponent[] {
+  if (role === "both") return components;
+
+  const allowed = role === "maintainer"
+    ? maintainerComponentNames
+    : contributorComponentNames;
+
+  return components.filter((c) => allowed.has(c.name));
+}
+
+export function getToolsForRole(role: WorkspaceRole): TamboTool[] {
+  if (role === "both") return tools;
+
+  const allowed = role === "maintainer" ? maintainerToolNames : contributorToolNames;
+  return tools.filter((t) => allowed.has(t.name));
+}

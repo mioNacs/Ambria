@@ -6,9 +6,10 @@ import { TamboProvider } from "@tambo-ai/react";
 import { ApiKeyCheck } from "@/components/ApiKeyCheck";
 import { WorkspaceChat } from "@/components/workspace/WorkspaceChat";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
+import { WorkspaceCanvasPanel } from "@/components/workspace/WorkspaceCanvasPanel";
 import { useWorkspaces, Workspace } from "@/hooks/useWorkspaces";
 import { useAuth } from "@/hooks/useAuth";
-import { components, tools } from "@/lib/tambo";
+import { getComponentsForRole, getToolsForRole } from "@/lib/tambo";
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
 import { Loader2 } from "lucide-react";
 
@@ -91,8 +92,8 @@ export default function WorkspacePage() {
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <TamboProvider
                     apiKey={apiKey}
-                    components={components}
-                    tools={tools}
+                    components={getComponentsForRole(workspace.role)}
+                    tools={getToolsForRole(workspace.role)}
                     tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
                     mcpServers={mcpServers}
                     userToken={session?.access_token}
@@ -118,11 +119,14 @@ export default function WorkspacePage() {
                         }),
                     }}
                 >
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0 overflow-hidden flex">
                         <WorkspaceChat
+                            role={workspace.role}
                             workspaceId={workspace.id}
                             repoName={`${workspace.repo_owner}/${workspace.repo_name}`}
                         />
+
+                        <WorkspaceCanvasPanel role={workspace.role} />
                     </div>
                 </TamboProvider>
             </div>
