@@ -29,7 +29,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    const pullRequests = await getRepoPullRequests(parsed.data);
+    const limit = parsed.data.limit ?? 20;
+    const page = parsed.data.page ?? 1;
+
+    if (limit * page > 1000) {
+      return NextResponse.json(
+        {
+          error: "Too many items requested; please narrow your query.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const pullRequests = await getRepoPullRequests({
+      ...parsed.data,
+      limit,
+      page,
+    });
     return NextResponse.json({ pullRequests });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
