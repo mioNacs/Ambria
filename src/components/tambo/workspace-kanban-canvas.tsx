@@ -75,6 +75,11 @@ function createStableInteractableComponent<ComponentProps extends object>(
       null,
     );
     const lastSerializedProps = React.useRef<Record<string, unknown>>({});
+    const createdAtRef = React.useRef<string | null>(null);
+    const createdAtIdRef = React.useRef<string | null>(null);
+    const propsRef = React.useRef(props);
+
+    propsRef.current = props;
 
     React.useEffect(() => {
       const cachedId = interactableKeyToId.get(stableKey);
@@ -88,21 +93,31 @@ function createStableInteractableComponent<ComponentProps extends object>(
 
       if (cachedId && cachedComponent) {
         setInteractableId(cachedId);
-        return;
+        return () => {
+          if (process.env.NODE_ENV !== "development") {
+            interactableKeyToId.delete(stableKey);
+          }
+        };
       }
 
       const id = addInteractableComponent({
         name: componentName,
         description,
         component: WrappedComponent,
-        props: props as Record<string, unknown>,
+        props: propsRef.current as Record<string, unknown>,
         propsSchema,
         stateSchema,
       });
 
       interactableKeyToId.set(stableKey, id);
-      lastSerializedProps.current = props as Record<string, unknown>;
+      lastSerializedProps.current = propsRef.current as Record<string, unknown>;
       setInteractableId(id);
+
+      return () => {
+        if (process.env.NODE_ENV !== "development") {
+          interactableKeyToId.delete(stableKey);
+        }
+      };
     }, [
       addInteractableComponent,
       getInteractableComponent,
@@ -110,7 +125,6 @@ function createStableInteractableComponent<ComponentProps extends object>(
       description,
       propsSchema,
       stateSchema,
-      props,
       stableKey,
     ]);
 
@@ -139,19 +153,27 @@ function createStableInteractableComponent<ComponentProps extends object>(
       return null;
     }
 
+    if (createdAtIdRef.current !== interactableId) {
+      createdAtIdRef.current = interactableId;
+      createdAtRef.current = new Date().toISOString();
+    }
+
+    const interactableState =
+      (currentInteractable?.state as Record<string, unknown> | undefined) ?? {};
+
     const minimalMessage: TamboThreadMessage = {
       id: interactableId,
       role: "assistant",
       content: [],
       threadId: "",
-      createdAt: new Date().toISOString(),
+      createdAt: createdAtRef.current ?? new Date().toISOString(),
       component: {
         componentName,
-        componentState: {},
+        componentState: interactableState,
         message: "",
         props: effectiveProps as Record<string, unknown>,
       },
-      componentState: {},
+      componentState: interactableState,
     };
 
     return (
@@ -306,7 +328,8 @@ function KanbanBoard({
   const prevTamboColumnsRef = React.useRef<string | null>(null);
   const hasSyncedFromDbRef = React.useRef(false);
   
-  // Sync Supabase -> Tambo on initial load
+  // One-time bootstrap: load Supabase state into Tambo on initial load.
+  // Ongoing changes (UI/AI) flow Tambo -> Supabase.
   React.useEffect(() => {
     if (
       usePersistence &&

@@ -57,15 +57,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   return (
     <>
-      {isFullscreen ? (
-        <button
-          type="button"
-          aria-label="Exit full screen"
-          className="absolute inset-0 z-40 bg-black/10"
-          onClick={() => setIsFullscreen(false)}
-        />
-      ) : null}
-
       <div
         className={cn(
           "flex flex-col bg-card backdrop-blur",
