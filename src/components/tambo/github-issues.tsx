@@ -41,6 +41,10 @@ export const githubIssueSchema = z
       .describe("Optional short preview of the issue body"),
   });
 
+const issuesApiResponseSchema = z.object({
+  issues: z.array(githubIssueSchema),
+});
+
 const issuesRequestSchema = z
   .object({
     owner: z.string().describe("GitHub repository owner/organization name"),
@@ -68,8 +72,7 @@ const issuesRequestSchema = z
       .positive()
       .max(100)
       .optional()
-      .describe("Page number (1-indexed)")
-      .default(1),
+      .describe("Page number (1-indexed)"),
     token: z
       .string()
       .optional()
@@ -245,9 +248,7 @@ export function IssueList({
   className,
   ...props
 }: IssueListProps) {
-  const issues = React.useMemo(() => issuesProp ?? [], [issuesProp]);
-
-  const [items, setItems] = React.useState(issues);
+  const [items, setItems] = React.useState(() => issuesProp ?? []);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(
@@ -259,11 +260,6 @@ export function IssueList({
     if (!issuesRequest?.limit) return 20;
     return Math.max(1, Math.min(issuesRequest.limit, 50));
   }, [issuesRequest?.limit]);
-
-  const apiResponseSchema = React.useMemo(
-    () => z.object({ issues: z.array(githubIssueSchema) }),
-    [],
-  );
 
   const fetchPage = React.useCallback(
     async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
@@ -293,7 +289,7 @@ export function IssueList({
         }
 
         const payload = await response.json();
-        const parsed = apiResponseSchema.safeParse(payload);
+        const parsed = issuesApiResponseSchema.safeParse(payload);
         if (!parsed.success) {
           throw new Error("Received an invalid response from the server");
         }
@@ -309,27 +305,32 @@ export function IssueList({
         setIsLoading(false);
       }
     },
-    [apiResponseSchema, issuesRequest, pageSize],
+    [issuesRequest, pageSize],
   );
 
   React.useEffect(() => {
     if ((issuesProp?.length ?? 0) > 0) {
-      setItems(issues);
+      setItems(issuesProp ?? []);
       setError(null);
       setIsLoading(false);
       setHasMore(false);
+      setCurrentPage(1);
       return;
     }
 
     if (!issuesRequest) {
       setItems([]);
+      setError(null);
       setHasMore(false);
       return;
     }
 
     const startPage = issuesRequest.page ?? 1;
+    setItems([]);
+    setHasMore(false);
+    setCurrentPage(startPage);
     void fetchPage({ page: startPage, mode: "replace" });
-  }, [fetchPage, issues, issuesProp, issuesRequest]);
+  }, [fetchPage, issuesProp, issuesRequest]);
 
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;

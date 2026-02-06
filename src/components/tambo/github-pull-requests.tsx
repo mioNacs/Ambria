@@ -54,6 +54,10 @@ export const githubPullRequestSchema = z
       .describe("Base branch name (target)"),
   });
 
+const pullRequestsApiResponseSchema = z.object({
+  pullRequests: z.array(githubPullRequestSchema),
+});
+
 const pullRequestsRequestSchema = z
   .object({
     owner: z.string().describe("GitHub repository owner/organization name"),
@@ -75,8 +79,7 @@ const pullRequestsRequestSchema = z
       .positive()
       .max(100)
       .optional()
-      .describe("Page number (1-indexed)")
-      .default(1),
+      .describe("Page number (1-indexed)"),
     token: z
       .string()
       .optional()
@@ -272,12 +275,7 @@ export function PullRequestList({
   className,
   ...props
 }: PullRequestListProps) {
-  const pullRequests = React.useMemo(
-    () => pullRequestsProp ?? [],
-    [pullRequestsProp],
-  );
-
-  const [items, setItems] = React.useState(pullRequests);
+  const [items, setItems] = React.useState(() => pullRequestsProp ?? []);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(
@@ -289,11 +287,6 @@ export function PullRequestList({
     if (!pullRequestsRequest?.limit) return 20;
     return Math.max(1, Math.min(pullRequestsRequest.limit, 50));
   }, [pullRequestsRequest?.limit]);
-
-  const apiResponseSchema = React.useMemo(
-    () => z.object({ pullRequests: z.array(githubPullRequestSchema) }),
-    [],
-  );
 
   const fetchPage = React.useCallback(
     async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
@@ -323,7 +316,7 @@ export function PullRequestList({
         }
 
         const payload = await response.json();
-        const parsed = apiResponseSchema.safeParse(payload);
+        const parsed = pullRequestsApiResponseSchema.safeParse(payload);
         if (!parsed.success) {
           throw new Error("Received an invalid response from the server");
         }
@@ -339,27 +332,32 @@ export function PullRequestList({
         setIsLoading(false);
       }
     },
-    [apiResponseSchema, pageSize, pullRequestsRequest],
+    [pageSize, pullRequestsRequest],
   );
 
   React.useEffect(() => {
     if ((pullRequestsProp?.length ?? 0) > 0) {
-      setItems(pullRequests);
+      setItems(pullRequestsProp ?? []);
       setError(null);
       setIsLoading(false);
       setHasMore(false);
+      setCurrentPage(1);
       return;
     }
 
     if (!pullRequestsRequest) {
       setItems([]);
+      setError(null);
       setHasMore(false);
       return;
     }
 
     const startPage = pullRequestsRequest.page ?? 1;
+    setItems([]);
+    setHasMore(false);
+    setCurrentPage(startPage);
     void fetchPage({ page: startPage, mode: "replace" });
-  }, [fetchPage, pullRequests, pullRequestsProp, pullRequestsRequest]);
+  }, [fetchPage, pullRequestsProp, pullRequestsRequest]);
 
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;

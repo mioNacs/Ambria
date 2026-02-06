@@ -10,8 +10,8 @@ const requestSchema = z.object({
   repo: z.string().min(1),
   state: z.enum(["open", "closed", "all"]).optional(),
   labels: z.string().optional(),
-  limit: z.number().int().positive().max(50).optional(),
-  page: z.number().int().positive().max(100).optional(),
+  limit: z.coerce.number().int().positive().max(50).optional(),
+  page: z.coerce.number().int().positive().max(100).optional(),
   token: z.string().optional(),
 });
 
