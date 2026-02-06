@@ -81,10 +81,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
       propsRef.current = props;
     }, [props]);
 
-    const createdAt = React.useMemo(
-      () => (interactableId ? new Date().toISOString() : ""),
-      [interactableId],
-    );
+    const [createdAt] = React.useState(() => new Date().toISOString());
 
     React.useEffect(() => {
       const cachedId = interactableKeyToId.get(stableKey);

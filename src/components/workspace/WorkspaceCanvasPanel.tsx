@@ -43,10 +43,11 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   }, [role]);
 
   React.useEffect(() => {
-    if (!isFullscreen) return;
+    if (!isFullscreen || typeof window === "undefined") return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.stopPropagation();
         setIsFullscreen(false);
       }
     };
