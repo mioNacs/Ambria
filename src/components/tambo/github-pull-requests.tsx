@@ -247,7 +247,7 @@ export const pullRequestListSchema = z
       .optional()
       .default([])
       .describe(
-        "Pull requests to display. If provided, pullRequestsRequest will be ignored.",
+        "Pull requests to display. If non-empty, pullRequestsRequest will be ignored.",
       ),
     pullRequestsRequest: pullRequestsRequestSchema
       .optional()
