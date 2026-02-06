@@ -986,11 +986,16 @@ export async function getCommunityFiles(params: {
 
     const listDirectory = async (path: string) => {
         try {
-            const { data } = await octokit.rest.repos.getContent({
-                owner,
-                repo,
-                path,
-            });
+            const { data } = path
+                ? await octokit.rest.repos.getContent({
+                      owner,
+                      repo,
+                      path,
+                  })
+                : await octokit.request("GET /repos/{owner}/{repo}/contents", {
+                      owner,
+                      repo,
+                  });
 
             if (!Array.isArray(data)) {
                 return new Map<string, { type: string; path: string }>();
