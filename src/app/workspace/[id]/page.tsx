@@ -126,7 +126,7 @@ export default function WorkspacePage() {
                             repoName={`${workspace.repo_owner}/${workspace.repo_name}`}
                         />
 
-                        <WorkspaceCanvasPanel role={workspace.role} />
+                        <WorkspaceCanvasPanel role={workspace.role} workspaceId={workspace.id} />
                     </div>
                 </TamboProvider>
             </div>

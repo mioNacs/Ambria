@@ -11,11 +11,12 @@ import {
 
 export interface WorkspaceCanvasPanelProps {
   role: WorkspaceRole;
+  workspaceId: string;
 }
 
 type CanvasTab = "contributor" | "maintainer";
 
-export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
+export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [tab, setTab] = React.useState<CanvasTab>(() =>
     role === "maintainer" ? "maintainer" : "contributor",
@@ -37,13 +38,14 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
   return (
     <div
       className={cn(
-        "flex flex-col bg-white/80 backdrop-blur border-l border-gray-200",
+        "flex flex-col bg-card backdrop-blur border-l border-muted-foreground/20",
+        "shadow-sm",
         isCollapsed ? "w-14" : "w-120",
       )}
     >
       <div
         className={cn(
-          "flex items-center justify-between border-b border-gray-200",
+          "flex items-center justify-between border-b border-muted-foreground/20",
           isCollapsed ? "px-2 py-2" : "pl-4 pr-2 py-2",
         )}
       >
@@ -51,29 +53,32 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
           <div className="flex flex-col items-center w-full">
             <button
               onClick={() => setIsCollapsed(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
               title="Expand canvas"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-500" />
+              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
             </button>
 
-            <div className="mt-2 p-2 rounded-lg bg-gray-100 text-gray-600">
+            <div className="mt-2 p-2 rounded-lg bg-muted/50 text-muted-foreground">
               <LayoutDashboard className="w-5 h-5" />
             </div>
           </div>
         ) : (
           <>
             <div className="min-w-0">
-              <div className="font-medium text-gray-800 text-sm truncate">
-                Role-aware interactables
+              <div className="font-medium text-foreground text-sm truncate">
+                Planning Board
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Drag cards to track progress
               </div>
             </div>
             <button
               onClick={() => setIsCollapsed(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
               title="Collapse canvas"
             >
-              <ChevronRight className="w-5 h-5 text-gray-500" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
           </>
         )}
@@ -86,7 +91,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
         )}
       >
         {role === "both" ? (
-          <div className="px-4 py-2 border-b border-gray-200">
+          <div className="px-4 py-2 border-b border-muted-foreground/20">
             <div className="flex gap-2">
               <button
                 type="button"
@@ -94,8 +99,8 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
                 className={cn(
                   "flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
                   visibleTab === "contributor"
-                    ? "bg-blue-50 border-blue-200 text-blue-700"
-                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50",
+                    ? "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400"
+                    : "bg-muted/30 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50",
                 )}
               >
                 Contributor
@@ -106,8 +111,8 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
                 className={cn(
                   "flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
                   visibleTab === "maintainer"
-                    ? "bg-purple-50 border-purple-200 text-purple-700"
-                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50",
+                    ? "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400"
+                    : "bg-muted/30 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50",
                 )}
               >
                 Maintainer
@@ -119,6 +124,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
         <div className="flex-1 min-h-0 overflow-y-auto">
           {role === "contributor" ? (
             <ContributorPlanningCanvas
+              workspaceId={workspaceId}
               title="Contributor planning"
               instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
             />
@@ -126,6 +132,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
 
           {role === "maintainer" ? (
             <MaintainerTriageCanvas
+              workspaceId={workspaceId}
               title="Maintainer triage"
               instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
             />
@@ -135,6 +142,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
             <>
               <div className={cn(visibleTab === "contributor" ? "block" : "hidden")}>
                 <ContributorPlanningCanvas
+                  workspaceId={workspaceId}
                   title="Contributor planning"
                   instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
                 />
@@ -142,6 +150,7 @@ export function WorkspaceCanvasPanel({ role }: WorkspaceCanvasPanelProps) {
 
               <div className={cn(visibleTab === "maintainer" ? "block" : "hidden")}>
                 <MaintainerTriageCanvas
+                  workspaceId={workspaceId}
                   title="Maintainer triage"
                   instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
                 />
