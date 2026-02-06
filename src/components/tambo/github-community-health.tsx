@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { CheckCircle2, XCircle } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -32,14 +33,14 @@ export const communityHealthSchema = z
     "Shows a repository community health checklist (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, etc.)",
   );
 
-export type CommunityHealthProps = z.infer<typeof communityHealthSchema> & {
-  className?: string;
-};
+export type CommunityHealthProps = z.infer<typeof communityHealthSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 export function CommunityHealth({
   title = "Community health",
   files = [],
   className,
+  ...props
 }: CommunityHealthProps) {
   const uniqueFiles = React.useMemo(() => {
     const seen = new Set<string>();
@@ -60,6 +61,7 @@ export function CommunityHealth({
         "p-4",
         className,
       )}
+      {...pickSafeDomProps(props)}
     >
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>

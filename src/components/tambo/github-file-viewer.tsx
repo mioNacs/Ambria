@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
@@ -41,9 +42,8 @@ export const githubFileViewerSchema = z
     "Displays the contents of a repository file with syntax highlighting and a copy-to-clipboard button.",
   );
 
-export type GitHubFileViewerProps = z.infer<typeof githubFileViewerSchema> & {
-  className?: string;
-};
+export type GitHubFileViewerProps = z.infer<typeof githubFileViewerSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 function inferHljsLanguage(path?: string) {
   if (!path) return undefined;
@@ -156,6 +156,7 @@ export function GitHubFileViewer({
   language,
   maxHeight,
   className,
+  ...props
 }: GitHubFileViewerProps) {
   const deferredContent = React.useDeferredValue(content ?? "");
   const inferredLanguage = language ?? inferHljsLanguage(path);
@@ -198,6 +199,7 @@ export function GitHubFileViewer({
         "w-full rounded-lg border border-border bg-background p-4",
         className,
       )}
+      {...pickSafeDomProps(props)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">

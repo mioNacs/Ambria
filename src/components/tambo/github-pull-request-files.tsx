@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, FileDiff, FileText } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -67,9 +68,7 @@ export const githubPullRequestFilesSchema = z
 
 export type GitHubPullRequestFilesProps = z.infer<
   typeof githubPullRequestFilesSchema
-> & {
-  className?: string;
-};
+> & React.HTMLAttributes<HTMLDivElement>;
 
 function getFolderLabel(path: string) {
   const parts = path.split("/").filter(Boolean);
@@ -106,6 +105,7 @@ export function GitHubPullRequestFiles({
   emptyMessage = "No changed files.",
   showPatchPreview,
   className,
+  ...props
 }: GitHubPullRequestFilesProps) {
   const grouped = React.useMemo(() => {
     const groups = new Map<string, z.infer<typeof pullRequestFileSchema>[]>();
@@ -136,6 +136,7 @@ export function GitHubPullRequestFiles({
         "p-4",
         className,
       )}
+      {...pickSafeDomProps(props)}
     >
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>

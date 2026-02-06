@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, MessageCircle } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -51,9 +52,8 @@ export const issueCardSchema = githubIssueSchema
     "Shows a GitHub issue as a compact card (number, title, labels, author, etc.)",
   );
 
-export type IssueCardProps = z.infer<typeof issueCardSchema> & {
-  className?: string;
-};
+export type IssueCardProps = z.infer<typeof issueCardSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 function formatDate(value?: string | null) {
   if (!value) return "";
@@ -88,6 +88,7 @@ export function IssueCard({
   body,
   showBodyPreview,
   className,
+  ...props
 }: IssueCardProps) {
   const header = number ? `#${number}` : "Issue";
   const created = formatDate(createdAt);
@@ -103,6 +104,7 @@ export function IssueCard({
         "w-full rounded-lg border border-border bg-background p-4",
         className,
       )}
+      {...pickSafeDomProps(props)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -179,9 +181,8 @@ export const issueListSchema = z
   })
   .describe("Shows a list of GitHub issues as cards");
 
-export type IssueListProps = z.infer<typeof issueListSchema> & {
-  className?: string;
-};
+export type IssueListProps = z.infer<typeof issueListSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 export function IssueList({
   title = "Issues",
@@ -189,13 +190,14 @@ export function IssueList({
   showBodyPreview,
   emptyMessage = "No issues.",
   className,
+  ...props
 }: IssueListProps) {
   const items = issues;
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full", className)} {...pickSafeDomProps(props)}>
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
         <div className="text-xs text-muted-foreground">

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { useTamboComponentState } from "@tambo-ai/react";
 import { ChevronDown, ChevronRight, FileText, Folder, Scissors } from "lucide-react";
 import * as React from "react";
@@ -56,9 +57,8 @@ type RepoTreeState = {
   expandedPaths: Record<string, boolean>;
 };
 
-export type GitHubRepoTreeProps = z.infer<typeof githubRepoTreeSchema> & {
-  className?: string;
-};
+export type GitHubRepoTreeProps = z.infer<typeof githubRepoTreeSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 function getRowLabel(path?: string) {
   if (!path) return "(unknown)";
@@ -81,6 +81,7 @@ export function GitHubRepoTree({
   truncated,
   initialSelectedPath,
   className,
+  ...props
 }: GitHubRepoTreeProps) {
   const resolvedStateKey =
     stateKey ?? `github-repo-tree:${repoFullName ?? title ?? "default"}`;
@@ -308,6 +309,7 @@ export function GitHubRepoTree({
         "p-4",
         className,
       )}
+      {...pickSafeDomProps(props)}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">

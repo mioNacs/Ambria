@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, GitBranch, GitPullRequest, Minus, Plus } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -45,9 +46,7 @@ export const githubPullRequestOverviewSchema = z
 
 export type GitHubPullRequestOverviewProps = z.infer<
   typeof githubPullRequestOverviewSchema
-> & {
-  className?: string;
-};
+> & React.HTMLAttributes<HTMLDivElement>;
 
 function formatDate(value?: string) {
   if (!value) return "";
@@ -87,6 +86,7 @@ export function GitHubPullRequestOverview({
   htmlUrl,
   body,
   className,
+  ...props
 }: GitHubPullRequestOverviewProps) {
   const createdText = formatDate(createdAt);
   const updatedText = formatDate(updatedAt);
@@ -122,7 +122,7 @@ export function GitHubPullRequestOverview({
   ];
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full", className)} {...pickSafeDomProps(props)}>
       {heading ? (
         <div className="mb-2 text-base font-semibold text-foreground">
           {heading}

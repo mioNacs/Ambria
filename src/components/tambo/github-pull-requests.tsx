@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, GitBranch, GitMerge } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -64,9 +65,8 @@ export const pullRequestCardSchema = githubPullRequestSchema
     "Shows a GitHub pull request as a compact card (number, title, branches, labels, etc.)",
   );
 
-export type PullRequestCardProps = z.infer<typeof pullRequestCardSchema> & {
-  className?: string;
-};
+export type PullRequestCardProps = z.infer<typeof pullRequestCardSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 function formatDate(value?: string | null) {
   if (!value) return "";
@@ -104,6 +104,7 @@ export function PullRequestCard({
   base,
   showBodyPreview,
   className,
+  ...props
 }: PullRequestCardProps) {
   const header = number ? `#${number}` : "Pull request";
   const created = formatDate(createdAt);
@@ -120,6 +121,7 @@ export function PullRequestCard({
         "w-full rounded-lg border border-border bg-background p-4",
         className,
       )}
+      {...pickSafeDomProps(props)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -212,9 +214,8 @@ export const pullRequestListSchema = z
   })
   .describe("Shows a list of GitHub pull requests as cards");
 
-export type PullRequestListProps = z.infer<typeof pullRequestListSchema> & {
-  className?: string;
-};
+export type PullRequestListProps = z.infer<typeof pullRequestListSchema> &
+  React.HTMLAttributes<HTMLDivElement>;
 
 export function PullRequestList({
   title = "Pull requests",
@@ -222,13 +223,14 @@ export function PullRequestList({
   showBodyPreview,
   emptyMessage = "No pull requests.",
   className,
+  ...props
 }: PullRequestListProps) {
   const items = pullRequests;
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full", className)} {...pickSafeDomProps(props)}>
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
         <div className="text-xs text-muted-foreground">
