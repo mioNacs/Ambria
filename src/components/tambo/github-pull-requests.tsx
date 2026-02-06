@@ -54,6 +54,38 @@ export const githubPullRequestSchema = z
       .describe("Base branch name (target)"),
   });
 
+const pullRequestsRequestSchema = z
+  .object({
+    owner: z.string().describe("GitHub repository owner/organization name"),
+    repo: z.string().describe("GitHub repository name"),
+    state: z
+      .enum(["open", "closed", "all"])
+      .optional()
+      .describe("Filter pull requests by state"),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .max(50)
+      .optional()
+      .describe("Number of pull requests to fetch per page (default 20, max 50)"),
+    page: z
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .optional()
+      .describe("Page number (1-indexed)")
+      .default(1),
+    token: z
+      .string()
+      .optional()
+      .describe("Optional GitHub access token for private repos"),
+  })
+  .describe(
+    "A GitHub pull requests request. Prefer passing this instead of a large pullRequests array.",
+  );
+
 export const pullRequestCardSchema = githubPullRequestSchema
   .extend({
     showBodyPreview: z
@@ -209,7 +241,14 @@ export const pullRequestListSchema = z
       .describe("Title displayed above the pull request list"),
     pullRequests: z
       .array(githubPullRequestSchema)
+      .optional()
+      .default([])
       .describe("Pull requests to display"),
+    pullRequestsRequest: pullRequestsRequestSchema
+      .optional()
+      .describe(
+        "Optional pull requests request. When provided and pullRequests are omitted, the component will fetch pull requests itself.",
+      ),
     showBodyPreview: z
       .boolean()
       .optional()
@@ -226,13 +265,102 @@ export type PullRequestListProps = z.infer<typeof pullRequestListSchema> &
 
 export function PullRequestList({
   title = "Pull requests",
-  pullRequests = [],
+  pullRequests: pullRequestsProp,
+  pullRequestsRequest,
   showBodyPreview,
   emptyMessage = "No pull requests.",
   className,
   ...props
 }: PullRequestListProps) {
-  const items = pullRequests;
+  const pullRequests = React.useMemo(
+    () => pullRequestsProp ?? [],
+    [pullRequestsProp],
+  );
+
+  const [items, setItems] = React.useState(pullRequests);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(
+    pullRequestsRequest?.page ?? 1,
+  );
+  const [hasMore, setHasMore] = React.useState(false);
+
+  const pageSize = React.useMemo(() => {
+    if (!pullRequestsRequest?.limit) return 20;
+    return Math.max(1, Math.min(pullRequestsRequest.limit, 50));
+  }, [pullRequestsRequest?.limit]);
+
+  const apiResponseSchema = React.useMemo(
+    () => z.object({ pullRequests: z.array(githubPullRequestSchema) }),
+    [],
+  );
+
+  const fetchPage = React.useCallback(
+    async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
+      if (!pullRequestsRequest) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/github/pull-requests", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            ...pullRequestsRequest,
+            limit: pageSize,
+            page,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(payload?.error ?? `Request failed (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const parsed = apiResponseSchema.safeParse(payload);
+        if (!parsed.success) {
+          throw new Error("Received an invalid response from the server");
+        }
+
+        const next = parsed.data.pullRequests;
+        setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
+        setCurrentPage(page);
+        setHasMore(next.length === pageSize);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiResponseSchema, pageSize, pullRequestsRequest],
+  );
+
+  React.useEffect(() => {
+    if ((pullRequestsProp?.length ?? 0) > 0) {
+      setItems(pullRequests);
+      setError(null);
+      setIsLoading(false);
+      setHasMore(false);
+      return;
+    }
+
+    if (!pullRequestsRequest) {
+      setItems([]);
+      setHasMore(false);
+      return;
+    }
+
+    const startPage = pullRequestsRequest.page ?? 1;
+    void fetchPage({ page: startPage, mode: "replace" });
+  }, [fetchPage, pullRequests, pullRequestsProp, pullRequestsRequest]);
+
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
@@ -246,9 +374,21 @@ export function PullRequestList({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
+        <div className="mt-3 space-y-2">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          )}
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
+        </div>
       ) : (
         <div className="mt-3 space-y-3">
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
           {items.map((pr) => (
             <PullRequestCard
               key={pr.htmlUrl ?? `pr:${pr.number}`}
@@ -256,6 +396,24 @@ export function PullRequestList({
               {...bodyPreviewProps}
             />
           ))}
+          {pullRequestsRequest && hasMore ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (isLoading) return;
+                void fetchPage({ page: currentPage + 1, mode: "append" });
+              }}
+              className={cn(
+                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
+                "px-3 py-2 text-sm text-foreground",
+                "hover:bg-muted/50 transition-colors",
+                "disabled:opacity-60",
+              )}
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading…" : "Load more"}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

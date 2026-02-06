@@ -41,6 +41,44 @@ export const githubIssueSchema = z
       .describe("Optional short preview of the issue body"),
   });
 
+const issuesRequestSchema = z
+  .object({
+    owner: z.string().describe("GitHub repository owner/organization name"),
+    repo: z.string().describe("GitHub repository name"),
+    state: z
+      .enum(["open", "closed", "all"])
+      .optional()
+      .describe("Filter issues by state"),
+    labels: z
+      .string()
+      .optional()
+      .describe(
+        "Optional comma-separated label names to filter issues (e.g. 'bug,good first issue')",
+      ),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .max(50)
+      .optional()
+      .describe("Number of issues to fetch per page (default 20, max 50)"),
+    page: z
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .optional()
+      .describe("Page number (1-indexed)")
+      .default(1),
+    token: z
+      .string()
+      .optional()
+      .describe("Optional GitHub access token for private repos"),
+  })
+  .describe(
+    "A GitHub issues request. Prefer passing this instead of a large issues array.",
+  );
+
 export const issueCardSchema = githubIssueSchema
   .extend({
     showBodyPreview: z
@@ -176,7 +214,14 @@ export const issueListSchema = z
     title: z.string().optional().describe("Title displayed above the issue list"),
     issues: z
       .array(githubIssueSchema)
+      .optional()
+      .default([])
       .describe("Issues to display"),
+    issuesRequest: issuesRequestSchema
+      .optional()
+      .describe(
+        "Optional issues request. When provided and issues are omitted, the component will fetch issues itself.",
+      ),
     showBodyPreview: z
       .boolean()
       .optional()
@@ -193,13 +238,99 @@ export type IssueListProps = z.infer<typeof issueListSchema> &
 
 export function IssueList({
   title = "Issues",
-  issues = [],
+  issues: issuesProp,
+  issuesRequest,
   showBodyPreview,
   emptyMessage = "No issues.",
   className,
   ...props
 }: IssueListProps) {
-  const items = issues;
+  const issues = React.useMemo(() => issuesProp ?? [], [issuesProp]);
+
+  const [items, setItems] = React.useState(issues);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(
+    issuesRequest?.page ?? 1,
+  );
+  const [hasMore, setHasMore] = React.useState(false);
+
+  const pageSize = React.useMemo(() => {
+    if (!issuesRequest?.limit) return 20;
+    return Math.max(1, Math.min(issuesRequest.limit, 50));
+  }, [issuesRequest?.limit]);
+
+  const apiResponseSchema = React.useMemo(
+    () => z.object({ issues: z.array(githubIssueSchema) }),
+    [],
+  );
+
+  const fetchPage = React.useCallback(
+    async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
+      if (!issuesRequest) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/github/issues", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            ...issuesRequest,
+            limit: pageSize,
+            page,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(payload?.error ?? `Request failed (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const parsed = apiResponseSchema.safeParse(payload);
+        if (!parsed.success) {
+          throw new Error("Received an invalid response from the server");
+        }
+
+        const next = parsed.data.issues;
+        setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
+        setCurrentPage(page);
+        setHasMore(next.length === pageSize);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiResponseSchema, issuesRequest, pageSize],
+  );
+
+  React.useEffect(() => {
+    if ((issuesProp?.length ?? 0) > 0) {
+      setItems(issues);
+      setError(null);
+      setIsLoading(false);
+      setHasMore(false);
+      return;
+    }
+
+    if (!issuesRequest) {
+      setItems([]);
+      setHasMore(false);
+      return;
+    }
+
+    const startPage = issuesRequest.page ?? 1;
+    void fetchPage({ page: startPage, mode: "replace" });
+  }, [fetchPage, issues, issuesProp, issuesRequest]);
+
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
@@ -213,9 +344,21 @@ export function IssueList({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
+        <div className="mt-3 space-y-2">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          )}
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
+        </div>
       ) : (
         <div className="mt-3 space-y-3">
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
           {items.map((issue) => (
             <IssueCard
               key={issue.htmlUrl ?? `issue:${issue.number}`}
@@ -223,6 +366,24 @@ export function IssueList({
               {...bodyPreviewProps}
             />
           ))}
+          {issuesRequest && hasMore ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (isLoading) return;
+                void fetchPage({ page: currentPage + 1, mode: "append" });
+              }}
+              className={cn(
+                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
+                "px-3 py-2 text-sm text-foreground",
+                "hover:bg-muted/50 transition-colors",
+                "disabled:opacity-60",
+              )}
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading…" : "Load more"}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

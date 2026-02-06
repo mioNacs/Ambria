@@ -632,9 +632,10 @@ export async function getRepoIssues(params: {
     state?: "open" | "closed" | "all";
     labels?: string;
     limit?: number;
+    page?: number;
     token?: string;
 }): Promise<Issue[]> {
-    const { owner, repo, state = "open", labels, limit = 20, token } = params;
+    const { owner, repo, state = "open", labels, limit = 20, page = 1, token } = params;
     const octokit = new Octokit({ auth: token });
 
     try {
@@ -644,6 +645,7 @@ export async function getRepoIssues(params: {
             state,
             labels,
             per_page: Math.min(limit, 50),
+            page,
         });
 
         // Filter out pull requests (they appear in issues API)
@@ -735,9 +737,10 @@ export async function getRepoPullRequests(params: {
     repo: string;
     state?: "open" | "closed" | "all";
     limit?: number;
+    page?: number;
     token?: string;
 }): Promise<PullRequest[]> {
-    const { owner, repo, state = "open", limit = 20, token } = params;
+    const { owner, repo, state = "open", limit = 20, page = 1, token } = params;
     const octokit = new Octokit({ auth: token });
 
     try {
@@ -746,6 +749,7 @@ export async function getRepoPullRequests(params: {
             repo,
             state,
             per_page: Math.min(limit, 50),
+            page,
         });
 
         return data.map((pr) => ({
