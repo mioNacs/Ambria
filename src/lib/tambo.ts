@@ -787,26 +787,28 @@ function warnIfUnknownNames(
   }
 }
 
-warnIfUnknownNames({
-  registry: components,
-  allowed: contributorComponentNames,
-  kind: "component",
-});
-warnIfUnknownNames({
-  registry: components,
-  allowed: maintainerComponentNames,
-  kind: "component",
-});
-warnIfUnknownNames({
-  registry: tools,
-  allowed: contributorToolNames,
-  kind: "tool",
-});
-warnIfUnknownNames({
-  registry: tools,
-  allowed: maintainerToolNames,
-  kind: "tool",
-});
+if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
+  warnIfUnknownNames({
+    registry: components,
+    allowed: contributorComponentNames,
+    kind: "component",
+  });
+  warnIfUnknownNames({
+    registry: components,
+    allowed: maintainerComponentNames,
+    kind: "component",
+  });
+  warnIfUnknownNames({
+    registry: tools,
+    allowed: contributorToolNames,
+    kind: "tool",
+  });
+  warnIfUnknownNames({
+    registry: tools,
+    allowed: maintainerToolNames,
+    kind: "tool",
+  });
+}
 
 export function getComponentsForRole(role: WorkspaceRole): TamboComponent[] {
   if (role === "both") return components;

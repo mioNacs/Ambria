@@ -34,8 +34,10 @@ type KanbanCanvasProps = z.infer<typeof kanbanCanvasPropsSchema>;
 type KanbanCard = z.infer<typeof kanbanCardSchema>;
 type KanbanColumn = z.infer<typeof kanbanColumnSchema>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object";
+const KANBAN_DND_TYPE = "application/x-tambo-kanban-card";
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function createClientId(prefix: string) {
@@ -172,12 +174,12 @@ function KanbanBoard({
                 onDrop={(e) => {
                   e.preventDefault();
 
-                  const raw = e.dataTransfer.getData("application/json");
+                  const raw = e.dataTransfer.getData(KANBAN_DND_TYPE);
                   if (!raw) return;
 
                   try {
                     const parsed: unknown = JSON.parse(raw);
-                    if (!isRecord(parsed)) {
+                    if (!isPlainObject(parsed)) {
                       return;
                     }
 
@@ -233,7 +235,7 @@ function KanbanBoard({
                       onDragStart={(e) => {
                         setDragState({ cardId: card.id, fromColumnId: col.id });
                         e.dataTransfer.setData(
-                          "application/json",
+                          KANBAN_DND_TYPE,
                           JSON.stringify({ cardId: card.id, fromColumnId: col.id }),
                         );
                         e.dataTransfer.effectAllowed = "move";
@@ -247,6 +249,7 @@ function KanbanBoard({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <input
+                              aria-label={`${col.title}: card title`}
                               value={card.title}
                               onChange={(e) =>
                                 setColumns(
@@ -282,6 +285,7 @@ function KanbanBoard({
                           ) : null}
 
                           <textarea
+                            aria-label={`${col.title}: card description`}
                             value={card.description ?? ""}
                             onChange={(e) =>
                               setColumns(
