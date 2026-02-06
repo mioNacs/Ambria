@@ -68,7 +68,7 @@ export function useWorkspaceJsonArrayPersistence<Item>(
           if (isSchemaError(error)) {
             setPersistenceAvailable(false);
           }
-        } else if (Array.isArray(data?.[columnName]) && data[columnName].length > 0) {
+        } else if (Array.isArray(data?.[columnName])) {
           setItemsInternal(data[columnName] as Item[]);
         }
       } catch (err) {
