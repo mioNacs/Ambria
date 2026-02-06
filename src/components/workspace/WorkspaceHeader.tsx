@@ -77,7 +77,7 @@ export function WorkspaceHeader({ workspace }: WorkspaceHeaderProps) {
                                     {workspace.repo_stars?.toLocaleString() || 0}
                                 </span>
                                 {workspace.repo_language && (
-                                    <span className="flex items-center gap-1">
+                                    <span className="hidden sm:flex items-center gap-1">
                                         <GitBranch className="w-3.5 h-3.5" />
                                         {workspace.repo_language}
                                     </span>
