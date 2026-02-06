@@ -8,7 +8,6 @@
  * Read more about Tambo at https://tambo.co/docs
  */
 
-import { Graph, graphSchema } from "@/components/tambo/graph";
 import {
   CommunityHealth,
   communityHealthSchema,
@@ -30,6 +29,14 @@ import {
   pullRequestListSchema,
 } from "@/components/tambo/github-pull-requests";
 import {
+  GitHubPullRequestFiles,
+  githubPullRequestFilesSchema,
+} from "@/components/tambo/github-pull-request-files";
+import {
+  GitHubPullRequestOverview,
+  githubPullRequestOverviewSchema,
+} from "@/components/tambo/github-pull-request-overview";
+import {
   GitHubRepoMetadataCard,
   githubRepoMetadataCardSchema,
 } from "@/components/tambo/github-repo-metadata-card";
@@ -41,11 +48,6 @@ import {
   WorkflowRunsList,
   workflowRunsListSchema,
 } from "@/components/tambo/github-workflow-runs";
-import { DataCard, dataCardSchema } from "@/components/ui/card-data";
-import {
-  getCountryPopulations,
-  getGlobalPopulationTrend,
-} from "@/services/population-stats";
 import {
   getRepoTree,
   getFileContent,
@@ -630,54 +632,6 @@ export const tools: TamboTool[] = [
       encoding: z.string(),
     }),
   },
-
-  // Population Tools (existing)
-  {
-    name: "countryPopulation",
-    description:
-      "A tool to get population statistics by country with advanced filtering options",
-    tool: getCountryPopulations,
-    inputSchema: z.object({
-      continent: z.string().optional(),
-      sortBy: z.enum(["population", "growthRate"]).optional(),
-      limit: z.number().optional(),
-      order: z.enum(["asc", "desc"]).optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        countryCode: z.string(),
-        countryName: z.string(),
-        continent: z.enum([
-          "Asia",
-          "Africa",
-          "Europe",
-          "North America",
-          "South America",
-          "Oceania",
-        ]),
-        population: z.number(),
-        year: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
-  {
-    name: "globalPopulation",
-    description:
-      "A tool to get global population trends with optional year range filtering",
-    tool: getGlobalPopulationTrend,
-    inputSchema: z.object({
-      startYear: z.number().optional(),
-      endYear: z.number().optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        year: z.number(),
-        population: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
 ];
 
 /**
@@ -688,20 +642,6 @@ export const tools: TamboTool[] = [
  * can be controlled by AI to dynamically render UI elements based on user interactions.
  */
 export const components: TamboComponent[] = [
-  {
-    name: "Graph",
-    description:
-      "A component that renders various types of charts (bar, line, pie) using Recharts. Supports customizable data visualization with labels, datasets, and styling options.",
-    component: Graph,
-    propsSchema: graphSchema,
-  },
-  {
-    name: "DataCard",
-    description:
-      "A component that displays options as clickable cards with links and summaries with the ability to select multiple items.",
-    component: DataCard,
-    propsSchema: dataCardSchema,
-  },
   {
     name: "GitHubRepoMetadataCard",
     description:
@@ -750,6 +690,20 @@ export const components: TamboComponent[] = [
       "Shows a list of GitHub pull requests as cards. Useful after calling getRepoPullRequests.",
     component: PullRequestList,
     propsSchema: pullRequestListSchema,
+  },
+  {
+    name: "GitHubPullRequestOverview",
+    description:
+      "Shows a compact pull request overview (title, branches, and diff stats). Useful after calling getPullRequestDiff.",
+    component: GitHubPullRequestOverview,
+    propsSchema: githubPullRequestOverviewSchema,
+  },
+  {
+    name: "GitHubPullRequestFiles",
+    description:
+      "Shows a pull request's changed files grouped by folder path with basic change stats. Useful after calling getPullRequestFiles.",
+    component: GitHubPullRequestFiles,
+    propsSchema: githubPullRequestFilesSchema,
   },
   {
     name: "WorkflowRunsList",

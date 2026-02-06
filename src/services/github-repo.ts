@@ -985,18 +985,25 @@ export async function getCommunityFiles(params: {
     ];
 
     const listDirectory = async (path: string) => {
-        const { data } = path
-            ? await octokit.rest.repos.getContent({ owner, repo, path })
-            : await octokit.request("GET /repos/{owner}/{repo}/contents", {
-                  owner,
-                  repo,
-              });
-        if (!Array.isArray(data)) return new Map<string, { type: string; path: string }>();
-        const entries = new Map<string, { type: string; path: string }>();
-        for (const entry of data) {
-            entries.set(entry.name, { type: entry.type, path: entry.path });
+        try {
+            const { data } = await octokit.rest.repos.getContent({
+                owner,
+                repo,
+                path,
+            });
+
+            if (!Array.isArray(data)) {
+                return new Map<string, { type: string; path: string }>();
+            }
+
+            const entries = new Map<string, { type: string; path: string }>();
+            for (const entry of data) {
+                entries.set(entry.name, { type: entry.type, path: entry.path });
+            }
+            return entries;
+        } catch {
+            return new Map<string, { type: string; path: string }>();
         }
-        return entries;
     };
 
     const rootListing = await listDirectory("");

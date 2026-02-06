@@ -21,6 +21,12 @@ export const githubRepoTreeSchema = z
       .string()
       .optional()
       .describe("Title displayed above the repository tree"),
+    repoFullName: z
+      .string()
+      .optional()
+      .describe(
+        "Optional repository full name in the form 'owner/repo'. Used to derive a stable default state key.",
+      ),
     stateKey: z
       .string()
       .optional()
@@ -50,8 +56,9 @@ type RepoTreeState = {
   expandedPaths: Record<string, boolean>;
 };
 
-export type GitHubRepoTreeProps = z.infer<typeof githubRepoTreeSchema> &
-  React.HTMLAttributes<HTMLDivElement>;
+export type GitHubRepoTreeProps = z.infer<typeof githubRepoTreeSchema> & {
+  className?: string;
+};
 
 function getRowLabel(path?: string) {
   if (!path) return "(unknown)";
@@ -68,20 +75,21 @@ function sortTree(items: RepoTreeItem[]) {
 
 export function GitHubRepoTree({
   title = "Repository tree",
+  repoFullName,
   stateKey,
   tree = [],
   truncated,
   initialSelectedPath,
   className,
-  ...props
 }: GitHubRepoTreeProps) {
-  const instanceId = React.useId();
-  const resolvedStateKey = stateKey ?? `github-repo-tree:${instanceId}`;
+  const resolvedStateKey =
+    stateKey ?? `github-repo-tree:${repoFullName ?? title ?? "default"}`;
 
   const initialExpandedPaths = React.useMemo(() => {
     const expanded: Record<string, boolean> = {};
 
     for (const item of tree) {
+      if (!item?.path) continue;
       const parts = item.path.split("/").filter(Boolean);
       const topLevel = parts[0];
       if (!topLevel) continue;
@@ -117,8 +125,20 @@ export function GitHubRepoTree({
     if (!state) return;
     if (state.selectedPath) return;
 
-    setState({ ...state, selectedPath: initialSelectedPath });
+    setState({
+      selectedPath: initialSelectedPath,
+      expandedPaths: state.expandedPaths,
+    });
   }, [initialSelectedPath, setState, state]);
+
+  React.useEffect(() => {
+    if (!state) return;
+    if (tree.length === 0) return;
+    if (Object.keys(state.expandedPaths).length > 0) return;
+    if (Object.keys(initialExpandedPaths).length === 0) return;
+
+    setState({ ...state, expandedPaths: initialExpandedPaths });
+  }, [initialExpandedPaths, setState, state, tree.length]);
 
   const items = React.useMemo(() => sortTree(tree), [tree]);
   const selectedPath = state?.selectedPath ?? null;
@@ -288,7 +308,6 @@ export function GitHubRepoTree({
         "p-4",
         className,
       )}
-      {...props}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">

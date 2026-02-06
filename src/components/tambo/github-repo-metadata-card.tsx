@@ -78,8 +78,9 @@ export const githubRepoMetadataCardSchema = z
 
 export type GitHubRepoMetadataCardProps = z.infer<
   typeof githubRepoMetadataCardSchema
-> &
-  React.HTMLAttributes<HTMLDivElement>;
+> & {
+  className?: string;
+};
 
 function formatCompactNumber(value?: number) {
   if (typeof value !== "number" || Number.isNaN(value)) return "—";
@@ -142,7 +143,6 @@ export function GitHubRepoMetadataCard({
   updatedAt,
   pushedAt,
   className,
-  ...props
 }: GitHubRepoMetadataCardProps) {
   return (
     <div
@@ -150,7 +150,6 @@ export function GitHubRepoMetadataCard({
         "w-full rounded-lg border border-border bg-background p-4",
         className,
       )}
-      {...props}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">

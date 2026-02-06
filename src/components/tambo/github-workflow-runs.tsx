@@ -36,8 +36,9 @@ export const workflowRunsListSchema = z
   })
   .describe("Shows recent GitHub Actions workflow runs");
 
-export type WorkflowRunsListProps = z.infer<typeof workflowRunsListSchema> &
-  React.HTMLAttributes<HTMLDivElement>;
+export type WorkflowRunsListProps = z.infer<typeof workflowRunsListSchema> & {
+  className?: string;
+};
 
 function formatDate(value?: string) {
   if (!value) return "";
@@ -67,12 +68,11 @@ export function WorkflowRunsList({
   runs = [],
   emptyMessage = "No workflow runs.",
   className,
-  ...props
 }: WorkflowRunsListProps) {
   const items = runs;
 
   return (
-    <div className={cn("w-full", className)} {...props}>
+    <div className={cn("w-full", className)}>
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
         <div className="text-xs text-muted-foreground">

@@ -35,15 +35,15 @@ export const githubFileViewerSchema = z
     maxHeight: z
       .number()
       .optional()
-      .describe("Max code block height in pixels (default 420)")
-      .default(420),
+      .describe("Max code block height in pixels (default 420)"),
   })
   .describe(
     "Displays the contents of a repository file with syntax highlighting and a copy-to-clipboard button.",
   );
 
-export type GitHubFileViewerProps = z.infer<typeof githubFileViewerSchema> &
-  React.HTMLAttributes<HTMLDivElement>;
+export type GitHubFileViewerProps = z.infer<typeof githubFileViewerSchema> & {
+  className?: string;
+};
 
 function inferHljsLanguage(path?: string) {
   if (!path) return undefined;
@@ -156,10 +156,10 @@ export function GitHubFileViewer({
   language,
   maxHeight,
   className,
-  ...props
 }: GitHubFileViewerProps) {
   const deferredContent = React.useDeferredValue(content ?? "");
   const inferredLanguage = language ?? inferHljsLanguage(path);
+  const resolvedMaxHeight = typeof maxHeight === "number" ? maxHeight : 420;
 
   const highlight = React.useMemo(() => {
     if (!deferredContent) {
@@ -184,13 +184,20 @@ export function GitHubFileViewer({
   if (encoding) detailsParts.push(encoding);
   const detailsText = detailsParts.join(" • ");
 
+  const sanitizedHighlightHtml = React.useMemo(() => {
+    if (highlight.kind !== "html") return "";
+    return DOMPurify.sanitize(highlight.html, {
+      ALLOWED_TAGS: ["span"],
+      ALLOWED_ATTR: ["class"],
+    });
+  }, [highlight]);
+
   return (
     <div
       className={cn(
         "w-full rounded-lg border border-border bg-background p-4",
         className,
       )}
-      {...props}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -217,7 +224,7 @@ export function GitHubFileViewer({
             "[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-md",
             "[&::-webkit-scrollbar:horizontal]:h-[4px]",
           )}
-          style={{ maxHeight: maxHeight ?? 420 }}
+          style={{ maxHeight: resolvedMaxHeight }}
         >
           <pre className="p-3 text-xs leading-relaxed">
             {highlight.kind === "html" ? (
@@ -227,7 +234,7 @@ export function GitHubFileViewer({
                   inferredLanguage && `language-${inferredLanguage}`,
                 )}
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(highlight.html),
+                  __html: sanitizedHighlightHtml,
                 }}
               />
             ) : (
