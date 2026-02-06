@@ -96,7 +96,7 @@ export function CommunityHealth({
                     {file.exists ? (
                       <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <XCircle className="size-4 text-destructive" />
+                      <XCircle className="size-4 text-destructive dark:text-red-400" />
                     )}
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium text-foreground">

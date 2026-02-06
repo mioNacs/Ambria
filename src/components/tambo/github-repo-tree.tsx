@@ -290,8 +290,20 @@ export function GitHubRepoTree({
       >
         <FileText className="size-4 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-foreground">{label}</div>
-          <div className="truncate font-mono text-xs text-muted-foreground">
+          <div
+            className={cn(
+              "truncate text-sm font-medium text-foreground",
+              isSelected && "font-semibold",
+            )}
+          >
+            {label}
+          </div>
+          <div
+            className={cn(
+              "truncate font-mono text-xs text-muted-foreground",
+              isSelected && "text-muted-foreground/90",
+            )}
+          >
             {node.path}
           </div>
         </div>

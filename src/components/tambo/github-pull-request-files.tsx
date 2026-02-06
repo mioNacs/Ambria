@@ -167,7 +167,7 @@ export function GitHubPullRequestFiles({
                 </div>
               </div>
 
-              <div className="divide-y divide-muted-foreground/15">
+              <div className="divide-y divide-muted-foreground/20">
                 {groupFiles.map((file) => {
                   const link =
                     file.htmlUrl ??

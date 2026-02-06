@@ -115,7 +115,7 @@ export function GitHubPullRequestOverview({
       label: "Deletions",
       value: deletions,
       icon: <Minus className="size-4" />, 
-      tone: "text-destructive",
+      tone: "text-destructive dark:text-red-300",
     },
     {
       label: "Changed files",
