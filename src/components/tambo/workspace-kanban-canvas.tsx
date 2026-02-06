@@ -68,6 +68,8 @@ function createStableInteractableComponent<ComponentProps extends object>(
       getInteractableComponent,
     } = useTamboInteractable();
 
+    const { componentName, description, propsSchema, stateSchema } = config;
+
     const stableKey = stableKeyFn(props);
     const [interactableId, setInteractableId] = React.useState<string | null>(
       null,
@@ -86,12 +88,12 @@ function createStableInteractableComponent<ComponentProps extends object>(
       }
 
       const id = addInteractableComponent({
-        name: config.componentName,
-        description: config.description,
+        name: componentName,
+        description,
         component: WrappedComponent,
-        props,
-        propsSchema: config.propsSchema,
-        stateSchema: config.stateSchema,
+        props: props as Record<string, unknown>,
+        propsSchema,
+        stateSchema,
       });
 
       interactableKeyToId.set(stableKey, id);
@@ -121,7 +123,10 @@ function createStableInteractableComponent<ComponentProps extends object>(
       const lastPropsString = JSON.stringify(lastSerializedProps.current);
       const currentPropsString = JSON.stringify(props);
       if (lastPropsString !== currentPropsString) {
-        updateInteractableComponentProps(interactableId, props);
+        updateInteractableComponentProps(
+          interactableId,
+          props as Record<string, unknown>,
+        );
         lastSerializedProps.current = props as Record<string, unknown>;
       }
     }, [interactableId, props, updateInteractableComponentProps]);
@@ -137,7 +142,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
       threadId: "",
       createdAt: new Date().toISOString(),
       component: {
-        componentName: config.componentName,
+        componentName,
         componentState: {},
         message: "",
         props: effectiveProps,
@@ -150,8 +155,8 @@ function createStableInteractableComponent<ComponentProps extends object>(
         message={minimalMessage}
         interactableMetadata={{
           id: interactableId,
-          componentName: config.componentName,
-          description: config.description,
+          componentName,
+          description,
         }}
       >
         <WrappedComponent {...effectiveProps} />
@@ -160,7 +165,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
   };
 
   StableInteractableWrapper.displayName =
-    `StableInteractable(${config.componentName}:${displayName})`;
+    `StableInteractable(${componentName}:${displayName})`;
   return StableInteractableWrapper;
 }
 
