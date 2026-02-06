@@ -114,7 +114,7 @@ export default function WorkspacePage() {
                             owner: workspace.repo_owner,
                             repo: workspace.repo_name,
                             token: session?.provider_token ?? undefined,
-                            instructions: "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles), always use these credentials. This gives you full access to the repository's files and structure to answer questions about the codebase.",
+                            instructions: "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests), always use these credentials. For ANY write actions (createRepoIssue, createRepoPullRequest, createIssueComment), you MUST first render the corresponding GitHubCreateIssue / GitHubCreatePullRequest / GitHubCreateComment and let the user click confirm. Never call write tools directly without a real confirmationId (confirmation tokens are short-lived and single-use).",
                         }),
                     }}
                 >

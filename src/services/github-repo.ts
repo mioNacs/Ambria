@@ -4,6 +4,11 @@
  */
 
 import { Octokit } from "@octokit/rest";
+import {
+    consumeGitHubWriteConfirmation,
+    type GitHubWriteKind,
+    hasGitHubWriteConfirmation,
+} from "@/lib/github-write-confirmation";
 
 function toErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
@@ -23,6 +28,29 @@ function decodeBase64Utf8(base64: string) {
     const binary = globalThis.atob(normalized);
     const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
     return new TextDecoder("utf-8").decode(bytes);
+}
+
+function consumeUserConfirmedGitHubWrite(params: {
+    confirmationId: string | undefined;
+    owner: string;
+    repo: string;
+    kind: GitHubWriteKind;
+}) {
+    const { confirmationId, owner, repo, kind } = params;
+
+    if (!confirmationId) {
+        throw new Error(
+            "User confirmation required. Render the GitHubCreateIssue, GitHubCreatePullRequest, or GitHubCreateComment component and have the user click the confirm button.",
+        );
+    }
+
+    if (!hasGitHubWriteConfirmation({ id: confirmationId, owner, repo, kind })) {
+        throw new Error(
+            "User confirmation expired or missing. Please click confirm again.",
+        );
+    }
+
+    consumeGitHubWriteConfirmation({ id: confirmationId, owner, repo, kind });
 }
 
 export interface RepoTreeItem {
@@ -807,6 +835,184 @@ export async function getPRReviews(params: {
         }));
     } catch (error) {
         throw new Error(`Failed to fetch PR reviews: ${error}`);
+    }
+}
+
+// GitHub write tools (require user confirmation)
+
+export interface CreatedIssue {
+    number: number;
+    title: string;
+    state: string;
+    htmlUrl: string;
+}
+
+/**
+* Create a new issue in a repository.
+*/
+export async function createRepoIssue(params: {
+    owner: string;
+    repo: string;
+    title: string;
+    body?: string;
+    labels?: string[];
+    assignees?: string[];
+    token: string;
+    confirmationId: string;
+}): Promise<CreatedIssue> {
+    const { owner, repo, title, body, labels, assignees, token, confirmationId } =
+        params;
+
+    consumeUserConfirmedGitHubWrite({ confirmationId, owner, repo, kind: "issue" });
+    const octokit = new Octokit({ auth: token });
+
+    try {
+        const payload: Parameters<typeof octokit.rest.issues.create>[0] = {
+            owner,
+            repo,
+            title,
+        };
+
+        if (body !== undefined) payload.body = body;
+        if (labels?.length) payload.labels = labels;
+        if (assignees?.length) payload.assignees = assignees;
+
+        const { data } = await octokit.rest.issues.create(payload);
+
+        return {
+            number: data.number,
+            title: data.title,
+            state: data.state,
+            htmlUrl: data.html_url,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to create issue. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
+        );
+    }
+}
+
+export interface CreatedPullRequest {
+    number: number;
+    title: string;
+    state: string;
+    htmlUrl: string;
+}
+
+/**
+* Create a new pull request in a repository.
+*/
+export async function createRepoPullRequest(params: {
+    owner: string;
+    repo: string;
+    title: string;
+    head: string;
+    base: string;
+    body?: string;
+    draft?: boolean;
+    maintainerCanModify?: boolean;
+    token: string;
+    confirmationId: string;
+}): Promise<CreatedPullRequest> {
+    const {
+        owner,
+        repo,
+        title,
+        head,
+        base,
+        body,
+        draft,
+        maintainerCanModify,
+        token,
+        confirmationId,
+    } = params;
+
+    consumeUserConfirmedGitHubWrite({
+        confirmationId,
+        owner,
+        repo,
+        kind: "pull_request",
+    });
+    const octokit = new Octokit({ auth: token });
+
+    try {
+        const payload: Parameters<typeof octokit.rest.pulls.create>[0] = {
+            owner,
+            repo,
+            title,
+            head,
+            base,
+            draft: draft ?? false,
+            maintainer_can_modify: maintainerCanModify ?? true,
+        };
+
+        if (body !== undefined) payload.body = body;
+
+        const { data } = await octokit.rest.pulls.create(payload);
+
+        return {
+            number: data.number,
+            title: data.title,
+            state: data.state,
+            htmlUrl: data.html_url,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to create pull request. This may be due to missing GitHub permissions/scopes, invalid branches, or repository settings. Underlying error: ${message}`,
+        );
+    }
+}
+
+export interface CreatedIssueComment {
+    id: number;
+    htmlUrl: string;
+    body: string;
+    createdAt: string;
+}
+
+/**
+* Create a new comment on an issue or pull request.
+*/
+export async function createIssueComment(params: {
+    owner: string;
+    repo: string;
+    issueNumber: number;
+    body: string;
+    token: string;
+    confirmationId: string;
+}): Promise<CreatedIssueComment> {
+    const { owner, repo, issueNumber, body, token, confirmationId } = params;
+
+    if (body.trim().length === 0) {
+        throw new Error("Comment body must not be empty.");
+    }
+
+    consumeUserConfirmedGitHubWrite({ confirmationId, owner, repo, kind: "comment" });
+    const octokit = new Octokit({ auth: token });
+
+    try {
+        const { data } = await octokit.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: issueNumber,
+            body,
+        });
+
+        const persistedBody = data.body ?? "";
+
+        return {
+            id: data.id,
+            htmlUrl: data.html_url,
+            body: persistedBody,
+            createdAt: data.created_at,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to create comment. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
+        );
     }
 }
 
