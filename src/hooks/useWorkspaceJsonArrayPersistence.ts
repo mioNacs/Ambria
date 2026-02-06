@@ -10,6 +10,11 @@ interface UseWorkspaceJsonArrayPersistenceResult<Item> {
   isSaving: boolean;
 }
 
+function isSchemaError(error: { code?: string | null }) {
+  // Postgres / PostgREST codes we most commonly see for missing tables/columns.
+  return error.code === "42P01" || error.code === "42703";
+}
+
 /**
 * Persist a JSON array column on the `workspaces` table.
 *
@@ -55,14 +60,19 @@ export function useWorkspaceJsonArrayPersistence<Item>(
           .single();
 
         if (error) {
-          console.warn(`${columnName} persistence not available:`, error.message);
-          setPersistenceAvailable(false);
+          console.warn(
+            `${columnName} persistence error:`,
+            error.code ? `[${error.code}]` : "",
+            error.message,
+          );
+          if (isSchemaError(error)) {
+            setPersistenceAvailable(false);
+          }
         } else if (Array.isArray(data?.[columnName]) && data[columnName].length > 0) {
           setItemsInternal(data[columnName] as Item[]);
         }
       } catch (err) {
         console.warn(`${columnName} persistence error:`, err);
-        setPersistenceAvailable(false);
       } finally {
         setIsLoading(false);
       }
@@ -83,7 +93,14 @@ export function useWorkspaceJsonArrayPersistence<Item>(
           .eq("id", workspaceId);
 
         if (error) {
-          console.warn(`Failed to save ${columnName} state:`, error.message);
+          console.warn(
+            `Failed to save ${columnName} state:`,
+            error.code ? `[${error.code}]` : "",
+            error.message,
+          );
+          if (isSchemaError(error)) {
+            setPersistenceAvailable(false);
+          }
         }
       } finally {
         setIsSaving(false);
@@ -111,11 +128,14 @@ export function useWorkspaceJsonArrayPersistence<Item>(
 
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      if (!saveTimeoutRef.current) return;
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+
+      // Best-effort flush to reduce the chances of silently dropping the last update.
+      void saveToDatabase(itemsRef.current);
     };
-  }, []);
+  }, [saveToDatabase]);
 
   return {
     items,

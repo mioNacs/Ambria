@@ -318,6 +318,7 @@ function KanbanBoard({
   accentClass: string;
   boardType: BoardType;
 }) {
+  // `defaultOpen` is only used to seed the initial value; `state.isOpen` is the source of truth after that.
   const [isOpen] = useTamboComponentState("isOpen", defaultOpen ?? true);
 
   // Use persisted state if workspaceId is provided, otherwise fall back to Tambo state

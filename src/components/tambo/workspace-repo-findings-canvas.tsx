@@ -16,11 +16,11 @@ import { useWorkspaceJsonArrayPersistence } from "@/hooks/useWorkspaceJsonArrayP
 
 const findingSchema = z.object({
   id: z.string(),
-  title: z.string(),
-  summary: z.string().optional(),
+  title: z.string().max(200),
+  summary: z.string().max(8000).optional(),
   severity: z.enum(["info", "low", "medium", "high"]).optional(),
   status: z.enum(["open", "in_progress", "resolved"]).optional(),
-  references: z.array(z.string()).max(10).optional(),
+  references: z.array(z.string().max(512)).max(10).optional(),
 });
 
 export const repoFindingsCanvasPropsSchema = z.object({
@@ -37,6 +37,10 @@ export const repoFindingsCanvasStateSchema = z.object({
 
 type RepoFindingsCanvasProps = z.infer<typeof repoFindingsCanvasPropsSchema>;
 type RepoFinding = z.infer<typeof findingSchema>;
+
+const MAX_TITLE = 200;
+const MAX_SUMMARY = 8000;
+const MAX_REF = 512;
 
 function createClientId(prefix: string) {
   if (typeof crypto !== "undefined") {
@@ -93,6 +97,7 @@ function RepoFindingsCanvasBase({
   workspaceId,
   defaultOpen,
 }: RepoFindingsCanvasProps) {
+  // `defaultOpen` is only used to seed the initial value; `state.isOpen` is the source of truth after that.
   const [isOpen] = useTamboComponentState<boolean>(
     "isOpen",
     defaultOpen ?? false,
@@ -170,13 +175,13 @@ function RepoFindingsCanvasBase({
   const addFinding = () => {
     const nextFinding: RepoFinding = {
       id: createClientId("finding"),
-      title: draftTitle.trim() || "Finding",
-      summary: draftSummary.trim() || undefined,
+      title: (draftTitle.trim() || "Finding").slice(0, MAX_TITLE),
+      summary: draftSummary.trim().slice(0, MAX_SUMMARY) || undefined,
       severity: draftSeverity,
       status: draftStatus,
       references: draftRefs
         .split("\n")
-        .map((v) => v.trim())
+        .map((v) => v.trim().slice(0, MAX_REF))
         .filter(Boolean)
         .slice(0, 10),
     };
@@ -225,7 +230,7 @@ function RepoFindingsCanvasBase({
           <div className="grid grid-cols-1 gap-2">
             <input
               value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
+              onChange={(e) => setDraftTitle(e.target.value.slice(0, MAX_TITLE))}
               placeholder="Finding title (e.g. 'Too many ad-hoc fetch() calls')"
               className={cn(
                 "px-3 py-2 rounded-lg text-sm",
@@ -236,7 +241,7 @@ function RepoFindingsCanvasBase({
 
             <textarea
               value={draftSummary}
-              onChange={(e) => setDraftSummary(e.target.value)}
+              onChange={(e) => setDraftSummary(e.target.value.slice(0, MAX_SUMMARY))}
               placeholder="Summary / suggested fix (optional)"
               rows={2}
               className={cn(
@@ -331,7 +336,9 @@ function RepoFindingsCanvasBase({
                     onChange={(e) =>
                       setFindings((prev) =>
                         prev.map((f) =>
-                          f.id === finding.id ? { ...f, title: e.target.value } : f,
+                          f.id === finding.id
+                            ? { ...f, title: e.target.value.slice(0, MAX_TITLE) }
+                            : f,
                         ),
                       )
                     }
@@ -413,7 +420,11 @@ function RepoFindingsCanvasBase({
                   setFindings((prev) =>
                     prev.map((f) =>
                       f.id === finding.id
-                        ? { ...f, summary: e.target.value || undefined }
+                        ? {
+                            ...f,
+                            summary:
+                              e.target.value.slice(0, MAX_SUMMARY) || undefined,
+                          }
                         : f,
                     ),
                   )

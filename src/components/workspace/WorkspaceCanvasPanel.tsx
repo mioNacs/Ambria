@@ -217,8 +217,10 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                     "flex-1 flex items-center gap-2 min-w-0",
                     "text-left text-sm",
                     "hover:text-foreground transition-colors",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
                     panel.isOpen ? "text-foreground" : "text-muted-foreground",
                   )}
+                  disabled={!panel.interactableId}
                   onClick={() => {
                     if (!panel.interactableId) return;
                     setInteractableState(panel.interactableId, "isOpen", !panel.isOpen);
@@ -237,10 +239,12 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                   type="button"
                   className={cn(
                     "p-1.5 rounded-lg border transition-colors",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
                     panel.isSelected
                       ? "bg-primary/10 border-primary/20 text-primary"
                       : "bg-transparent border-muted-foreground/20 text-muted-foreground hover:bg-muted/30 hover:text-foreground",
                   )}
+                  disabled={!panel.interactableId}
                   onClick={() => {
                     if (!panel.interactableId) return;
                     clearInteractableSelections();

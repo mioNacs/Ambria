@@ -17,9 +17,9 @@ import { useWorkspaceJsonArrayPersistence } from "@/hooks/useWorkspaceJsonArrayP
 const pinSchema = z.object({
   id: z.string(),
   kind: z.enum(["issue", "pull_request", "file", "discussion", "other"]),
-  title: z.string(),
-  url: z.string().url().optional(),
-  note: z.string().optional(),
+  title: z.string().max(200),
+  url: z.string().max(1024).optional(),
+  note: z.string().max(5000).optional(),
   status: z.enum(["todo", "watching", "blocked", "done"]).optional(),
 });
 
@@ -37,6 +37,10 @@ export const repoPinsCanvasStateSchema = z.object({
 
 type RepoPinsCanvasProps = z.infer<typeof repoPinsCanvasPropsSchema>;
 type RepoPin = z.infer<typeof pinSchema>;
+
+const MAX_TITLE = 200;
+const MAX_URL = 1024;
+const MAX_NOTE = 5000;
 
 function createClientId(prefix: string) {
   if (typeof crypto !== "undefined") {
@@ -64,6 +68,9 @@ function createClientId(prefix: string) {
 function guessPinKind(url: string): RepoPin["kind"] {
   try {
     const parsed = new URL(url);
+    if (parsed.hostname !== "github.com" && !parsed.hostname.endsWith(".github.com")) {
+      return "other";
+    }
     const parts = parsed.pathname.split("/").filter(Boolean);
     if (parts.length >= 4 && parts[2] === "issues") return "issue";
     if (parts.length >= 4 && parts[2] === "pull") return "pull_request";
@@ -78,6 +85,9 @@ function guessPinKind(url: string): RepoPin["kind"] {
 function guessPinTitle(url: string, kind: RepoPin["kind"]) {
   try {
     const parsed = new URL(url);
+    if (parsed.hostname !== "github.com" && !parsed.hostname.endsWith(".github.com")) {
+      return "Pinned link";
+    }
     const parts = parsed.pathname.split("/").filter(Boolean);
     if ((kind === "issue" || kind === "pull_request") && parts.length >= 4) {
       const number = parts[3];
@@ -91,7 +101,7 @@ function guessPinTitle(url: string, kind: RepoPin["kind"]) {
     // ignore
   }
 
-  return "Pin";
+  return "Pinned link";
 }
 
 function kindLabel(kind: RepoPin["kind"]) {
@@ -130,6 +140,7 @@ function RepoPinsCanvasBase({
   workspaceId,
   defaultOpen,
 }: RepoPinsCanvasProps) {
+  // `defaultOpen` is only used to seed the initial value; `state.isOpen` is the source of truth after that.
   const [isOpen] = useTamboComponentState<boolean>(
     "isOpen",
     defaultOpen ?? false,
@@ -199,13 +210,14 @@ function RepoPinsCanvasBase({
     const url = draftUrl.trim();
     const kind = url ? guessPinKind(url) : "other";
     const title = (draftTitle || (url ? guessPinTitle(url, kind) : "Pin")).trim();
+    const safeUrl = url ? url.slice(0, MAX_URL) : "";
 
     const nextPin: RepoPin = {
       id: createClientId("pin"),
       kind,
-      title: title || "Pin",
-      url: url || undefined,
-      note: draftNote.trim() || undefined,
+      title: (title || "Pinned link").slice(0, MAX_TITLE),
+      url: safeUrl || undefined,
+      note: (draftNote.trim().slice(0, MAX_NOTE) || undefined) ?? undefined,
       status: draftStatus,
     };
 
@@ -252,7 +264,7 @@ function RepoPinsCanvasBase({
           <div className="grid grid-cols-1 gap-2">
             <input
               value={draftUrl}
-              onChange={(e) => setDraftUrl(e.target.value)}
+              onChange={(e) => setDraftUrl(e.target.value.slice(0, MAX_URL))}
               placeholder="Paste a GitHub URL (issue, PR, file)…"
               className={cn(
                 "px-3 py-2 rounded-lg text-sm",
@@ -264,7 +276,7 @@ function RepoPinsCanvasBase({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input
                 value={draftTitle}
-                onChange={(e) => setDraftTitle(e.target.value)}
+                onChange={(e) => setDraftTitle(e.target.value.slice(0, MAX_TITLE))}
                 placeholder="Title (optional)"
                 className={cn(
                   "sm:col-span-2 px-3 py-2 rounded-lg text-sm",
@@ -292,7 +304,7 @@ function RepoPinsCanvasBase({
 
             <textarea
               value={draftNote}
-              onChange={(e) => setDraftNote(e.target.value)}
+              onChange={(e) => setDraftNote(e.target.value.slice(0, MAX_NOTE))}
               placeholder="Note (optional)"
               rows={2}
               className={cn(
@@ -352,7 +364,9 @@ function RepoPinsCanvasBase({
                       onChange={(e) =>
                         setPins((prev) =>
                           prev.map((p) =>
-                            p.id === pin.id ? { ...p, title: e.target.value } : p,
+                            p.id === pin.id
+                              ? { ...p, title: e.target.value.slice(0, MAX_TITLE) }
+                              : p,
                           ),
                         )
                       }
@@ -426,7 +440,11 @@ function RepoPinsCanvasBase({
                     setPins((prev) =>
                       prev.map((p) =>
                         p.id === pin.id
-                          ? { ...p, url: e.target.value || undefined }
+                          ? {
+                              ...p,
+                              url:
+                                e.target.value.slice(0, MAX_URL) || undefined,
+                            }
                           : p,
                       ),
                     )
@@ -446,7 +464,11 @@ function RepoPinsCanvasBase({
                   setPins((prev) =>
                     prev.map((p) =>
                       p.id === pin.id
-                        ? { ...p, note: e.target.value || undefined }
+                        ? {
+                            ...p,
+                            note:
+                              e.target.value.slice(0, MAX_NOTE) || undefined,
+                          }
                         : p,
                     ),
                   )
