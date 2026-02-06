@@ -43,19 +43,6 @@ export default function InteractablesPage() {
     return () => mql.removeEventListener("change", handleChange);
   }, []);
 
-  useEffect(() => {
-    if (!isMobileChatOpen || typeof window === "undefined") return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsMobileChatOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isMobileChatOpen]);
-
   if (!apiKey) {
     return (
       <div className="min-h-screen p-6">
@@ -151,6 +138,12 @@ export default function InteractablesPage() {
               role="dialog"
               aria-modal="true"
               aria-label="Chat assistant"
+              onKeyDownCapture={(event) => {
+                if (event.key === "Escape") {
+                  event.stopPropagation();
+                  setIsMobileChatOpen(false);
+                }
+              }}
             >
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Chat Assistant</h2>

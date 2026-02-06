@@ -40,21 +40,14 @@ export function WorkspaceThreadHistory({
 
     React.useEffect(() => {
         if (!isOverlay) return;
-        closeButtonRef.current?.focus();
+        setIsCollapsed(false);
     }, [isOverlay]);
 
     React.useEffect(() => {
-        if (!isOverlay || !onClose || typeof window === "undefined") return;
+        if (!isOverlay) return;
+        closeButtonRef.current?.focus();
+    }, [isOverlay]);
 
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                onClose();
-            }
-        };
-
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-    }, [isOverlay, onClose]);
 
     const handleCreateNewThread = React.useCallback(() => {
         createNewThread();
@@ -137,6 +130,16 @@ export function WorkspaceThreadHistory({
                 isOverlay ? "w-full" : "w-72",
                 !isOverlay && (position === "left" ? "border-r" : "border-l"),
             )}
+            onKeyDownCapture={
+                isOverlay && onClose
+                    ? (event) => {
+                        if (event.key === "Escape") {
+                            event.stopPropagation();
+                            onClose();
+                        }
+                    }
+                    : undefined
+            }
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">

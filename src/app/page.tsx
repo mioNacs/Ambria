@@ -236,8 +236,10 @@ export default function LandingPage() {
               </div>
 
               <h1 className="mt-6 text-3xl sm:text-5xl font-semibold tracking-tight text-gray-900">
-                Move faster across issues, PRs, and codebase context{" "} <br/>
-                <span className="gradient-text">with AI</span>
+                <span className="block">Move faster across issues, PRs, and codebase context</span>
+                <span className="block">
+                  <span className="gradient-text">with AI</span>
+                </span>
               </h1>
               <p className="mt-4 text-lg text-gray-600 max-w-xl">
                 Connect a repo, keep context separated by workspace, and get answers that
