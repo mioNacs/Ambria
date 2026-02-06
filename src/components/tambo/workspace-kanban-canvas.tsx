@@ -161,7 +161,9 @@ function KanbanBoard({
 
   const applyColumnsUpdate = React.useCallback(
     (updater: (current: KanbanColumn[]) => KanbanColumn[]) => {
-      setColumns(updater(columnsRef.current));
+      const next = updater(columnsRef.current);
+      columnsRef.current = next;
+      setColumns(next);
     },
     [setColumns],
   );
