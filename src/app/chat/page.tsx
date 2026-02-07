@@ -38,7 +38,7 @@ export default function Home() {
       tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
       mcpServers={mcpServers}
     >
-      <div className="h-[100dvh] overflow-hidden">
+      <div className="h-[100dvh]">
         <MessageThreadFull />
       </div>
     </TamboProvider>

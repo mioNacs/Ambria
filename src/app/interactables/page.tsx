@@ -58,7 +58,7 @@ export default function InteractablesPage() {
       tools={tools}
       tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
     >
-      <div className="flex h-[100dvh] overflow-hidden bg-gray-50 flex-col lg:flex-row">
+      <div className="flex h-[100dvh] bg-gray-50 flex-col lg:flex-row">
         {/* Desktop Chat Sidebar */}
         <div
           className={`${
