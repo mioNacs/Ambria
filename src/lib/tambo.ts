@@ -61,6 +61,14 @@ import {
   githubCreateCommentSchema,
 } from "@/components/tambo/github-create-comment";
 import {
+  BeginnerResourcesList,
+  beginnerResourcesListSchema,
+} from "@/components/tambo/beginner-resources-list";
+import {
+  AddWorkspaceCard,
+  addWorkspaceCardSchema,
+} from "@/components/tambo/add-workspace-card";
+import {
   getRepoTree,
   getFileContent,
   getRepoOverview,
@@ -94,6 +102,56 @@ import {
 } from "@/services/github-repo";
 import type { TamboComponent, TamboTool } from "@tambo-ai/react";
 import { z } from "zod";
+
+/**
+ * Tool to fetch beginner resources (Static Data)
+ */
+const getBeginnerResources = async () => {
+  return [
+    {
+      name: "first-contributions",
+      description: "A guided 'make your first PR' repository. Perfect for learning the contribution workflow.",
+      url: "https://github.com/firstcontributions/first-contributions",
+      category: "repo",
+      tags: ["tutorial", "beginner-friendly"]
+    },
+    {
+      name: "EddieHubCommunity/support",
+      description: "Community repository designed specifically for beginners to ask questions and practice.",
+      url: "https://github.com/EddieHubCommunity/support",
+      category: "community",
+      tags: ["support", "community"]
+    },
+    {
+      name: "freeCodeCamp",
+      description: "Massive open source codebase with lots of docs, coding tasks, and a strong contribution process.",
+      url: "https://github.com/freeCodeCamp/freeCodeCamp",
+      category: "repo",
+      tags: ["education", "web-dev"]
+    },
+    {
+      name: "TypeScript-Website",
+      description: "Microsoft's TypeScript documentation site. Good for beginner-friendly writing fixes and light coding.",
+      url: "https://github.com/microsoft/TypeScript-Website",
+      category: "doc",
+      tags: ["microsoft", "docs"]
+    },
+    {
+      name: "flutter/website",
+      description: "Flutter's documentation and content website. detailed contribution guides.",
+      url: "https://github.com/flutter/website",
+      category: "doc",
+      tags: ["flutter", "docs"]
+    },
+    {
+      name: "public-apis",
+      description: "A collective list of free APIs. Mostly markdown maintenance, great for first PRs.",
+      url: "https://github.com/public-apis/public-apis",
+      category: "repo",
+      tags: ["list", "markdown"]
+    }
+  ];
+};
 
 /**
  * tools
@@ -218,6 +276,20 @@ export const tools: TamboTool[] = [
         encoding: z.string(),
       })
     ),
+  },
+
+  {
+    name: "getBeginnerResources",
+    description: "Get a curated list of beginner-friendly open source repositories and resources. Use this when the user asks for 'good first issues', 'beginner friendly repos', or how to start contributing.",
+    tool: getBeginnerResources,
+    inputSchema: z.object({}),
+    outputSchema: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      url: z.string(),
+      category: z.string(),
+      tags: z.array(z.string()).optional()
+    }))
   },
 
   // ============================================
@@ -909,6 +981,18 @@ export const components: TamboComponent[] = [
     component: CommunityHealth,
     propsSchema: communityHealthSchema,
   },
+  {
+    name: "BeginnerResourcesList",
+    description: "Displays a list of beginner-friendly open source resources. Use this to render the output of getBeginnerResources.",
+    component: BeginnerResourcesList,
+    propsSchema: beginnerResourcesListSchema,
+  },
+  {
+    name: "AddWorkspaceCard",
+    description: "Displays a card to confirm adding a new workspace, allowing the user to select their role (Contributor/Maintainer/Both). Use this when adding a workspace where the user has 'write' or 'admin' access.",
+    component: AddWorkspaceCard,
+    propsSchema: addWorkspaceCardSchema,
+  },
 ];
 
 export type WorkspaceRole = "contributor" | "maintainer" | "both";
@@ -920,6 +1004,8 @@ const contributorComponentNames = new Set<string>([
   "IssueCard",
   "IssueList",
   "CommunityHealth",
+  "BeginnerResourcesList",
+  "AddWorkspaceCard",
 ]);
 
 const maintainerComponentNames = new Set<string>([
@@ -947,6 +1033,7 @@ const contributorToolNames = new Set<string>([
   "getRepoIssues",
   "getIssueComments",
   "getCommunityFiles",
+  "getBeginnerResources",
 ]);
 
 const maintainerToolNames = new Set<string>([
@@ -1000,12 +1087,12 @@ if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
   });
 }
 
-export function getComponentsForRole(role: WorkspaceRole): TamboComponent[] {
+export function getComponentsForRole(_role: WorkspaceRole): TamboComponent[] {
   // Allow all components for all roles
   return components;
 }
 
-export function getToolsForRole(role: WorkspaceRole): TamboTool[] {
+export function getToolsForRole(_role: WorkspaceRole): TamboTool[] {
   // Allow all tools for all roles
   return tools;
 }

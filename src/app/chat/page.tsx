@@ -26,6 +26,12 @@ import {
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
+import {
+  getRepoDetails,
+  checkRepoPermissions,
+  getSuggestedRole,
+  type RepoPermissions,
+} from "@/lib/github";
 import { components, tools } from "@/lib/tambo";
 import { TamboProvider, type TamboTool, type Suggestion } from "@tambo-ai/react";
 import { z } from "zod";
@@ -51,12 +57,13 @@ export default function Home() {
   const { session, isLoading: authLoading } = useAuth();
   const { workspaces, isLoading: workspacesLoading } = useWorkspaces();
 
-  // Define a tool to list the user's workspaces
+  // Define the tool to list workspaces
   const listWorkspacesTool: TamboTool = {
     name: "list_user_workspaces",
     description: "List all workspaces (repositories) available to the user. Use this to find out which projects the user has access to.",
     tool: async () => {
-      return workspaces.map(w => ({
+      const refreshedWorkspaces = workspaces; // Use current state
+      return refreshedWorkspaces.map(w => ({
         id: w.id,
         owner: w.repo_owner,
         repo: w.repo_name,
@@ -76,8 +83,129 @@ export default function Home() {
     })),
   };
 
-  // Combine default tools with our dynamic tool
-  const allTools = [...tools, listWorkspacesTool];
+  const { createWorkspace } = useWorkspaces();
+
+  // Define tool to add a workspace
+  const addWorkspaceTool: TamboTool = {
+    name: "add_workspace_repo",
+    description: "Add a GitHub repository to the user's workspaces. If the user has write/admin access, this tool returns 'requiresConfirmation'. You MUST then call the 'AddWorkspaceCard' tool with the returned details to let the user select a role.",
+    tool: async ({ owner, repo }: { owner: string; repo: string }) => {
+      try {
+        // Check if already exists
+        const exists = workspaces.find(
+          (w) => w.repo_owner.toLowerCase() === owner.toLowerCase() &&
+            w.repo_name.toLowerCase() === repo.toLowerCase()
+        );
+
+        if (exists) {
+          return {
+            success: false,
+            message: `Repository ${owner}/${repo} is already in your workspaces.`
+          };
+        }
+
+        const token = session?.provider_token;
+
+        // 1. Get Repo Details
+        const details = await getRepoDetails(owner, repo, token || undefined);
+
+        // 2. Determine permissions
+        let permissions: RepoPermissions = { access: "read", push: false, pull: true, admin: false };
+        let role: "contributor" | "maintainer" | "both" = "contributor";
+        let permissionCheckFailed = false;
+
+        if (token) {
+          try {
+            permissions = await checkRepoPermissions(owner, repo, token);
+            role = getSuggestedRole(permissions);
+          } catch (e) {
+            console.warn("Failed to check permissions:", e);
+            permissionCheckFailed = true;
+          }
+        }
+
+        // 3. Check if confirmation needed (Write/Admin access OR if check failed but likely owner)
+        // Heuristic: If detecting permissions failed but we have a token, effectively treating as "unknown".
+        // Also if the user explicitly asks to add their own repo, they likely want maintainer access.
+
+        // If the user name matches the repo owner, assume admin rights might be intended/available but check failed
+        const isOwner = session?.user?.user_metadata?.user_name?.toLowerCase() === owner.toLowerCase();
+
+        if (permissions.access === "write" || permissions.access === "admin" || (permissionCheckFailed && token) || isOwner) {
+          // Default to 'write' if we are forcing it due to check failure or ownership match
+          const explicitAccess = (permissions.access === "read" && (permissionCheckFailed || isOwner)) ? "admin" : permissions.access;
+
+          return {
+            requiresConfirmation: true,
+            owner: details.owner,
+            repo: details.name,
+            url: details.url,
+            detectedAccess: explicitAccess,
+            stars: details.stars,
+            language: details.language,
+            description: details.description,
+            message: `User has ${explicitAccess} access (or ownership detected). Please render AddWorkspaceCard.`
+          };
+        }
+
+        // 4. Create Workspace directly (Read-only)
+        const newWorkspace = await createWorkspace({
+          repo_owner: details.owner,
+          repo_name: details.name,
+          repo_url: details.url,
+          role: role,
+          detected_access: permissions.access,
+          repo_stars: details.stars,
+          repo_language: details.language,
+          repo_description: details.description,
+        });
+
+        return {
+          success: true,
+          workspace: {
+            id: newWorkspace.id,
+            owner: newWorkspace.repo_owner,
+            repo: newWorkspace.repo_name,
+            role: newWorkspace.role
+          }
+        };
+
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || "Failed to add workspace"
+        };
+      }
+    },
+    inputSchema: z.object({
+      owner: z.string().describe("Repository owner"),
+      repo: z.string().describe("Repository name"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean().optional(),
+      requiresConfirmation: z.boolean().optional(),
+      message: z.string().optional(),
+      error: z.string().optional(),
+      // Fields for confirmation
+      owner: z.string().optional(),
+      repo: z.string().optional(),
+      url: z.string().optional(),
+      detectedAccess: z.enum(["read", "write", "admin"]).optional(),
+      stars: z.number().optional(),
+      language: z.string().nullable().optional(),
+      description: z.string().nullable().optional(),
+      // Fields for success
+      workspace: z.object({
+        id: z.string(),
+        owner: z.string(),
+        repo: z.string(),
+        role: z.string()
+      }).optional()
+    })
+  };
+
+  // Combine default tools with our dynamic tools
+  const allTools = [...tools, listWorkspacesTool, addWorkspaceTool];
 
   if (!apiKey) {
     return (
