@@ -69,7 +69,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
         const c = interactables[i];
         if (!c) continue;
         if (c.name !== componentName) continue;
-        const candidateWorkspaceId = (c.props as { workspaceId?: unknown }).workspaceId;
+        const candidateWorkspaceId = (c.props as { workspaceId?: string }).workspaceId;
         if (candidateWorkspaceId !== workspaceId) continue;
         return c;
       }
@@ -96,11 +96,27 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   React.useEffect(() => {
     if (suppressStateNavigationRef.current) return;
-    // While we're intentionally opening a specific canvas, keep the local `view` stable.
-    if (pendingOpen) return;
     if (viewFromState === view) return;
+
+    // While we're intentionally opening a specific canvas, keep the local `view` stable.
+    // If something else opens while we're pending, treat that as an override.
+    if (pendingOpen) {
+      const pendingTargetView: CanvasView = pendingOpen === "RepoPinsCanvas"
+        ? "repoPins"
+        : pendingOpen === "RepoFindingsCanvas"
+          ? "repoFindings"
+          : "workboards";
+
+      if (viewFromState !== "list" && viewFromState !== pendingTargetView) {
+        pendingOpenRef.current = null;
+        setPendingOpen(null);
+        setView(viewFromState);
+      }
+      return;
+    }
+
     setView(viewFromState);
-  }, [pendingOpen, setView, view, viewFromState]);
+  }, [pendingOpen, setPendingOpen, setView, view, viewFromState]);
 
   React.useEffect(() => {
     const prevViewFromState = lastViewFromStateRef.current;
