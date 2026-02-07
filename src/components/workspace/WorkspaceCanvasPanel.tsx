@@ -293,6 +293,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       if (componentName === "MaintainerTriageCanvas") {
         setPreferredTab("maintainer");
       }
+      setIsCollapsed(false);
       setView(viewForInteractable(componentName));
       closeAllCanvases();
       pendingOpenRef.current = componentName;

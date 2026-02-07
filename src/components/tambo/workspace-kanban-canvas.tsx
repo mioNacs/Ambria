@@ -82,6 +82,8 @@ function createStableInteractableComponent<ComponentProps extends object>(
     const [createdAt] = React.useState(() => new Date().toISOString());
 
     React.useEffect(() => {
+      // Interactable IDs are intentionally UI-scoped here (not stable across unmount/remount).
+      // Persistent data for these canvases lives in Supabase via `useKanbanPersistence`.
       const id = addInteractableComponent({
         name: componentName,
         description,
