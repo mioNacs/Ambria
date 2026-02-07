@@ -425,9 +425,7 @@ function KanbanBoard({
   }, [effectiveIsOpen]);
 
   if (!effectiveIsOpen) {
-    return (
-      <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-card" />
-    );
+    return <section hidden aria-hidden="true" className="h-full bg-card" />;
   }
 
   if (isLoading) {

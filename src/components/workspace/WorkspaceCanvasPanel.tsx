@@ -43,6 +43,12 @@ const VIEW_LABELS: Record<Exclude<CanvasView, "list">, string> = {
   repoFindings: "Repo findings",
 };
 
+function viewForInteractable(componentName: InteractableComponentName): CanvasView {
+  if (componentName === "RepoPinsCanvas") return "repoPins";
+  if (componentName === "RepoFindingsCanvas") return "repoFindings";
+  return "workboards";
+}
+
 export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
@@ -101,11 +107,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     // While we're intentionally opening a specific canvas, keep the local `view` stable.
     // If something else opens while we're pending, treat that as an override.
     if (pendingOpen) {
-      const pendingTargetView: CanvasView = pendingOpen === "RepoPinsCanvas"
-        ? "repoPins"
-        : pendingOpen === "RepoFindingsCanvas"
-          ? "repoFindings"
-          : "workboards";
+      const pendingTargetView = viewForInteractable(pendingOpen);
 
       if (viewFromState !== "list" && viewFromState !== pendingTargetView) {
         pendingOpenRef.current = null;
@@ -122,6 +124,8 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     const prevViewFromState = lastViewFromStateRef.current;
     lastViewFromStateRef.current = viewFromState;
 
+    // If the panel is collapsed, auto-expand whenever we're explicitly opening a canvas
+    // (`pendingOpen`) or when the active view changes away from `list` (AI/state-driven).
     if (!isCollapsed) return;
     if (pendingOpen) {
       setIsCollapsed(false);
@@ -214,17 +218,19 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     const openNames = openTargets.filter(([, isOpen]) => isOpen).map(([name]) => name);
     if (openNames.length <= 1) return;
 
-    // Prefer the canvas that's actually open in state (this keeps the UI aligned
-    // with AI-driven opens/switches, even if `view` hasn't synced yet).
-    const keepByOpenState: InteractableComponentName | null = pinsIsOpen
+    // Prefer the canvas that `viewFromState` would navigate to (keeps the UI aligned
+    // with state/AI-driven opens even if `view` hasn't synced yet).
+    const keepByOpenState: InteractableComponentName | null = viewFromState === "repoPins"
       ? "RepoPinsCanvas"
-      : findingsIsOpen
+      : viewFromState === "repoFindings"
         ? "RepoFindingsCanvas"
-        : maintainerIsOpen
-          ? "MaintainerTriageCanvas"
-          : contributorIsOpen
-            ? "ContributorPlanningCanvas"
-            : null;
+        : viewFromState === "workboards"
+          ? maintainerIsOpen
+            ? "MaintainerTriageCanvas"
+            : contributorIsOpen
+              ? "ContributorPlanningCanvas"
+              : null
+          : null;
 
     const keep = pendingOpen ?? keepByOpenState ?? openNames[0] ?? null;
     if (!keep) return;
@@ -240,8 +246,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     pendingOpen,
     pinsIsOpen,
     setIsOpen,
-    view,
-    activeWorkboard,
+    viewFromState,
   ]);
 
   const closeAllCanvases = React.useCallback(() => {
@@ -272,9 +277,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   }, [closeAllCanvases]);
 
   const viewForComponent = React.useCallback((componentName: InteractableComponentName) => {
-    if (componentName === "RepoPinsCanvas") return "repoPins";
-    if (componentName === "RepoFindingsCanvas") return "repoFindings";
-    return "workboards";
+    return viewForInteractable(componentName);
   }, []);
 
   const openOnly = React.useCallback(
