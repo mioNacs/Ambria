@@ -17,10 +17,28 @@ export default function Dashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const authProvider = user?.app_metadata?.provider;
-  const isGitHubAuthProvider = authProvider === "github";
-  const githubToken = isGitHubAuthProvider
-    ? session?.provider_token ?? undefined
-    : undefined;
+  const linkedProviders = Array.isArray(user?.app_metadata?.providers)
+    ? user.app_metadata.providers
+    : [];
+  const isGitHubAuthProvider =
+    authProvider === "github" || linkedProviders.includes("github");
+
+  const providerToken = session?.provider_token ?? undefined;
+  const githubToken =
+    providerToken && (isGitHubAuthProvider || !authProvider)
+      ? providerToken
+      : undefined;
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    providerToken &&
+    !githubToken &&
+    authProvider
+  ) {
+    console.warn(
+      `Dashboard: provider_token present but auth provider is '${authProvider}'. GitHub search will run unauthenticated.`,
+    );
+  }
 
   const askAmbriaContextKey = user?.id
     ? `ask-ambria-dashboard:${user.id}`

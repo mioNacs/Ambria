@@ -19,7 +19,10 @@ const projectSchema = z.object({
     .describe("Short repository description"),
   stars: z.number().optional().describe("Star count"),
   language: z.string().nullable().optional().describe("Primary language"),
-  topics: z.array(z.string()).optional().describe("Repository topics"),
+  topics: z
+    .array(z.string())
+    .optional()
+    .describe("Repository topics (best-effort; may be missing from search)"),
 });
 
 export const openSourceProjectListSchema = z
@@ -159,6 +162,10 @@ export function OpenSourceProjectList({
           );
         })}
       </div>
+
+      <p className="mt-3 text-xs text-muted-foreground">
+        Topics are best-effort from GitHub search and may be incomplete or missing.
+      </p>
     </section>
   );
 }

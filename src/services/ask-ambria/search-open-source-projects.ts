@@ -131,7 +131,7 @@ export async function searchOpenSourceProjects(params: {
     skillLevel: params.skillLevel,
     pushedAfter: relaxedPushedAfter,
     minStars: RELAXED_MIN_STARS,
-    requireIssues: true,
+    requireIssues: false,
   });
 
   const octokit = new Octokit({
