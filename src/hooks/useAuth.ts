@@ -56,7 +56,7 @@ export function useAuth() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "github",
             options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
+                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
                 scopes,
             },
         });
