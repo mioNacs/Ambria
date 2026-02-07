@@ -64,7 +64,7 @@ describe("closePullRequest", () => {
         token: "token",
         confirmationId,
       }),
-    ).rejects.toThrow(/Insufficient GitHub permissions/);
+    ).rejects.toThrow(/Write access required/);
   });
 
   test("closes an open pull request", async () => {

@@ -18,9 +18,16 @@ import { z } from "zod";
 
 export const confirmMergePRSchema = z
   .object({
-    owner: z.string().describe("GitHub repository owner/organization name"),
-    repo: z.string().describe("GitHub repository name"),
-    pullNumber: z.number().describe("Pull request number"),
+    owner: z
+      .string()
+      .min(1)
+      .describe("GitHub repository owner/organization name"),
+    repo: z.string().min(1).describe("GitHub repository name"),
+    pullNumber: z.coerce
+      .number()
+      .int()
+      .positive()
+      .describe("Pull request number"),
     token: z
       .string()
       .optional()
@@ -67,6 +74,9 @@ function ConfirmMergePRForm({
 }: ConfirmMergePRProps) {
   const { session } = useAuth();
 
+  const normalizedOwner = owner.trim();
+  const normalizedRepo = repo.trim();
+
   const effectiveToken = token ?? session?.provider_token ?? undefined;
   const [mergeMethod, setMergeMethod] = useState<PullRequestMergeMethod>("merge");
   const [deleteBranch, setDeleteBranch] = useState(false);
@@ -105,13 +115,18 @@ function ConfirmMergePRForm({
       try {
         const [prInfo, perms, reviews] = await Promise.all([
           getPullRequestConfirmationInfo({
-            owner,
-            repo,
+            owner: normalizedOwner,
+            repo: normalizedRepo,
             pullNumber,
             token: effectiveToken,
           }),
-          checkRepoPermissions(owner, repo, effectiveToken),
-          getPRReviews({ owner, repo, pullNumber, token: effectiveToken }),
+          checkRepoPermissions(normalizedOwner, normalizedRepo, effectiveToken),
+          getPRReviews({
+            owner: normalizedOwner,
+            repo: normalizedRepo,
+            pullNumber,
+            token: effectiveToken,
+          }),
         ]);
 
         if (cancelled) return;
@@ -128,7 +143,7 @@ function ConfirmMergePRForm({
     return () => {
       cancelled = true;
     };
-  }, [effectiveToken, owner, pullNumber, repo]);
+  }, [effectiveToken, normalizedOwner, normalizedRepo, pullNumber]);
 
   const hasWriteAccess = !!permission && (permission.push || permission.admin);
   const canSubmit = !!effectiveToken && hasWriteAccess && !isSubmitting;
@@ -146,14 +161,14 @@ function ConfirmMergePRForm({
 
     try {
       const confirmationId = createGitHubWriteConfirmation({
-        owner,
-        repo,
+        owner: normalizedOwner,
+        repo: normalizedRepo,
         kind: "pull_request_merge",
       });
 
       const merged = await mergePullRequest({
-        owner,
-        repo,
+        owner: normalizedOwner,
+        repo: normalizedRepo,
         pullNumber,
         mergeMethod,
         deleteBranch,

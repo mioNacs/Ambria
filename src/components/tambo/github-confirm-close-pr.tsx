@@ -17,9 +17,16 @@ import { z } from "zod";
 
 export const confirmClosePRSchema = z
   .object({
-    owner: z.string().describe("GitHub repository owner/organization name"),
-    repo: z.string().describe("GitHub repository name"),
-    pullNumber: z.number().describe("Pull request number"),
+    owner: z
+      .string()
+      .min(1)
+      .describe("GitHub repository owner/organization name"),
+    repo: z.string().min(1).describe("GitHub repository name"),
+    pullNumber: z.coerce
+      .number()
+      .int()
+      .positive()
+      .describe("Pull request number"),
     token: z
       .string()
       .optional()
@@ -54,6 +61,9 @@ function ConfirmClosePRForm({
 }: ConfirmClosePRProps) {
   const { session } = useAuth();
 
+  const normalizedOwner = owner.trim();
+  const normalizedRepo = repo.trim();
+
   const effectiveToken = token ?? session?.provider_token ?? undefined;
   const [commentBody, setCommentBody] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,12 +93,12 @@ function ConfirmClosePRForm({
       try {
         const [prInfo, perms] = await Promise.all([
           getPullRequestConfirmationInfo({
-            owner,
-            repo,
+            owner: normalizedOwner,
+            repo: normalizedRepo,
             pullNumber,
             token: effectiveToken,
           }),
-          checkRepoPermissions(owner, repo, effectiveToken),
+          checkRepoPermissions(normalizedOwner, normalizedRepo, effectiveToken),
         ]);
 
         if (cancelled) return;
@@ -104,7 +114,7 @@ function ConfirmClosePRForm({
     return () => {
       cancelled = true;
     };
-  }, [effectiveToken, owner, pullNumber, repo]);
+  }, [effectiveToken, normalizedOwner, normalizedRepo, pullNumber]);
 
   const hasWriteAccess = !!permission && (permission.push || permission.admin);
   const canSubmit = !!effectiveToken && hasWriteAccess && !isSubmitting;
@@ -124,13 +134,13 @@ function ConfirmClosePRForm({
     try {
       if (trimmedComment) {
         const commentConfirmationId = createGitHubWriteConfirmation({
-          owner,
-          repo,
+          owner: normalizedOwner,
+          repo: normalizedRepo,
           kind: "comment",
         });
         await createIssueComment({
-          owner,
-          repo,
+          owner: normalizedOwner,
+          repo: normalizedRepo,
           issueNumber: pullNumber,
           body: trimmedComment,
           token: effectiveToken,
@@ -139,13 +149,13 @@ function ConfirmClosePRForm({
       }
 
       const closeConfirmationId = createGitHubWriteConfirmation({
-        owner,
-        repo,
+        owner: normalizedOwner,
+        repo: normalizedRepo,
         kind: "pull_request_close",
       });
       const closed = await closePullRequest({
-        owner,
-        repo,
+        owner: normalizedOwner,
+        repo: normalizedRepo,
         pullNumber,
         token: effectiveToken,
         confirmationId: closeConfirmationId,

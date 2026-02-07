@@ -1,10 +1,24 @@
-import { describe, expect, it, mock, vi } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 
 const reposGet = vi.fn();
 const issuesUpdate = vi.fn();
 
-mock.module("@octokit/rest", () => {
+if (!("Worker" in globalThis)) {
+  vi.stubGlobal(
+    "Worker",
+    class Worker {
+      constructor() {}
+      postMessage() {}
+      terminate() {}
+      addEventListener() {}
+      removeEventListener() {}
+    },
+  );
+}
+
+vi.mock("@octokit/rest", () => {
   class Octokit {
     rest = {
       repos: {
@@ -30,13 +44,18 @@ const { components, tools, getComponentsForRole, getToolsForRole } = await impor
 const { setIssueAssignees } = await import("@/services/github-repo");
 
 describe("maintainer tool gating", () => {
+  beforeEach(() => {
+    reposGet.mockReset();
+    issuesUpdate.mockReset();
+  });
+
   it("does not accidentally orphan tools/components outside role allowlists", () => {
     const visibleToolNames = new Set([
       ...getToolsForRole("contributor").map((t) => t.name),
       ...getToolsForRole("maintainer").map((t) => t.name),
     ]);
     for (const tool of tools) {
-      expect(visibleToolNames.has(tool.name)).toBeTrue();
+      expect(visibleToolNames.has(tool.name)).toBe(true);
     }
 
     const visibleComponentNames = new Set([
@@ -44,7 +63,7 @@ describe("maintainer tool gating", () => {
       ...getComponentsForRole("maintainer").map((c) => c.name),
     ]);
     for (const component of components) {
-      expect(visibleComponentNames.has(component.name)).toBeTrue();
+      expect(visibleComponentNames.has(component.name)).toBe(true);
     }
   });
 
@@ -56,6 +75,8 @@ describe("maintainer tool gating", () => {
     expect(toolNames).not.toContain("setIssueAssignees");
     expect(toolNames).not.toContain("closeRepoIssue");
     expect(toolNames).not.toContain("getRepoMaintainers");
+    expect(toolNames).not.toContain("mergePullRequest");
+    expect(toolNames).not.toContain("closePullRequest");
 
     const componentNames = getComponentsForRole("contributor").map(
       (c) => c.name,
@@ -65,6 +86,8 @@ describe("maintainer tool gating", () => {
     expect(componentNames).not.toContain("GitHubCreateIssue");
     expect(componentNames).not.toContain("ConfirmAssignIssue");
     expect(componentNames).not.toContain("ConfirmCloseIssue");
+    expect(componentNames).not.toContain("ConfirmMergePR");
+    expect(componentNames).not.toContain("ConfirmClosePR");
   });
 
   it("includes maintainer tools and components for maintainer role", () => {
@@ -75,6 +98,8 @@ describe("maintainer tool gating", () => {
     expect(toolNames).toContain("setIssueAssignees");
     expect(toolNames).toContain("closeRepoIssue");
     expect(toolNames).toContain("getRepoMaintainers");
+    expect(toolNames).toContain("mergePullRequest");
+    expect(toolNames).toContain("closePullRequest");
 
     const componentNames = getComponentsForRole("maintainer").map(
       (c) => c.name,
@@ -83,6 +108,8 @@ describe("maintainer tool gating", () => {
     expect(componentNames).toContain("PullRequestList");
     expect(componentNames).toContain("GitHubCreateIssue");
     expect(componentNames).toContain("ConfirmCloseIssue");
+    expect(componentNames).toContain("ConfirmMergePR");
+    expect(componentNames).toContain("ConfirmClosePR");
   });
 });
 
