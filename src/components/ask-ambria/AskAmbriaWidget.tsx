@@ -26,8 +26,6 @@ import { TamboProvider } from "@tambo-ai/react";
 import { MessageSquareText, X } from "lucide-react";
 import * as React from "react";
 
-const contextKey = "ask-ambria-dashboard";
-
 const systemPrompt =
   "You are Ambria, a friendly open source mentor. Help users learn open source fundamentals and contribute confidently. When users ask for project recommendations: ask for their preferred tech stack (language) and skill level, then use the `searchOpenSourceProjects` tool. After the tool returns, render the `OpenSourceProjectList` component with `projects: <tool_result>.projects` (and optionally `title`). For common questions (what is open source, etiquette, finding projects, raising a good PR), prefer using the `OpenSourceGuide` component when it fits. Keep answers practical and concise.";
 
@@ -35,6 +33,15 @@ const initialMessages: InitialTamboThreadMessage[] = [
   {
     role: "system",
     content: [{ type: "text", text: systemPrompt }],
+  },
+  {
+    role: "assistant",
+    content: [
+      {
+        type: "text",
+        text: "Hi — I’m Ambria. Tell me what tech stack you want to use (or pick a quick prompt below) and I’ll help you find good beginner-friendly projects.",
+      },
+    ],
   },
 ];
 
@@ -82,13 +89,9 @@ function AskAmbriaChat() {
         </ThreadContent>
       </ScrollableMessageContainer>
 
-      <MessageSuggestions>
-        <MessageSuggestionsStatus />
-      </MessageSuggestions>
-
       <div className="px-4 pb-3">
         <MessageInput>
-          <MessageInputTextarea placeholder="Ask Ambria about open source…" />
+          <MessageInputTextarea placeholder="Ask about open source, projects, or your first PR…" />
           <MessageInputToolbar>
             <MessageInputSubmitButton />
           </MessageInputToolbar>
@@ -97,6 +100,7 @@ function AskAmbriaChat() {
       </div>
 
       <MessageSuggestions initialSuggestions={defaultSuggestions}>
+        <MessageSuggestionsStatus />
         <MessageSuggestionsList />
       </MessageSuggestions>
     </ThreadContainer>
@@ -104,11 +108,16 @@ function AskAmbriaChat() {
 }
 
 export interface AskAmbriaWidgetProps {
-  userToken?: string;
+  contextKey: string;
   githubToken?: string;
 }
 
-export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps) {
+type SearchOpenSourceProjectsInput = Omit<
+  Parameters<typeof searchOpenSourceProjects>[0],
+  "token"
+>;
+
+export function AskAmbriaWidget({ contextKey, githubToken }: AskAmbriaWidgetProps) {
   const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
   const [isOpen, setIsOpen] = React.useState(false);
   const openButtonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -125,11 +134,10 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
 
       return {
         ...tool,
-        tool: async (input: Parameters<typeof searchOpenSourceProjects>[0]) => {
-          const token = input.token ?? githubToken;
+        tool: async (input: SearchOpenSourceProjectsInput) => {
           return await searchOpenSourceProjects({
             ...input,
-            token,
+            token: githubToken,
           });
         },
       };
@@ -153,7 +161,7 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
     const focusTarget = dialogRef.current?.querySelector<HTMLElement>(
       '[contenteditable="true"], textarea, input, button, a[href], [tabindex]:not([tabindex="-1"])',
     );
-    focusTarget?.focus();
+    (focusTarget ?? dialogRef.current)?.focus();
   }, [isOpen]);
 
   React.useEffect(() => {
@@ -204,18 +212,28 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
             aria-modal="true"
             aria-label="Ask Ambria"
             ref={dialogRef}
+            tabIndex={-1}
             onKeyDown={(event) => {
               if (event.key !== "Tab") return;
+
+              const isActuallyFocusable = (element: HTMLElement) => {
+                if (element.hasAttribute("disabled")) return false;
+                if (element.getAttribute("aria-hidden") === "true") return false;
+                if (element.hasAttribute("hidden")) return false;
+                if (element.hasAttribute("inert")) return false;
+
+                const style = window.getComputedStyle(element);
+                if (style.display === "none") return false;
+                if (style.visibility === "hidden") return false;
+
+                return true;
+              };
 
               const focusables = Array.from(
                 dialogRef.current?.querySelectorAll<HTMLElement>(
                   'button, [href], input, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
                 ) ?? [],
-              ).filter(
-                (el) =>
-                  !el.hasAttribute("disabled") &&
-                  el.getAttribute("aria-hidden") !== "true",
-              );
+              ).filter(isActuallyFocusable);
 
               if (focusables.length === 0) return;
 
@@ -262,7 +280,6 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
                 tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
                 components={askAmbriaComponents}
                 tools={tools}
-                userToken={userToken}
                 contextKey={contextKey}
                 initialMessages={initialMessages}
                 contextHelpers={{

@@ -102,16 +102,19 @@ const MessageSuggestions = React.forwardRef<
       generateResult: { isPending: isGenerating, error },
     } = useTamboSuggestions({ maxSuggestions });
 
-    // Combine initial and generated suggestions, but only use initial ones when thread is empty
+    const hasUserMessages =
+      thread?.messages?.some((message) => message.role === "user") ?? false;
+
+    // Combine initial and generated suggestions, but only use initial ones before the first user message
     const suggestions = React.useMemo(() => {
-      // Only use pre-seeded suggestions if thread is empty
-      if (!thread?.messages?.length && initialSuggestions.length > 0) {
+      // Only use pre-seeded suggestions before the first user message
+      if (!hasUserMessages && initialSuggestions.length > 0) {
         return initialSuggestions.slice(0, maxSuggestions);
       }
       // Otherwise use generated suggestions
       return generatedSuggestions;
     }, [
-      thread?.messages?.length,
+      hasUserMessages,
       generatedSuggestions,
       initialSuggestions,
       maxSuggestions,

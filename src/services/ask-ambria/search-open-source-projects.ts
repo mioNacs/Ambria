@@ -49,16 +49,21 @@ function buildRepoSearchQuery(params: {
   skillLevel: OpenSourceSkillLevel;
   interest?: string;
   pushedAfter: string;
+  minStars?: number;
+  requireIssues?: boolean;
 }): string {
   const techStack = normalizeTechStack(params.techStack);
   const interest = normalizeOptionalInput(params.interest);
+
+  const minStars = params.minStars ?? 50;
+  const requireIssues = params.requireIssues ?? true;
 
   const qualifiers: string[] = [
     "is:public",
     "fork:false",
     "archived:false",
     `pushed:>${params.pushedAfter}`,
-    "stars:>50",
+    `stars:>${minStars}`,
   ];
 
   if (techStack) {
@@ -76,10 +81,12 @@ function buildRepoSearchQuery(params: {
     }
   }
 
-  if (params.skillLevel === "beginner") {
-    qualifiers.push("good-first-issues:>0");
-  } else {
-    qualifiers.push("help-wanted-issues:>0");
+  if (requireIssues) {
+    if (params.skillLevel === "beginner") {
+      qualifiers.push("good-first-issues:>0");
+    } else {
+      qualifiers.push("help-wanted-issues:>0");
+    }
   }
 
   return qualifiers.join(" ");
@@ -92,12 +99,34 @@ export async function searchOpenSourceProjects(params: {
   limit?: number;
   token?: string;
 }): Promise<{ query: string; totalCount: number; projects: OpenSourceProject[] }> {
-  const pushedAfter = getIsoDateDaysAgo(365);
+  const primaryPushedAfter = getIsoDateDaysAgo(365);
+  const relaxedPushedAfter = getIsoDateDaysAgo(365 * 2);
+
   const primaryQuery = buildRepoSearchQuery({
     techStack: params.techStack,
     skillLevel: params.skillLevel,
     interest: params.interest,
-    pushedAfter,
+    pushedAfter: primaryPushedAfter,
+    minStars: 50,
+    requireIssues: true,
+  });
+
+  const fallbackQuery = params.interest
+    ? buildRepoSearchQuery({
+        techStack: params.techStack,
+        skillLevel: params.skillLevel,
+        pushedAfter: primaryPushedAfter,
+        minStars: 50,
+        requireIssues: true,
+      })
+    : null;
+
+  const relaxedQuery = buildRepoSearchQuery({
+    techStack: params.techStack,
+    skillLevel: params.skillLevel,
+    pushedAfter: relaxedPushedAfter,
+    minStars: 10,
+    requireIssues: false,
   });
 
   const octokit = new Octokit({
@@ -119,13 +148,13 @@ export async function searchOpenSourceProjects(params: {
     let query = primaryQuery;
     let { data } = await runSearch(query);
 
-    if (data.total_count === 0 && params.interest) {
-      query = buildRepoSearchQuery({
-        techStack: params.techStack,
-        skillLevel: params.skillLevel,
-        pushedAfter,
-      });
+    if (data.total_count === 0 && fallbackQuery) {
+      query = fallbackQuery;
+      ({ data } = await runSearch(query));
+    }
 
+    if (data.total_count === 0) {
+      query = relaxedQuery;
       ({ data } = await runSearch(query));
     }
 

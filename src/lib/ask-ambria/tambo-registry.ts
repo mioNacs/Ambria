@@ -45,12 +45,6 @@ export const askAmbriaTools: TamboTool[] = [
         .number()
         .optional()
         .describe("How many repositories to return (default 6, max 10)"),
-      token: z
-        .string()
-        .optional()
-        .describe(
-          "Optional GitHub token to increase rate limits and access private data (not required for public search)",
-        ),
     }),
     outputSchema: z.object({
       query: z.string().describe("The GitHub search query used"),
