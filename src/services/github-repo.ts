@@ -1466,12 +1466,6 @@ export async function mergePullRequest(params: {
     } = params;
 
     const octokit = new Octokit({ auth: token });
-    consumeUserConfirmedGitHubWrite({
-        confirmationId,
-        owner,
-        repo,
-        kind: "pull_request_merge",
-    });
     await assertRepoWriteAccess({ octokit, owner, repo });
 
     try {
@@ -1518,7 +1512,7 @@ export async function mergePullRequest(params: {
             ref: pr.head.sha,
         });
 
-        if (checks && checks.state !== "success") {
+        if (checks && checks.totalCount > 0 && checks.state !== "success") {
             if (checks.state === "pending") {
                 throw new Error(
                     "Required checks are still running. Wait for checks to complete before merging.",
@@ -1529,6 +1523,13 @@ export async function mergePullRequest(params: {
                 "Required checks are failing. Fix failing checks before merging.",
             );
         }
+
+        consumeUserConfirmedGitHubWrite({
+            confirmationId,
+            owner,
+            repo,
+            kind: "pull_request_merge",
+        });
 
         const { data } = await octokit.rest.pulls.merge({
             owner,
@@ -1598,12 +1599,6 @@ export async function closePullRequest(params: {
     const { owner, repo, pullNumber, token, confirmationId } = params;
 
     const octokit = new Octokit({ auth: token });
-    consumeUserConfirmedGitHubWrite({
-        confirmationId,
-        owner,
-        repo,
-        kind: "pull_request_close",
-    });
     await assertRepoWriteAccess({ octokit, owner, repo });
 
     try {
@@ -1620,6 +1615,13 @@ export async function closePullRequest(params: {
 
             throw new Error(`Pull request #${pullNumber} is already closed.`);
         }
+
+        consumeUserConfirmedGitHubWrite({
+            confirmationId,
+            owner,
+            repo,
+            kind: "pull_request_close",
+        });
 
         const { data } = await octokit.rest.pulls.update({
             owner,

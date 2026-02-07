@@ -2,14 +2,10 @@
 
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { useAuth } from "@/hooks/useAuth";
-import { checkRepoPermissions } from "@/lib/github";
-import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 import { cn } from "@/lib/utils";
-import {
-  getPRReviews,
-  getPullRequestConfirmationInfo,
-  mergePullRequest,
-  type PullRequestMergeMethod,
+import type {
+  PullRequestConfirmationInfo,
+  PullRequestMergeMethod,
 } from "@/services/github-repo";
 import { ExternalLink } from "lucide-react";
 import * as React from "react";
@@ -43,26 +39,46 @@ export const confirmMergePRSchema = z
 export type ConfirmMergePRProps = z.infer<typeof confirmMergePRSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
+type RepoPermissionSummary = {
+  access: "read" | "write" | "admin";
+  pull: boolean;
+  push: boolean;
+  maintain: boolean;
+  admin: boolean;
+};
+
+type ReviewSummary = {
+  approvals: number;
+  changesRequested: number;
+};
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = (await response.json().catch(() => null)) as unknown;
+  if (!response.ok) {
+    const message =
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return data as T;
+}
+
 function toAccessLabel(access?: string) {
   if (!access) return "unknown";
   return access;
-}
-
-function summarizeReviews(reviews: Array<{ author: string; state: string }>) {
-  const latestByAuthor = new Map<string, string>();
-  for (const review of reviews) {
-    if (!review.author) continue;
-    latestByAuthor.set(review.author, review.state);
-  }
-
-  let approvals = 0;
-  let changesRequested = 0;
-  for (const state of latestByAuthor.values()) {
-    if (state === "APPROVED") approvals += 1;
-    if (state === "CHANGES_REQUESTED") changesRequested += 1;
-  }
-
-  return { approvals, changesRequested };
 }
 
 function ConfirmMergePRForm({
@@ -75,7 +91,8 @@ function ConfirmMergePRForm({
 }: ConfirmMergePRProps) {
   const { session } = useAuth();
 
-  const effectiveToken = token ?? session?.provider_token ?? undefined;
+  const explicitToken = token?.trim() ? token.trim() : undefined;
+  const effectiveToken = explicitToken ?? session?.provider_token ?? undefined;
   const [mergeMethod, setMergeMethod] = useState<PullRequestMergeMethod>("merge");
   const [deleteBranch, setDeleteBranch] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,15 +103,10 @@ function ConfirmMergePRForm({
   >(null);
 
   const [info, setInfo] = useState<
-    | Awaited<ReturnType<typeof getPullRequestConfirmationInfo>>
-    | null
+    PullRequestConfirmationInfo | null
   >(null);
-  const [permission, setPermission] = useState<
-    Awaited<ReturnType<typeof checkRepoPermissions>> | null
-  >(null);
-  const [reviewSummary, setReviewSummary] = useState<
-    { approvals: number; changesRequested: number } | null
-  >(null);
+  const [permission, setPermission] = useState<RepoPermissionSummary | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,26 +123,21 @@ function ConfirmMergePRForm({
       }
 
       try {
-        const [prInfo, perms, reviews] = await Promise.all([
-          getPullRequestConfirmationInfo({
-            owner,
-            repo,
-            pullNumber,
-            token: effectiveToken,
-          }),
-          checkRepoPermissions(owner, repo, effectiveToken),
-          getPRReviews({
-            owner,
-            repo,
-            pullNumber,
-            token: effectiveToken,
-          }),
-        ]);
+        const result = await postJson<{
+          info: PullRequestConfirmationInfo;
+          permission: RepoPermissionSummary;
+          reviews: ReviewSummary;
+        }>("/api/github/pull-request-info", {
+          owner,
+          repo,
+          pullNumber,
+          token: effectiveToken,
+        });
 
         if (cancelled) return;
-        setInfo(prInfo);
-        setPermission(perms);
-        setReviewSummary(summarizeReviews(reviews));
+        setInfo(result.info);
+        setPermission(result.permission);
+        setReviewSummary(result.reviews);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load PR info");
@@ -143,7 +150,8 @@ function ConfirmMergePRForm({
     };
   }, [effectiveToken, owner, repo, pullNumber]);
 
-  const hasWriteAccess = !!permission && (permission.push || permission.admin);
+  const hasWriteAccess =
+    !!permission && (permission.admin || permission.maintain || permission.push);
   const canSubmit = !!effectiveToken && hasWriteAccess && !isSubmitting;
 
   async function handleMerge() {
@@ -158,26 +166,31 @@ function ConfirmMergePRForm({
     setResult(null);
 
     try {
-      const confirmationId = createGitHubWriteConfirmation({
-        owner,
-        repo,
-        kind: "pull_request_merge",
-      });
+      const confirmation = await postJson<{ confirmationId: string }>(
+        "/api/github/write-confirmation",
+        {
+          owner,
+          repo,
+          kind: "pull_request_merge",
+        },
+      );
 
-      const merged = await mergePullRequest({
+      const mergedResult = await postJson<{
+        merged: { htmlUrl: string; sha: string; branchDeleted: boolean };
+      }>("/api/github/pull-request-merge", {
         owner,
         repo,
         pullNumber,
         mergeMethod,
         deleteBranch,
+        confirmationId: confirmation.confirmationId,
         token: effectiveToken,
-        confirmationId,
       });
 
       setResult({
-        htmlUrl: merged.htmlUrl,
-        sha: merged.sha,
-        branchDeleted: merged.branchDeleted,
+        htmlUrl: mergedResult.merged.htmlUrl,
+        sha: mergedResult.merged.sha,
+        branchDeleted: mergedResult.merged.branchDeleted,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to merge pull request");
@@ -188,6 +201,11 @@ function ConfirmMergePRForm({
 
   const checksLabel = useMemo(() => {
     if (!info?.checks) return "Checks: unknown";
+
+    if (info.checks.totalCount === 0) {
+      return "Checks: none";
+    }
+
     const parts = [
       `Checks: ${info.checks.state}`,
       info.checks.totalCount ? `${info.checks.totalCount} total` : "0 total",

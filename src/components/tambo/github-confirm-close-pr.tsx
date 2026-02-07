@@ -2,14 +2,8 @@
 
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { useAuth } from "@/hooks/useAuth";
-import { checkRepoPermissions } from "@/lib/github";
-import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 import { cn } from "@/lib/utils";
-import {
-  closePullRequest,
-  createIssueComment,
-  getPullRequestConfirmationInfo,
-} from "@/services/github-repo";
+import type { PullRequestConfirmationInfo } from "@/services/github-repo";
 import { ExternalLink } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -42,6 +36,38 @@ export const confirmClosePRSchema = z
 export type ConfirmClosePRProps = z.infer<typeof confirmClosePRSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
+type RepoPermissionSummary = {
+  access: "read" | "write" | "admin";
+  pull: boolean;
+  push: boolean;
+  maintain: boolean;
+  admin: boolean;
+};
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = (await response.json().catch(() => null)) as unknown;
+  if (!response.ok) {
+    const message =
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return data as T;
+}
+
 function toAccessLabel(access?: string) {
   if (!access) return "unknown";
   return access;
@@ -62,18 +88,16 @@ function ConfirmClosePRForm({
 }: ConfirmClosePRProps) {
   const { session } = useAuth();
 
-  const effectiveToken = token ?? session?.provider_token ?? undefined;
+  const explicitToken = token?.trim() ? token.trim() : undefined;
+  const effectiveToken = explicitToken ?? session?.provider_token ?? undefined;
   const [commentBody, setCommentBody] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ htmlUrl: string } | null>(null);
   const [info, setInfo] = useState<
-    | Awaited<ReturnType<typeof getPullRequestConfirmationInfo>>
-    | null
+    PullRequestConfirmationInfo | null
   >(null);
-  const [permission, setPermission] = useState<
-    Awaited<ReturnType<typeof checkRepoPermissions>> | null
-  >(null);
+  const [permission, setPermission] = useState<RepoPermissionSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,19 +113,19 @@ function ConfirmClosePRForm({
       }
 
       try {
-        const [prInfo, perms] = await Promise.all([
-          getPullRequestConfirmationInfo({
-            owner,
-            repo,
-            pullNumber,
-            token: effectiveToken,
-          }),
-          checkRepoPermissions(owner, repo, effectiveToken),
-        ]);
+        const result = await postJson<{
+          info: PullRequestConfirmationInfo;
+          permission: RepoPermissionSummary;
+        }>("/api/github/pull-request-info", {
+          owner,
+          repo,
+          pullNumber,
+          token: effectiveToken,
+        });
 
         if (cancelled) return;
-        setInfo(prInfo);
-        setPermission(perms);
+        setInfo(result.info);
+        setPermission(result.permission);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load PR info");
@@ -114,7 +138,8 @@ function ConfirmClosePRForm({
     };
   }, [effectiveToken, owner, repo, pullNumber]);
 
-  const hasWriteAccess = !!permission && (permission.push || permission.admin);
+  const hasWriteAccess =
+    !!permission && (permission.admin || permission.maintain || permission.push);
   const canSubmit = !!effectiveToken && hasWriteAccess && !isSubmitting;
   const trimmedComment = safeTrim(commentBody);
 
@@ -131,35 +156,46 @@ function ConfirmClosePRForm({
 
     try {
       if (trimmedComment) {
-        const commentConfirmationId = createGitHubWriteConfirmation({
-          owner,
-          repo,
-          kind: "comment",
-        });
-        await createIssueComment({
+        const commentConfirmation = await postJson<{ confirmationId: string }>(
+          "/api/github/write-confirmation",
+          {
+            owner,
+            repo,
+            kind: "comment",
+          },
+        );
+
+        await postJson("/api/github/issue-comment", {
           owner,
           repo,
           issueNumber: pullNumber,
           body: trimmedComment,
+          confirmationId: commentConfirmation.confirmationId,
           token: effectiveToken,
-          confirmationId: commentConfirmationId,
         });
       }
 
-      const closeConfirmationId = createGitHubWriteConfirmation({
-        owner,
-        repo,
-        kind: "pull_request_close",
-      });
-      const closed = await closePullRequest({
-        owner,
-        repo,
-        pullNumber,
-        token: effectiveToken,
-        confirmationId: closeConfirmationId,
-      });
+      const closeConfirmation = await postJson<{ confirmationId: string }>(
+        "/api/github/write-confirmation",
+        {
+          owner,
+          repo,
+          kind: "pull_request_close",
+        },
+      );
 
-      setResult({ htmlUrl: closed.htmlUrl });
+      const closedResult = await postJson<{ closed: { htmlUrl: string } }>(
+        "/api/github/pull-request-close",
+        {
+          owner,
+          repo,
+          pullNumber,
+          confirmationId: closeConfirmation.confirmationId,
+          token: effectiveToken,
+        },
+      );
+
+      setResult({ htmlUrl: closedResult.closed.htmlUrl });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to close pull request");
     } finally {
