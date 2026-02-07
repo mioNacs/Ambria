@@ -6,6 +6,7 @@ import { useWorkspaceThreads, WorkspaceThread } from "@/hooks/useWorkspaceThread
 import { NEW_THREAD_SHORTCUT } from "@/lib/shortcuts";
 import { getFallbackThreadTitle } from "@/lib/thread-titles";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface WorkspaceThreadHistoryProps {
     workspaceId: string;
@@ -139,8 +140,22 @@ export function WorkspaceThreadHistory({
             {/* Thread List */}
             <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="px-2 py-3" aria-busy="true" aria-live="polite">
+                        <span className="sr-only" role="status">
+                            Loading threads…
+                        </span>
+                        <div className="space-y-2">
+                            {[...Array(8)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                                >
+                                    <Skeleton className="h-8 w-1 rounded-full" />
+                                    <Skeleton className="h-4 w-40 flex-1 rounded-lg" />
+                                    <Skeleton className="h-3 w-10 rounded-lg" />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : filteredThreads.length === 0 ? (
                     <div className="px-4 py-8 text-center text-gray-500 text-sm">
