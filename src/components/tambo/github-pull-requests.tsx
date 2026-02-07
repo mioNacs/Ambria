@@ -92,10 +92,6 @@ const pullRequestsRequestSchema = z
       .max(100)
       .optional()
       .describe("Page number (1-indexed)"),
-    token: z
-      .string()
-      .optional()
-      .describe("Optional GitHub access token for private repos"),
   })
   .describe(
     "A GitHub pull requests request. Prefer passing this instead of a large pullRequests array.",
@@ -327,77 +323,15 @@ export function PullRequestList({
   const [hasMore, setHasMore] = React.useState(false);
 
   const pullRequestsPropLength = pullRequestsProp?.length ?? 0;
-  const pullRequestsPropFirst =
-    pullRequestsPropLength > 0 ? pullRequestsProp?.[0] : undefined;
-  const pullRequestsPropLast =
-    pullRequestsPropLength > 0
-      ? pullRequestsProp?.[pullRequestsPropLength - 1]
-      : undefined;
-
-  const pullRequestsPropSignature = React.useMemo(() => {
-    if (pullRequestsPropLength === 0) return "0";
-    const firstKey =
-      pullRequestsPropFirst?.htmlUrl ??
-      `n:${pullRequestsPropFirst?.number ?? ""}`;
-    const lastKey =
-      pullRequestsPropLast?.htmlUrl ?? `n:${pullRequestsPropLast?.number ?? ""}`;
-    return `${pullRequestsPropLength}|${firstKey}|${lastKey}`;
-  }, [
-    pullRequestsPropFirst?.htmlUrl,
-    pullRequestsPropFirst?.number,
-    pullRequestsPropLast?.htmlUrl,
-    pullRequestsPropLast?.number,
-    pullRequestsPropLength,
-  ]);
-
-  const pullRequestsPropRef = React.useRef(pullRequestsProp ?? []);
-  React.useEffect(() => {
-    pullRequestsPropRef.current = pullRequestsProp ?? [];
-  }, [pullRequestsProp, pullRequestsPropSignature]);
-
   const hasRequest = Boolean(pullRequestsRequest);
 
-  const repository = pullRequestsRequest?.repository;
-  const owner = pullRequestsRequest?.owner;
-  const repo = pullRequestsRequest?.repo;
-  const state = pullRequestsRequest?.state;
-  const limit = pullRequestsRequest?.limit;
-  const page = pullRequestsRequest?.page;
-  const token = pullRequestsRequest?.token;
-
-  const requestKey = React.useMemo(() => {
-    if (!hasRequest) return "";
-    const tokenKey = normalizeOptionalString(token) ? "1" : "0";
-    return [
-      normalizeOptionalString(repository) ?? "",
-      normalizeOptionalString(owner) ?? "",
-      normalizeOptionalString(repo) ?? "",
-      state ?? "",
-      String(limit ?? ""),
-      String(page ?? ""),
-      tokenKey,
-    ].join("|");
-  }, [hasRequest, limit, owner, page, repo, repository, state, token]);
-
-  const requestSnapshot = React.useMemo(() => {
-    if (!hasRequest) return null;
-
-    return {
-      repository: normalizeOptionalString(repository),
-      owner: normalizeOptionalString(owner),
-      repo: normalizeOptionalString(repo),
-      state,
-      limit,
-      page,
-      token: normalizeOptionalString(token),
-    };
-  }, [hasRequest, limit, owner, page, repo, repository, state, token]);
-
   const normalizedRequest = React.useMemo(() => {
+    if (!pullRequestsRequest) return null;
+
     const ownerRepo = resolveOwnerRepo({
-      repository: requestSnapshot?.repository,
-      owner: requestSnapshot?.owner,
-      repo: requestSnapshot?.repo,
+      repository: pullRequestsRequest.repository,
+      owner: pullRequestsRequest.owner,
+      repo: pullRequestsRequest.repo,
     });
 
     if (!ownerRepo) return null;
@@ -405,12 +339,18 @@ export function PullRequestList({
     return {
       owner: ownerRepo.owner,
       repo: ownerRepo.repo,
-      state: requestSnapshot?.state,
-      limit: requestSnapshot?.limit,
-      page: requestSnapshot?.page,
-      token: requestSnapshot?.token,
+      state: pullRequestsRequest.state,
+      limit: pullRequestsRequest.limit,
+      page: pullRequestsRequest.page,
     };
-  }, [requestSnapshot]);
+  }, [
+    pullRequestsRequest?.limit,
+    pullRequestsRequest?.owner,
+    pullRequestsRequest?.page,
+    pullRequestsRequest?.repo,
+    pullRequestsRequest?.repository,
+    pullRequestsRequest?.state,
+  ]);
 
   const pageSize = React.useMemo(() => {
     const normalizedLimit = normalizedRequest?.limit;
@@ -420,6 +360,12 @@ export function PullRequestList({
 
   const requestIdRef = React.useRef(0);
   const abortRef = React.useRef<AbortController | null>(null);
+
+  const cancelInFlight = React.useCallback(() => {
+    requestIdRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
 
   const fetchPage = React.useCallback(
     async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
@@ -500,7 +446,7 @@ export function PullRequestList({
 
         setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
         setCurrentPage(page);
-        setHasMore(next.length === pageSize);
+        setHasMore(next.length > 0 && next.length === pageSize);
       } catch (e) {
         if (controller.signal.aborted) return;
 
@@ -520,7 +466,8 @@ export function PullRequestList({
   React.useEffect(() => {
     // Precedence: explicit pullRequests props override pullRequestsRequest (no client-side pagination).
     if (pullRequestsPropLength > 0) {
-      setItems(pullRequestsPropRef.current);
+      cancelInFlight();
+      setItems(pullRequestsProp ?? []);
       setError(null);
       setIsLoading(false);
       setHasMore(false);
@@ -529,33 +476,38 @@ export function PullRequestList({
     }
 
     if (!hasRequest) {
+      cancelInFlight();
       setItems([]);
       setError(null);
       setHasMore(false);
+      setIsLoading(false);
       return;
     }
 
     if (!normalizedRequest) {
+      cancelInFlight();
       setItems([]);
       setError(
         "Invalid request (missing repository). Provide owner+repo or a repository URL.",
       );
       setHasMore(false);
+      setIsLoading(false);
       return;
     }
 
+    cancelInFlight();
     const startPage = normalizedRequest.page ?? 1;
     setItems([]);
     setHasMore(false);
     setCurrentPage(startPage);
     void fetchPage({ page: startPage, mode: "replace" });
   }, [
+    cancelInFlight,
     fetchPage,
     hasRequest,
     normalizedRequest,
+    pullRequestsProp,
     pullRequestsPropLength,
-    pullRequestsPropSignature,
-    requestKey,
   ]);
 
   React.useEffect(() => {

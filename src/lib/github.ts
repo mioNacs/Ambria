@@ -80,10 +80,21 @@ export function resolveGitHubRepoFromRequest(input: {
 }): ResolveGitHubRepoResult {
     const fieldErrors: Record<string, string[]> = {};
 
+    function normalizeOptionalString(value: unknown): string | undefined {
+        if (typeof value !== "string") return undefined;
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : undefined;
+    }
+
+    const repoUrl = normalizeOptionalString(input.repoUrl);
+    const fullName = normalizeOptionalString(input.fullName);
+    const owner = normalizeOptionalString(input.owner);
+    const repo = normalizeOptionalString(input.repo);
+
     let resolved: { owner: string; repo: string } | null = null;
 
-    if (input.repoUrl) {
-        const parsed = parseGitHubUrl(input.repoUrl);
+    if (repoUrl) {
+        const parsed = parseGitHubUrl(repoUrl);
         if (!parsed) {
             fieldErrors.repoUrl = ["Could not parse GitHub repository."];
         } else {
@@ -91,8 +102,8 @@ export function resolveGitHubRepoFromRequest(input: {
         }
     }
 
-    if (!resolved && input.fullName) {
-        const parsed = parseGitHubUrl(input.fullName);
+    if (!resolved && fullName) {
+        const parsed = parseGitHubUrl(fullName);
         if (!parsed) {
             fieldErrors.fullName = ["Could not parse GitHub repository."];
         } else {
@@ -100,8 +111,8 @@ export function resolveGitHubRepoFromRequest(input: {
         }
     }
 
-    if (!resolved && input.repo && (input.repo.includes("/") || input.repo.includes("github.com"))) {
-        const parsed = parseGitHubUrl(input.repo);
+    if (!resolved && repo && (repo.includes("/") || repo.includes("github.com"))) {
+        const parsed = parseGitHubUrl(repo);
         if (!parsed) {
             fieldErrors.repo = ["Could not parse GitHub repository."];
         } else {
@@ -109,20 +120,11 @@ export function resolveGitHubRepoFromRequest(input: {
         }
     }
 
-    if (!resolved && input.owner && input.repo) {
-        if (input.repo.includes("/") || input.repo.includes("github.com")) {
-            const parsed = parseGitHubUrl(input.repo);
-            if (!parsed) {
-                fieldErrors.repo = ["Could not parse GitHub repository."];
-            } else {
-                resolved = parsed;
-            }
-        } else {
-            resolved = {
-                owner: input.owner,
-                repo: input.repo,
-            };
-        }
+    if (!resolved && owner && repo) {
+        resolved = {
+            owner,
+            repo,
+        };
     }
 
     if (!resolved) {
@@ -139,8 +141,8 @@ export function resolveGitHubRepoFromRequest(input: {
 
     return {
         ok: true,
-        owner: resolved.owner,
-        repo: resolved.repo,
+        owner: resolved.owner.trim(),
+        repo: resolved.repo.trim(),
     };
 }
 

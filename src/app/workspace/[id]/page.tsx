@@ -114,7 +114,7 @@ export default function WorkspacePage() {
                             owner: workspace.repo_owner,
                             repo: workspace.repo_name,
                             token: session?.provider_token ?? undefined,
-                            instructions: "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests, getIssueComments), always use these credentials. For long lists, prefer rendering IssueList/PullRequestList via issuesRequest/pullRequestsRequest with these credentials instead of generating large arrays.",
+                            instructions: "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests, getIssueComments), always use these credentials. For long lists, prefer rendering IssueList/PullRequestList via issuesRequest/pullRequestsRequest (do not pass tokens in component props).",
                         }),
                     }}
                 >

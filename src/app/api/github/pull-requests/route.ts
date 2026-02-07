@@ -1,4 +1,5 @@
 import { resolveGitHubRepoFromRequest } from "@/lib/github";
+import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { getRepoPullRequests } from "@/services/github-repo";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -15,7 +16,6 @@ const requestSchema = z
     state: z.enum(["open", "closed", "all"]).optional(),
     limit: z.coerce.number().int().positive().max(50).optional(),
     page: z.coerce.number().int().positive().max(100).optional(),
-    token: z.string().optional(),
   })
   .refine(
     (data) =>
@@ -51,7 +51,6 @@ export async function POST(request: Request) {
     state: input?.state,
     limit: input?.limit,
     page: input?.page,
-    token: normalizeOptionalString(input?.token),
   };
 
   const parsed = requestSchema.safeParse(normalizedBody);
@@ -90,14 +89,11 @@ export async function POST(request: Request) {
     const limit = parsed.data.limit ?? 20;
     const page = parsed.data.page ?? 1;
 
-    if (limit * page > 1000) {
-      return NextResponse.json(
-        {
-          error: "Too many items requested; please narrow your query.",
-        },
-        { status: 400 },
-      );
-    }
+    const supabase = await createSupabaseClient().catch(() => null);
+    const session = supabase
+      ? await supabase.auth.getSession().catch(() => null)
+      : null;
+    const token = session?.data.session?.provider_token ?? undefined;
 
     const pullRequests = await getRepoPullRequests({
       owner,
@@ -105,7 +101,7 @@ export async function POST(request: Request) {
       state: parsed.data.state,
       limit,
       page,
-      token: parsed.data.token,
+      token,
     });
     return NextResponse.json({ pullRequests });
   } catch (error) {
