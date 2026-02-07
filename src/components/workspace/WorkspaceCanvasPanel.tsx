@@ -214,6 +214,8 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     const openNames = openTargets.filter(([, isOpen]) => isOpen).map(([name]) => name);
     if (openNames.length <= 1) return;
 
+    // Prefer the canvas that's actually open in state (this keeps the UI aligned
+    // with AI-driven opens/switches, even if `view` hasn't synced yet).
     const keepByOpenState: InteractableComponentName | null = pinsIsOpen
       ? "RepoPinsCanvas"
       : findingsIsOpen

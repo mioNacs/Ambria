@@ -102,6 +102,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
           // Interactables are UI-scoped here; removing them on unmount prevents
           // stale duplicates (dev/StrictMode + HMR) and keeps the registry aligned
           // with what's actually mounted.
+          // `removeInteractableComponent` is idempotent (no-op if the ID isn't present).
           removeInteractableComponent(cachedId);
           interactableKeyToId.delete(stableKey);
         };
@@ -122,6 +123,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
 
       return () => {
         // See note above: keep the interactables registry in sync with mounted UI.
+        // `removeInteractableComponent` is idempotent (no-op if the ID isn't present).
         removeInteractableComponent(id);
         interactableKeyToId.delete(stableKey);
       };
