@@ -58,6 +58,30 @@ export function OpenSourceProjectList({
 }: OpenSourceProjectListProps) {
   const domProps = pickSafeDomProps(props);
 
+  if (projects.length === 0) {
+    return (
+      <section
+        {...domProps}
+        className={cn(
+          "rounded-xl border border-muted-foreground/20 bg-muted/20 p-4 text-foreground",
+          className,
+        )}
+      >
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold">
+              {title ?? "Recommended projects"}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              No projects matched these filters. Try broadening your tech stack or
+              interest.
+            </p>
+          </div>
+        </header>
+      </section>
+    );
+  }
+
   return (
     <section
       {...domProps}

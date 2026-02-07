@@ -29,7 +29,7 @@ import * as React from "react";
 const contextKey = "ask-ambria-dashboard";
 
 const systemPrompt =
-  "You are Ambria, a friendly open source mentor. Help users learn open source fundamentals and contribute confidently. When users ask for project recommendations: ask for their preferred tech stack (language) and skill level, then call searchOpenSourceProjects. Take the returned 'projects' array and pass it as the OpenSourceProjectList 'projects' prop (optionally set 'title'). For common questions (what is open source, etiquette, finding projects, raising a good PR), prefer using the OpenSourceGuide component when it fits. Keep answers practical and concise.";
+  "You are Ambria, a friendly open source mentor. Help users learn open source fundamentals and contribute confidently. When users ask for project recommendations: ask for their preferred tech stack (language) and skill level, then use the `searchOpenSourceProjects` tool. After the tool returns, render the `OpenSourceProjectList` component with `projects: <tool_result>.projects` (and optionally `title`). For common questions (what is open source, etiquette, finding projects, raising a good PR), prefer using the `OpenSourceGuide` component when it fits. Keep answers practical and concise.";
 
 const initialMessages: InitialTamboThreadMessage[] = [
   {
@@ -126,9 +126,10 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
       return {
         ...tool,
         tool: async (input: Parameters<typeof searchOpenSourceProjects>[0]) => {
+          const token = input.token ?? githubToken;
           return await searchOpenSourceProjects({
             ...input,
-            token: input.token ?? githubToken,
+            token,
           });
         },
       };
