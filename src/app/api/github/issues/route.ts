@@ -1,4 +1,5 @@
 import { getRepoIssues } from "@/services/github-repo";
+import { parseGitHubUrl } from "@/lib/github";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -15,9 +16,45 @@ const requestSchema = z.object({
   token: z.string().optional(),
 });
 
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
-  const parsed = requestSchema.safeParse(body);
+  const body = (await request.json().catch(() => null)) as unknown;
+  const input =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+
+  let owner = normalizeOptionalString(input?.owner);
+  let repo = normalizeOptionalString(input?.repo);
+
+  if (!owner || !repo) {
+    const candidates = [
+      normalizeOptionalString(input?.repository),
+      normalizeOptionalString(input?.repo),
+      normalizeOptionalString(input?.owner),
+    ].filter(Boolean) as string[];
+
+    for (const candidate of candidates) {
+      const parsed = parseGitHubUrl(candidate);
+      if (!parsed) continue;
+      owner ??= parsed.owner;
+      repo ??= parsed.repo;
+      break;
+    }
+  }
+
+  const normalizedBody = {
+    ...(input ?? {}),
+    owner,
+    repo,
+    labels: normalizeOptionalString(input?.labels),
+    token: normalizeOptionalString(input?.token),
+  };
+
+  const parsed = requestSchema.safeParse(normalizedBody);
 
   if (!parsed.success) {
     return NextResponse.json(

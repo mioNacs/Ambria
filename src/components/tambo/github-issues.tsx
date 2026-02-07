@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { parseGitHubUrl } from "@/lib/github";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, MessageCircle } from "lucide-react";
 import * as React from "react";
@@ -47,8 +48,17 @@ const issuesApiResponseSchema = z.object({
 
 const issuesRequestSchema = z
   .object({
-    owner: z.string().describe("GitHub repository owner/organization name"),
-    repo: z.string().describe("GitHub repository name"),
+    repository: z
+      .string()
+      .optional()
+      .describe(
+        "Optional repository identifier (owner/repo or URL). If provided, owner/repo can be omitted.",
+      ),
+    owner: z
+      .string()
+      .optional()
+      .describe("GitHub repository owner/organization name"),
+    repo: z.string().optional().describe("GitHub repository name"),
     state: z
       .enum(["open", "closed", "all"])
       .optional()
@@ -60,6 +70,7 @@ const issuesRequestSchema = z
         "Optional comma-separated label names to filter issues (e.g. 'bug,good first issue')",
       ),
     limit: z
+      .coerce
       .number()
       .int()
       .positive()
@@ -67,6 +78,7 @@ const issuesRequestSchema = z
       .optional()
       .describe("Number of issues to fetch per page (default 20, max 50)"),
     page: z
+      .coerce
       .number()
       .int()
       .positive()
@@ -81,6 +93,31 @@ const issuesRequestSchema = z
   .describe(
     "A GitHub issues request. Prefer passing this instead of a large issues array.",
   );
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function resolveOwnerRepo(input: {
+  repository?: string;
+  owner?: string;
+  repo?: string;
+}): { owner: string; repo: string } | null {
+  const owner = normalizeOptionalString(input.owner);
+  const repo = normalizeOptionalString(input.repo);
+
+  if (owner && repo) return { owner, repo };
+
+  const candidate =
+    normalizeOptionalString(input.repository) ??
+    normalizeOptionalString(input.repo) ??
+    normalizeOptionalString(input.owner);
+
+  if (!candidate) return null;
+  return parseGitHubUrl(candidate);
+}
 
 export const issueCardSchema = githubIssueSchema
   .extend({
@@ -253,19 +290,120 @@ export function IssueList({
   const [items, setItems] = React.useState(() => issuesProp ?? []);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [currentPage, setCurrentPage] = React.useState(
-    issuesRequest?.page ?? 1,
-  );
+  const [currentPage, setCurrentPage] = React.useState(issuesRequest?.page ?? 1);
   const [hasMore, setHasMore] = React.useState(false);
 
+  const issuesPropLength = issuesProp?.length ?? 0;
+  const issuesPropFirst = issuesPropLength > 0 ? issuesProp?.[0] : undefined;
+  const issuesPropLast =
+    issuesPropLength > 0 ? issuesProp?.[issuesPropLength - 1] : undefined;
+
+  const issuesPropSignature = React.useMemo(() => {
+    if (issuesPropLength === 0) return "0";
+    const firstKey = issuesPropFirst?.htmlUrl ?? `n:${issuesPropFirst?.number ?? ""}`;
+    const lastKey = issuesPropLast?.htmlUrl ?? `n:${issuesPropLast?.number ?? ""}`;
+    return `${issuesPropLength}|${firstKey}|${lastKey}`;
+  }, [
+    issuesPropFirst?.htmlUrl,
+    issuesPropFirst?.number,
+    issuesPropLast?.htmlUrl,
+    issuesPropLast?.number,
+    issuesPropLength,
+  ]);
+
+  const issuesPropRef = React.useRef(issuesProp ?? []);
+  React.useEffect(() => {
+    issuesPropRef.current = issuesProp ?? [];
+  }, [issuesProp, issuesPropSignature]);
+
+  const hasRequest = Boolean(issuesRequest);
+
+  const repository = issuesRequest?.repository;
+  const owner = issuesRequest?.owner;
+  const repo = issuesRequest?.repo;
+  const state = issuesRequest?.state;
+  const labels = issuesRequest?.labels;
+  const limit = issuesRequest?.limit;
+  const page = issuesRequest?.page;
+  const token = issuesRequest?.token;
+
+  const requestKey = React.useMemo(() => {
+    if (!hasRequest) return "";
+    const tokenKey = normalizeOptionalString(token) ? "1" : "0";
+    return [
+      normalizeOptionalString(repository) ?? "",
+      normalizeOptionalString(owner) ?? "",
+      normalizeOptionalString(repo) ?? "",
+      state ?? "",
+      normalizeOptionalString(labels) ?? "",
+      String(limit ?? ""),
+      String(page ?? ""),
+      tokenKey,
+    ].join("|");
+  }, [
+    hasRequest,
+    labels,
+    limit,
+    owner,
+    page,
+    repo,
+    repository,
+    state,
+    token,
+  ]);
+
+  const requestSnapshot = React.useMemo(() => {
+    if (!hasRequest) return null;
+
+    return {
+      repository: normalizeOptionalString(repository),
+      owner: normalizeOptionalString(owner),
+      repo: normalizeOptionalString(repo),
+      state,
+      labels: normalizeOptionalString(labels),
+      limit,
+      page,
+      token: normalizeOptionalString(token),
+    };
+  }, [hasRequest, labels, limit, owner, page, repo, repository, state, token]);
+
+  const normalizedRequest = React.useMemo(() => {
+    const ownerRepo = resolveOwnerRepo({
+      repository: requestSnapshot?.repository,
+      owner: requestSnapshot?.owner,
+      repo: requestSnapshot?.repo,
+    });
+    if (!ownerRepo) return null;
+
+    return {
+      owner: ownerRepo.owner,
+      repo: ownerRepo.repo,
+      state: requestSnapshot?.state,
+      labels: requestSnapshot?.labels,
+      limit: requestSnapshot?.limit,
+      page: requestSnapshot?.page,
+      token: requestSnapshot?.token,
+    };
+  }, [requestSnapshot]);
+
   const pageSize = React.useMemo(() => {
-    if (!issuesRequest?.limit) return 20;
-    return Math.max(1, Math.min(issuesRequest.limit, 50));
-  }, [issuesRequest?.limit]);
+    const limit = normalizedRequest?.limit;
+    if (!limit) return 20;
+    return Math.max(1, Math.min(limit, 50));
+  }, [normalizedRequest?.limit]);
+
+  const requestIdRef = React.useRef(0);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   const fetchPage = React.useCallback(
     async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
-      if (!issuesRequest) return;
+      if (!normalizedRequest) return;
+
+      const requestId = ++requestIdRef.current;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       setIsLoading(true);
       setError(null);
@@ -276,8 +414,9 @@ export function IssueList({
           headers: {
             "content-type": "application/json",
           },
+          signal: controller.signal,
           body: JSON.stringify({
-            ...issuesRequest,
+            ...normalizedRequest,
             limit: pageSize,
             page,
           }),
@@ -285,9 +424,25 @@ export function IssueList({
 
         if (!response.ok) {
           const payload = (await response.json().catch(() => null)) as
-            | { error?: string }
+            | {
+                error?: string;
+                details?: {
+                  fieldErrors?: Record<string, string[] | undefined>;
+                  formErrors?: string[];
+                };
+              }
             | null;
-          throw new Error(payload?.error ?? `Request failed (${response.status})`);
+
+          const fieldError = payload?.details?.fieldErrors
+            ? Object.entries(payload.details.fieldErrors).find(
+                ([, value]) => (value?.length ?? 0) > 0,
+              )
+            : undefined;
+          const detail = fieldError ? `${fieldError[0]}: ${fieldError[1]?.[0]}` : null;
+
+          throw new Error(
+            `${payload?.error ?? `Request failed (${response.status})`}${detail ? ` (${detail})` : ""}`,
+          );
         }
 
         const payload = await response.json();
@@ -297,23 +452,32 @@ export function IssueList({
         }
 
         const next = parsed.data.issues;
+
+        if (requestId !== requestIdRef.current) return;
+
         setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
         setCurrentPage(page);
         setHasMore(next.length === pageSize);
       } catch (e) {
+        if (controller.signal.aborted) return;
+
+        if (requestId !== requestIdRef.current) return;
+
         const message = e instanceof Error ? e.message : String(e);
         setError(message);
       } finally {
-        setIsLoading(false);
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [issuesRequest, pageSize],
+    [normalizedRequest, pageSize],
   );
 
   React.useEffect(() => {
     // Precedence: explicit issues props override issuesRequest (no client-side pagination).
-    if ((issuesProp?.length ?? 0) > 0) {
-      setItems(issuesProp ?? []);
+    if (issuesPropLength > 0) {
+      setItems(issuesPropRef.current);
       setError(null);
       setIsLoading(false);
       setHasMore(false);
@@ -321,19 +485,41 @@ export function IssueList({
       return;
     }
 
-    if (!issuesRequest) {
+    if (!hasRequest) {
       setItems([]);
       setError(null);
       setHasMore(false);
       return;
     }
 
-    const startPage = issuesRequest.page ?? 1;
+    if (!normalizedRequest) {
+      setItems([]);
+      setError(
+        "Invalid request (missing repository). Provide owner+repo or a repository URL.",
+      );
+      setHasMore(false);
+      return;
+    }
+
+    const startPage = normalizedRequest.page ?? 1;
     setItems([]);
     setHasMore(false);
     setCurrentPage(startPage);
     void fetchPage({ page: startPage, mode: "replace" });
-  }, [fetchPage, issuesProp, issuesRequest]);
+  }, [
+    fetchPage,
+    hasRequest,
+    issuesPropLength,
+    issuesPropSignature,
+    normalizedRequest,
+    requestKey,
+  ]);
+
+  React.useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
@@ -370,7 +556,7 @@ export function IssueList({
               {...bodyPreviewProps}
             />
           ))}
-          {issuesRequest && hasMore ? (
+          {hasRequest && hasMore ? (
             <button
               type="button"
               onClick={() => {

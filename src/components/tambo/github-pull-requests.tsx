@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { parseGitHubUrl } from "@/lib/github";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, GitBranch, GitMerge } from "lucide-react";
 import * as React from "react";
@@ -60,13 +61,23 @@ const pullRequestsApiResponseSchema = z.object({
 
 const pullRequestsRequestSchema = z
   .object({
-    owner: z.string().describe("GitHub repository owner/organization name"),
-    repo: z.string().describe("GitHub repository name"),
+    repository: z
+      .string()
+      .optional()
+      .describe(
+        "Optional repository identifier (owner/repo or URL). If provided, owner/repo can be omitted.",
+      ),
+    owner: z
+      .string()
+      .optional()
+      .describe("GitHub repository owner/organization name"),
+    repo: z.string().optional().describe("GitHub repository name"),
     state: z
       .enum(["open", "closed", "all"])
       .optional()
       .describe("Filter pull requests by state"),
     limit: z
+      .coerce
       .number()
       .int()
       .positive()
@@ -74,6 +85,7 @@ const pullRequestsRequestSchema = z
       .optional()
       .describe("Number of pull requests to fetch per page (default 20, max 50)"),
     page: z
+      .coerce
       .number()
       .int()
       .positive()
@@ -88,6 +100,31 @@ const pullRequestsRequestSchema = z
   .describe(
     "A GitHub pull requests request. Prefer passing this instead of a large pullRequests array.",
   );
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function resolveOwnerRepo(input: {
+  repository?: string;
+  owner?: string;
+  repo?: string;
+}): { owner: string; repo: string } | null {
+  const owner = normalizeOptionalString(input.owner);
+  const repo = normalizeOptionalString(input.repo);
+
+  if (owner && repo) return { owner, repo };
+
+  const candidate =
+    normalizeOptionalString(input.repository) ??
+    normalizeOptionalString(input.repo) ??
+    normalizeOptionalString(input.owner);
+
+  if (!candidate) return null;
+  return parseGitHubUrl(candidate);
+}
 
 export const pullRequestCardSchema = githubPullRequestSchema
   .extend({
@@ -285,14 +322,110 @@ export function PullRequestList({
   );
   const [hasMore, setHasMore] = React.useState(false);
 
+  const pullRequestsPropLength = pullRequestsProp?.length ?? 0;
+  const pullRequestsPropFirst =
+    pullRequestsPropLength > 0 ? pullRequestsProp?.[0] : undefined;
+  const pullRequestsPropLast =
+    pullRequestsPropLength > 0
+      ? pullRequestsProp?.[pullRequestsPropLength - 1]
+      : undefined;
+
+  const pullRequestsPropSignature = React.useMemo(() => {
+    if (pullRequestsPropLength === 0) return "0";
+    const firstKey =
+      pullRequestsPropFirst?.htmlUrl ??
+      `n:${pullRequestsPropFirst?.number ?? ""}`;
+    const lastKey =
+      pullRequestsPropLast?.htmlUrl ?? `n:${pullRequestsPropLast?.number ?? ""}`;
+    return `${pullRequestsPropLength}|${firstKey}|${lastKey}`;
+  }, [
+    pullRequestsPropFirst?.htmlUrl,
+    pullRequestsPropFirst?.number,
+    pullRequestsPropLast?.htmlUrl,
+    pullRequestsPropLast?.number,
+    pullRequestsPropLength,
+  ]);
+
+  const pullRequestsPropRef = React.useRef(pullRequestsProp ?? []);
+  React.useEffect(() => {
+    pullRequestsPropRef.current = pullRequestsProp ?? [];
+  }, [pullRequestsProp, pullRequestsPropSignature]);
+
+  const hasRequest = Boolean(pullRequestsRequest);
+
+  const repository = pullRequestsRequest?.repository;
+  const owner = pullRequestsRequest?.owner;
+  const repo = pullRequestsRequest?.repo;
+  const state = pullRequestsRequest?.state;
+  const limit = pullRequestsRequest?.limit;
+  const page = pullRequestsRequest?.page;
+  const token = pullRequestsRequest?.token;
+
+  const requestKey = React.useMemo(() => {
+    if (!hasRequest) return "";
+    const tokenKey = normalizeOptionalString(token) ? "1" : "0";
+    return [
+      normalizeOptionalString(repository) ?? "",
+      normalizeOptionalString(owner) ?? "",
+      normalizeOptionalString(repo) ?? "",
+      state ?? "",
+      String(limit ?? ""),
+      String(page ?? ""),
+      tokenKey,
+    ].join("|");
+  }, [hasRequest, limit, owner, page, repo, repository, state, token]);
+
+  const requestSnapshot = React.useMemo(() => {
+    if (!hasRequest) return null;
+
+    return {
+      repository: normalizeOptionalString(repository),
+      owner: normalizeOptionalString(owner),
+      repo: normalizeOptionalString(repo),
+      state,
+      limit,
+      page,
+      token: normalizeOptionalString(token),
+    };
+  }, [hasRequest, limit, owner, page, repo, repository, state, token]);
+
+  const normalizedRequest = React.useMemo(() => {
+    const ownerRepo = resolveOwnerRepo({
+      repository: requestSnapshot?.repository,
+      owner: requestSnapshot?.owner,
+      repo: requestSnapshot?.repo,
+    });
+
+    if (!ownerRepo) return null;
+
+    return {
+      owner: ownerRepo.owner,
+      repo: ownerRepo.repo,
+      state: requestSnapshot?.state,
+      limit: requestSnapshot?.limit,
+      page: requestSnapshot?.page,
+      token: requestSnapshot?.token,
+    };
+  }, [requestSnapshot]);
+
   const pageSize = React.useMemo(() => {
-    if (!pullRequestsRequest?.limit) return 20;
-    return Math.max(1, Math.min(pullRequestsRequest.limit, 50));
-  }, [pullRequestsRequest?.limit]);
+    const normalizedLimit = normalizedRequest?.limit;
+    if (!normalizedLimit) return 20;
+    return Math.max(1, Math.min(normalizedLimit, 50));
+  }, [normalizedRequest?.limit]);
+
+  const requestIdRef = React.useRef(0);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   const fetchPage = React.useCallback(
     async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
-      if (!pullRequestsRequest) return;
+      if (!normalizedRequest) return;
+
+      const requestId = ++requestIdRef.current;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       setIsLoading(true);
       setError(null);
@@ -303,8 +436,9 @@ export function PullRequestList({
           headers: {
             "content-type": "application/json",
           },
+          signal: controller.signal,
           body: JSON.stringify({
-            ...pullRequestsRequest,
+            ...normalizedRequest,
             limit: pageSize,
             page,
           }),
@@ -312,9 +446,25 @@ export function PullRequestList({
 
         if (!response.ok) {
           const payload = (await response.json().catch(() => null)) as
-            | { error?: string }
+            | {
+                error?: string;
+                details?: {
+                  fieldErrors?: Record<string, string[] | undefined>;
+                  formErrors?: string[];
+                };
+              }
             | null;
-          throw new Error(payload?.error ?? `Request failed (${response.status})`);
+
+          const fieldError = payload?.details?.fieldErrors
+            ? Object.entries(payload.details.fieldErrors).find(
+                ([, value]) => (value?.length ?? 0) > 0,
+              )
+            : undefined;
+          const detail = fieldError ? `${fieldError[0]}: ${fieldError[1]?.[0]}` : null;
+
+          throw new Error(
+            `${payload?.error ?? `Request failed (${response.status})`}${detail ? ` (${detail})` : ""}`,
+          );
         }
 
         const payload = await response.json();
@@ -324,23 +474,32 @@ export function PullRequestList({
         }
 
         const next = parsed.data.pullRequests;
+
+        if (requestId !== requestIdRef.current) return;
+
         setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
         setCurrentPage(page);
         setHasMore(next.length === pageSize);
       } catch (e) {
+        if (controller.signal.aborted) return;
+
+        if (requestId !== requestIdRef.current) return;
+
         const message = e instanceof Error ? e.message : String(e);
         setError(message);
       } finally {
-        setIsLoading(false);
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [pageSize, pullRequestsRequest],
+    [normalizedRequest, pageSize],
   );
 
   React.useEffect(() => {
     // Precedence: explicit pullRequests props override pullRequestsRequest (no client-side pagination).
-    if ((pullRequestsProp?.length ?? 0) > 0) {
-      setItems(pullRequestsProp ?? []);
+    if (pullRequestsPropLength > 0) {
+      setItems(pullRequestsPropRef.current);
       setError(null);
       setIsLoading(false);
       setHasMore(false);
@@ -348,19 +507,41 @@ export function PullRequestList({
       return;
     }
 
-    if (!pullRequestsRequest) {
+    if (!hasRequest) {
       setItems([]);
       setError(null);
       setHasMore(false);
       return;
     }
 
-    const startPage = pullRequestsRequest.page ?? 1;
+    if (!normalizedRequest) {
+      setItems([]);
+      setError(
+        "Invalid request (missing repository). Provide owner+repo or a repository URL.",
+      );
+      setHasMore(false);
+      return;
+    }
+
+    const startPage = normalizedRequest.page ?? 1;
     setItems([]);
     setHasMore(false);
     setCurrentPage(startPage);
     void fetchPage({ page: startPage, mode: "replace" });
-  }, [fetchPage, pullRequestsProp, pullRequestsRequest]);
+  }, [
+    fetchPage,
+    hasRequest,
+    normalizedRequest,
+    pullRequestsPropLength,
+    pullRequestsPropSignature,
+    requestKey,
+  ]);
+
+  React.useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
@@ -397,7 +578,7 @@ export function PullRequestList({
               {...bodyPreviewProps}
             />
           ))}
-          {pullRequestsRequest && hasMore ? (
+          {hasRequest && hasMore ? (
             <button
               type="button"
               onClick={() => {
