@@ -325,13 +325,20 @@ export function PullRequestList({
   const pullRequestsPropLength = pullRequestsProp?.length ?? 0;
   const hasRequest = Boolean(pullRequestsRequest);
 
+  const repository = pullRequestsRequest?.repository;
+  const owner = pullRequestsRequest?.owner;
+  const repo = pullRequestsRequest?.repo;
+  const state = pullRequestsRequest?.state;
+  const limit = pullRequestsRequest?.limit;
+  const page = pullRequestsRequest?.page;
+
   const normalizedRequest = React.useMemo(() => {
-    if (!pullRequestsRequest) return null;
+    if (!hasRequest) return null;
 
     const ownerRepo = resolveOwnerRepo({
-      repository: pullRequestsRequest.repository,
-      owner: pullRequestsRequest.owner,
-      repo: pullRequestsRequest.repo,
+      repository,
+      owner,
+      repo,
     });
 
     if (!ownerRepo) return null;
@@ -339,17 +346,18 @@ export function PullRequestList({
     return {
       owner: ownerRepo.owner,
       repo: ownerRepo.repo,
-      state: pullRequestsRequest.state,
-      limit: pullRequestsRequest.limit,
-      page: pullRequestsRequest.page,
+      state,
+      limit,
+      page,
     };
   }, [
-    pullRequestsRequest?.limit,
-    pullRequestsRequest?.owner,
-    pullRequestsRequest?.page,
-    pullRequestsRequest?.repo,
-    pullRequestsRequest?.repository,
-    pullRequestsRequest?.state,
+    hasRequest,
+    limit,
+    owner,
+    page,
+    repo,
+    repository,
+    state,
   ]);
 
   const pageSize = React.useMemo(() => {

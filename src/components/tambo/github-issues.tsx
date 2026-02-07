@@ -296,13 +296,21 @@ export function IssueList({
   const issuesPropLength = issuesProp?.length ?? 0;
   const hasRequest = Boolean(issuesRequest);
 
+  const repository = issuesRequest?.repository;
+  const owner = issuesRequest?.owner;
+  const repo = issuesRequest?.repo;
+  const state = issuesRequest?.state;
+  const labels = issuesRequest?.labels;
+  const limit = issuesRequest?.limit;
+  const page = issuesRequest?.page;
+
   const normalizedRequest = React.useMemo(() => {
-    if (!issuesRequest) return null;
+    if (!hasRequest) return null;
 
     const ownerRepo = resolveOwnerRepo({
-      repository: issuesRequest.repository,
-      owner: issuesRequest.owner,
-      repo: issuesRequest.repo,
+      repository,
+      owner,
+      repo,
     });
 
     if (!ownerRepo) return null;
@@ -310,19 +318,20 @@ export function IssueList({
     return {
       owner: ownerRepo.owner,
       repo: ownerRepo.repo,
-      state: issuesRequest.state,
-      labels: normalizeOptionalString(issuesRequest.labels),
-      limit: issuesRequest.limit,
-      page: issuesRequest.page,
+      state,
+      labels: normalizeOptionalString(labels),
+      limit,
+      page,
     };
   }, [
-    issuesRequest?.labels,
-    issuesRequest?.limit,
-    issuesRequest?.owner,
-    issuesRequest?.page,
-    issuesRequest?.repo,
-    issuesRequest?.repository,
-    issuesRequest?.state,
+    hasRequest,
+    labels,
+    limit,
+    owner,
+    page,
+    repo,
+    repository,
+    state,
   ]);
 
   const pageSize = React.useMemo(() => {
