@@ -195,39 +195,37 @@ function RepoFindingsCanvasBase({
     setDraftRefs("");
   };
 
-  if (!effectiveIsOpen) {
-    // Keep mounted (hidden) so the workspace panel can open this interactable later.
-    return <div className="hidden" />;
-  }
-
   return (
-    <section className="h-full bg-card">
-      <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15">
-              <AlertTriangle className="w-4 h-4" />
+    // Keep mounted (hidden) so the workspace panel can open this interactable later.
+    <section className={cn("h-full bg-card", !effectiveIsOpen && "hidden")}>
+      {!effectiveIsOpen ? null : (
+        <>
+          <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div className="font-medium text-foreground text-sm truncate">{title}</div>
+              </div>
+              {instructions ? (
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {instructions}
+                </div>
+              ) : null}
             </div>
-            <div className="font-medium text-foreground text-sm truncate">{title}</div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {persistedState.isSaving ? (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Saving</span>
+                </div>
+              ) : null}
+            </div>
           </div>
-          {instructions ? (
-            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-              {instructions}
-            </div>
-          ) : null}
-        </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {persistedState.isSaving ? (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Saving</span>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="p-4 space-y-3">
+          <div className="p-4 space-y-3">
         <div className="rounded-xl border border-muted-foreground/20 bg-muted/10 p-3">
           <div className="grid grid-cols-1 gap-2">
             <input
@@ -476,6 +474,8 @@ function RepoFindingsCanvasBase({
           ))}
         </div>
       </div>
+        </>
+      )}
     </section>
   );
 }

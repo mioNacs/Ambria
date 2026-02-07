@@ -60,6 +60,9 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   const visibleTab: WorkspaceTab =
     role === "maintainer" ? "maintainer" : role === "contributor" ? "contributor" : tab;
 
+  const activeWorkboard: InteractableComponentName =
+    visibleTab === "maintainer" ? "MaintainerTriageCanvas" : "ContributorPlanningCanvas";
+
   React.useEffect(() => {
     if (role === "contributor") {
       setTab("contributor");
@@ -107,13 +110,15 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   React.useEffect(() => {
     if (!pendingFocus) return;
 
-    const timeout = setTimeout(() => setPendingFocus(null), 2000);
     const interactable = getInteractable(pendingFocus);
-    if (!interactable) return () => clearTimeout(timeout);
+    if (interactable) {
+      clearInteractableSelections();
+      setInteractableSelected(interactable.id, true);
+      setPendingFocus(null);
+      return;
+    }
 
-    clearInteractableSelections();
-    setInteractableSelected(interactable.id, true);
-    setPendingFocus(null);
+    const timeout = setTimeout(() => setPendingFocus(null), 2000);
     return () => clearTimeout(timeout);
   }, [
     pendingFocus,
@@ -264,11 +269,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                       )}
                       onClick={() => {
                         setView("workboards");
-                        focusInteractable(
-                          visibleTab === "maintainer"
-                            ? "MaintainerTriageCanvas"
-                            : "ContributorPlanningCanvas",
-                        );
+                        focusInteractable(activeWorkboard);
                       }}
                       title="Open workboards"
                     >
@@ -299,21 +300,11 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                         "bg-transparent border-muted-foreground/20 text-muted-foreground",
                         "hover:bg-muted/30 hover:text-foreground",
                       )}
-                      onClick={() =>
-                        focusInteractable(
-                          visibleTab === "maintainer"
-                            ? "MaintainerTriageCanvas"
-                            : "ContributorPlanningCanvas",
-                        )
-                      }
+                      onClick={() => focusInteractable(activeWorkboard)}
                       title="Focus for assistant"
                     >
                       {(
-                        getInteractable(
-                          visibleTab === "maintainer"
-                            ? "MaintainerTriageCanvas"
-                            : "ContributorPlanningCanvas",
-                        )?.isSelected ?? false
+                        getInteractable(activeWorkboard)?.isSelected ?? false
                       ) ? (
                         <Target className="w-4 h-4 text-primary" />
                       ) : (
@@ -453,11 +444,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                 )}
                 onClick={() => {
                   if (view === "workboards") {
-                    focusInteractable(
-                      visibleTab === "maintainer"
-                        ? "MaintainerTriageCanvas"
-                        : "ContributorPlanningCanvas",
-                    );
+                    focusInteractable(activeWorkboard);
                     return;
                   }
                   if (view === "repoPins") {
