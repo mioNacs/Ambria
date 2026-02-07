@@ -105,13 +105,18 @@ const MessageSuggestions = React.forwardRef<
     const hasUserMessages =
       thread?.messages?.some((message) => message.role === "user") ?? false;
 
-    // Combine initial and generated suggestions, but only use initial ones before the first user message
+    // Combine initial and generated suggestions.
     const suggestions = React.useMemo(() => {
-      // Only use pre-seeded suggestions before the first user message
-      if (!hasUserMessages && initialSuggestions.length > 0) {
-        return initialSuggestions.slice(0, maxSuggestions);
+      if (initialSuggestions.length > 0) {
+        if (!hasUserMessages) {
+          return initialSuggestions.slice(0, maxSuggestions);
+        }
+
+        if (generatedSuggestions.length === 0) {
+          return initialSuggestions.slice(0, maxSuggestions);
+        }
       }
-      // Otherwise use generated suggestions
+
       return generatedSuggestions;
     }, [
       hasUserMessages,

@@ -17,10 +17,14 @@ export default function Dashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const authProvider = user?.app_metadata?.provider;
-  const githubToken =
-    session?.provider_token && (authProvider === "github" || !authProvider)
-      ? session.provider_token
-      : undefined;
+  const authProviders = Array.isArray(user?.app_metadata?.providers)
+    ? user.app_metadata.providers
+    : [];
+  const isGitHubAuthProvider =
+    authProvider === "github" || authProviders.includes("github");
+  const githubToken = isGitHubAuthProvider
+    ? session?.provider_token ?? undefined
+    : undefined;
 
   const askAmbriaContextKey = user?.id
     ? `ask-ambria-dashboard:${user.id}`

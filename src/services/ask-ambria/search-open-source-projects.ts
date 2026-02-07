@@ -21,6 +21,11 @@ export interface OpenSourceProject {
   updatedAt: string;
 }
 
+const PRIMARY_PUSHED_WINDOW_DAYS = 365;
+const RELAXED_PUSHED_WINDOW_DAYS = PRIMARY_PUSHED_WINDOW_DAYS * 2;
+const PRIMARY_MIN_STARS = 50;
+const RELAXED_MIN_STARS = 10;
+
 function getIsoDateDaysAgo(daysAgo: number): string {
   const msAgo = daysAgo * 24 * 60 * 60 * 1000;
   return new Date(Date.now() - msAgo).toISOString().slice(0, 10);
@@ -99,15 +104,15 @@ export async function searchOpenSourceProjects(params: {
   limit?: number;
   token?: string;
 }): Promise<{ query: string; totalCount: number; projects: OpenSourceProject[] }> {
-  const primaryPushedAfter = getIsoDateDaysAgo(365);
-  const relaxedPushedAfter = getIsoDateDaysAgo(365 * 2);
+  const primaryPushedAfter = getIsoDateDaysAgo(PRIMARY_PUSHED_WINDOW_DAYS);
+  const relaxedPushedAfter = getIsoDateDaysAgo(RELAXED_PUSHED_WINDOW_DAYS);
 
   const primaryQuery = buildRepoSearchQuery({
     techStack: params.techStack,
     skillLevel: params.skillLevel,
     interest: params.interest,
     pushedAfter: primaryPushedAfter,
-    minStars: 50,
+    minStars: PRIMARY_MIN_STARS,
     requireIssues: true,
   });
 
@@ -116,7 +121,7 @@ export async function searchOpenSourceProjects(params: {
         techStack: params.techStack,
         skillLevel: params.skillLevel,
         pushedAfter: primaryPushedAfter,
-        minStars: 50,
+        minStars: PRIMARY_MIN_STARS,
         requireIssues: true,
       })
     : null;
@@ -125,7 +130,7 @@ export async function searchOpenSourceProjects(params: {
     techStack: params.techStack,
     skillLevel: params.skillLevel,
     pushedAfter: relaxedPushedAfter,
-    minStars: 10,
+    minStars: RELAXED_MIN_STARS,
     requireIssues: false,
   });
 

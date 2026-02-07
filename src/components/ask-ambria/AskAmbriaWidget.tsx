@@ -222,9 +222,14 @@ export function AskAmbriaWidget({ contextKey, githubToken }: AskAmbriaWidgetProp
                 if (element.hasAttribute("hidden")) return false;
                 if (element.hasAttribute("inert")) return false;
 
+                if (typeof window === "undefined" || !window.getComputedStyle) {
+                  return true;
+                }
+
                 const style = window.getComputedStyle(element);
                 if (style.display === "none") return false;
                 if (style.visibility === "hidden") return false;
+                if (style.visibility === "collapse") return false;
 
                 return true;
               };
