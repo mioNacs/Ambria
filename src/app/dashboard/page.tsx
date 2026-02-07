@@ -17,11 +17,7 @@ export default function Dashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const authProvider = user?.app_metadata?.provider;
-  const authProviders = Array.isArray(user?.app_metadata?.providers)
-    ? user.app_metadata.providers
-    : [];
-  const isGitHubAuthProvider =
-    authProvider === "github" || authProviders.includes("github");
+  const isGitHubAuthProvider = authProvider === "github";
   const githubToken = isGitHubAuthProvider
     ? session?.provider_token ?? undefined
     : undefined;

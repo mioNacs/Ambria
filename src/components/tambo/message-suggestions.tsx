@@ -107,16 +107,9 @@ const MessageSuggestions = React.forwardRef<
 
     // Combine initial and generated suggestions.
     const suggestions = React.useMemo(() => {
-      if (initialSuggestions.length > 0) {
-        if (!hasUserMessages) {
-          return initialSuggestions.slice(0, maxSuggestions);
-        }
-
-        if (generatedSuggestions.length === 0) {
-          return initialSuggestions.slice(0, maxSuggestions);
-        }
+      if (!hasUserMessages && initialSuggestions.length > 0) {
+        return initialSuggestions.slice(0, maxSuggestions);
       }
-
       return generatedSuggestions;
     }, [
       hasUserMessages,
