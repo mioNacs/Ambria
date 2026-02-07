@@ -28,6 +28,7 @@ export function useWorkspaceThreads(workspaceId: string) {
 
     const [workspaceThreads, setWorkspaceThreads] = useState<WorkspaceThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
 
     const currentWorkspaceThread = useMemo(() => {
         if (!currentThread?.id) return null;
@@ -53,6 +54,7 @@ export function useWorkspaceThreads(workspaceId: string) {
 
         try {
             setIsLoading(true);
+            setError(null);
             const { data, error } = await supabase
                 .from("workspace_threads")
                 .select("*")
@@ -63,7 +65,9 @@ export function useWorkspaceThreads(workspaceId: string) {
 
             setWorkspaceThreads(data || []);
         } catch (err) {
-            console.error("Error fetching workspace threads:", err);
+            const nextError = err instanceof Error ? err : new Error("Failed to load threads");
+            setError(nextError);
+            console.error("Error fetching workspace threads:", nextError);
         } finally {
             setIsLoading(false);
         }
@@ -300,6 +304,7 @@ export function useWorkspaceThreads(workspaceId: string) {
         threads: workspaceThreads,
         currentThread,
         isLoading: isLoading || isLoadingTambo,
+        error,
         switchToThread,
         createNewThread,
         updateThreadTitle,

@@ -7,11 +7,11 @@ import { ApiKeyCheck } from "@/components/ApiKeyCheck";
 import { WorkspaceChat } from "@/components/workspace/WorkspaceChat";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { WorkspaceCanvasPanel } from "@/components/workspace/WorkspaceCanvasPanel";
+import { WorkspacePageSkeleton } from "@/components/workspace/WorkspacePageSkeleton";
 import { useWorkspaces, Workspace } from "@/hooks/useWorkspaces";
 import { useAuth } from "@/hooks/useAuth";
 import { getComponentsForRole, getToolsForRole } from "@/lib/tambo";
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
-import { Loader2 } from "lucide-react";
 
 export default function WorkspacePage() {
     const params = useParams();
@@ -53,21 +53,19 @@ export default function WorkspacePage() {
 
     // Loading state
     if (authLoading || isLoading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-            </div>
-        );
+        return <WorkspacePageSkeleton />;
     }
 
     // Error state
     if (error || !workspace) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-                <p className="text-red-500 mb-4">{error || "Workspace not found"}</p>
+                <p className="text-red-500 mb-4" role="alert">
+                    {error || "Workspace not found"}
+                </p>
                 <button
                     onClick={() => router.push("/dashboard")}
-                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
                 >
                     Go to Dashboard
                 </button>

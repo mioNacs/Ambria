@@ -6,6 +6,7 @@ import { useWorkspaceThreads, WorkspaceThread } from "@/hooks/useWorkspaceThread
 import { NEW_THREAD_SHORTCUT } from "@/lib/shortcuts";
 import { getFallbackThreadTitle } from "@/lib/thread-titles";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface WorkspaceThreadHistoryProps {
     workspaceId: string;
@@ -20,9 +21,11 @@ export function WorkspaceThreadHistory({
         threads,
         currentThread,
         isLoading,
+        error,
         switchToThread,
         createNewThread,
         deleteThread,
+        refetch,
     } = useWorkspaceThreads(workspaceId);
 
     const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -139,27 +142,67 @@ export function WorkspaceThreadHistory({
             {/* Thread List */}
             <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                    </div>
-                ) : filteredThreads.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                        {searchQuery ? "No threads found" : "No conversations yet"}
+                    <div className="px-2 py-3" aria-busy="true">
+                        <span className="sr-only" role="status" aria-live="polite">
+                            Loading threads…
+                        </span>
+                        <div className="space-y-2">
+                            {[...Array(8)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                                >
+                                    <Skeleton className="h-4 w-4 rounded-md" />
+                                    <Skeleton className="h-4 w-40 flex-1 rounded-lg" />
+                                    <Skeleton className="h-3 w-10 rounded-lg" />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : (
-                    <div className="space-y-1 px-2">
-                        {filteredThreads.map((thread) => (
-                            <ThreadItem
-                                key={thread.id}
-                                thread={thread}
-                                threadLabel={getThreadLabel(thread)}
-                                isActive={currentThread?.id === thread.tambo_thread_id}
-                                onSelect={() => switchToThread(thread.tambo_thread_id)}
-                                onDelete={() => deleteThread(thread.tambo_thread_id)}
-                                formatDate={formatDate}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        {error ? (
+                            <div
+                                className="mx-2 mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-900"
+                                role="alert"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs font-medium">Error loading threads</div>
+                                    <button
+                                        type="button"
+                                        onClick={refetch}
+                                        className="text-xs font-medium text-rose-900 hover:text-rose-950 underline underline-offset-2"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {filteredThreads.length === 0 ? (
+                            <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                                {error
+                                    ? "Couldn’t load conversations"
+                                    : searchQuery
+                                        ? "No threads found"
+                                        : "No conversations yet"}
+                            </div>
+                        ) : (
+                            <div className="space-y-1 px-2">
+                                {filteredThreads.map((thread) => (
+                                    <ThreadItem
+                                        key={thread.id}
+                                        thread={thread}
+                                        threadLabel={getThreadLabel(thread)}
+                                        isActive={currentThread?.id === thread.tambo_thread_id}
+                                        onSelect={() => switchToThread(thread.tambo_thread_id)}
+                                        onDelete={() => deleteThread(thread.tambo_thread_id)}
+                                        formatDate={formatDate}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

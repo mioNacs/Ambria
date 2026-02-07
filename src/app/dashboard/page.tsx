@@ -2,17 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { WorkspaceList } from "@/components/workspace/WorkspaceList";
 import { AddWorkspaceModal } from "@/components/workspace/AddWorkspaceModal";
 
 export default function Dashboard() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { workspaces, isLoading: workspacesLoading, refetch } = useWorkspaces();
+  const {
+    workspaces,
+    isLoading: workspacesLoading,
+    error: workspacesError,
+    refetch,
+  } = useWorkspaces();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Redirect to landing if not authenticated
@@ -24,14 +30,7 @@ export default function Dashboard() {
 
   // Show loading while checking auth
   if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-600">
-          <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
-          <span className="text-sm">Checking your session…</span>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton label="Checking your session…" />;
   }
 
   return (
@@ -102,11 +101,35 @@ export default function Dashboard() {
         </div>
 
         {/* Workspace List */}
-        <WorkspaceList
-          workspaces={workspaces}
-          isLoading={workspacesLoading}
-          onAddClick={() => setIsAddModalOpen(true)}
-        />
+        {workspacesError ? (
+          <div
+            className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 text-rose-900"
+            role="alert"
+          >
+            <div className="text-sm font-semibold">Couldn’t load workspaces</div>
+            <div className="mt-1 text-sm text-rose-800">Please try again.</div>
+            {process.env.NODE_ENV !== "production" &&
+            typeof workspacesError.message === "string" &&
+            workspacesError.message.trim() ? (
+              <div className="mt-1 text-xs text-rose-900/80">
+                Details: {workspacesError.message.trim()}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={refetch}
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <WorkspaceList
+            workspaces={workspaces}
+            isLoading={workspacesLoading}
+            onAddClick={() => setIsAddModalOpen(true)}
+          />
+        )}
       </main>
 
       {/* Add Workspace Modal */}

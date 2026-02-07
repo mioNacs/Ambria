@@ -2,6 +2,7 @@
 
 import { Workspace, useWorkspaces } from "@/hooks/useWorkspaces";
 import { WorkspaceCard } from "./WorkspaceCard";
+import { WorkspaceCardSkeleton } from "./WorkspaceCardSkeleton";
 import { Plus, FolderGit2, Sparkles } from "lucide-react";
 
 interface WorkspaceListProps {
@@ -19,45 +20,15 @@ export function WorkspaceList({
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                    <div
-                        key={i}
-                        className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden"
-                        style={{ animationDelay: `${i * 0.1}s` }}
-                    >
-                        {/* Gradient accent */}
-                        <div className="h-1.5 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-shimmer" />
-                        
-                        <div className="p-6">
-                            {/* Header skeleton */}
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1">
-                                    <div className="h-5 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-lg w-2/3 mb-2 animate-shimmer" />
-                                    <div className="h-4 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-lg w-1/3 animate-shimmer" style={{ animationDelay: '0.1s' }} />
-                                </div>
-                            </div>
-                            
-                            {/* Description skeleton */}
-                            <div className="space-y-2 mb-4">
-                                <div className="h-3 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-lg animate-shimmer" style={{ animationDelay: '0.2s' }} />
-                                <div className="h-3 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-lg w-4/5 animate-shimmer" style={{ animationDelay: '0.3s' }} />
-                            </div>
-                            
-                            {/* Badge skeleton */}
-                            <div className="h-7 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full w-24 mb-4 animate-shimmer" style={{ animationDelay: '0.4s' }} />
-                            
-                            {/* Stats skeleton */}
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                <div className="flex gap-4">
-                                    <div className="h-4 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-lg w-12 animate-shimmer" style={{ animationDelay: '0.5s' }} />
-                                    <div className="h-4 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-lg w-16 animate-shimmer" style={{ animationDelay: '0.6s' }} />
-                                </div>
-                                <div className="h-4 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-lg w-12 animate-shimmer" style={{ animationDelay: '0.7s' }} />
-                            </div>
-                        </div>
-                    </div>
-                ))}
+            <div aria-busy="true">
+                <span className="sr-only" role="status" aria-live="polite">
+                    Loading workspaces…
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <WorkspaceCardSkeleton key={i} />
+                    ))}
+                </div>
             </div>
         );
     }
