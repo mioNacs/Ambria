@@ -3,8 +3,7 @@ import * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-export interface WorkspaceCardSkeletonProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+export type WorkspaceCardSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function WorkspaceCardSkeleton({
   className,
