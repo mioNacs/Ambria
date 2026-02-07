@@ -120,7 +120,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
         if (!c) continue;
         if (c.name !== componentName) continue;
         const candidateWorkspaceId = (c.props as WorkspaceScopedProps).workspaceId;
-        if (typeof candidateWorkspaceId !== "string") continue;
         if (candidateWorkspaceId !== workspaceId) continue;
         return c;
       }
@@ -135,6 +134,8 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   const pinsIsOpen = getInteractable("RepoPinsCanvas")?.state?.isOpen === true;
   const findingsIsOpen = getInteractable("RepoFindingsCanvas")?.state?.isOpen === true;
 
+  const anyCanvasOpen = contributorIsOpen || maintainerIsOpen || pinsIsOpen || findingsIsOpen;
+
   const viewFromState: CanvasView = pinsIsOpen
     ? "repoPins"
     : findingsIsOpen
@@ -144,6 +145,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
         : "list";
 
   const lastViewFromStateRef = React.useRef<CanvasView>(viewFromState);
+  const lastAnyCanvasOpenRef = React.useRef<boolean>(anyCanvasOpen);
 
   React.useEffect(() => {
     if (suppressStateNavigationRef.current) return;
@@ -167,6 +169,8 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   React.useEffect(() => {
     const prevViewFromState = lastViewFromStateRef.current;
     lastViewFromStateRef.current = viewFromState;
+    const prevAnyCanvasOpen = lastAnyCanvasOpenRef.current;
+    lastAnyCanvasOpenRef.current = anyCanvasOpen;
 
     // If the panel is collapsed, auto-expand whenever we're explicitly opening a canvas
     // (`pendingOpen`) or when the active view changes away from `list` (AI/state-driven).
@@ -178,8 +182,13 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
     if (prevViewFromState !== viewFromState && viewFromState !== "list") {
       setIsCollapsed(false);
+      return;
     }
-  }, [isCollapsed, pendingOpen, viewFromState]);
+
+    if (!prevAnyCanvasOpen && anyCanvasOpen) {
+      setIsCollapsed(false);
+    }
+  }, [anyCanvasOpen, isCollapsed, pendingOpen, viewFromState]);
 
   React.useEffect(() => {
     if (role !== "both") return;
@@ -338,8 +347,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     },
     [closeAllCanvases, setIsOpen],
   );
-
-  const anyCanvasOpen = contributorIsOpen || maintainerIsOpen || pinsIsOpen || findingsIsOpen;
 
   React.useEffect(() => {
     if (!anyCanvasOpen) {
