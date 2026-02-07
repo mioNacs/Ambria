@@ -5,6 +5,7 @@ const PUBLIC_GITHUB_API_ROUTES = new Set([
     "/api/github/issues",
     "/api/github/pull-requests",
     "/api/github/pull-request-files",
+    "/api/github/pull-request-info",
 ]);
 
 export async function updateSession(request: NextRequest) {

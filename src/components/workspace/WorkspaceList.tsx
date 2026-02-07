@@ -78,7 +78,7 @@ export function WorkspaceList({
                     Welcome to Your Workspaces
                 </h3>
                 <p className="text-gray-600 text-center mb-8 max-w-md leading-relaxed">
-                    Start by adding a GitHub repository. You'll be able to chat with AI about issues, pull requests, and collaborate more effectively.
+                    Start by adding a GitHub repository. You&apos;ll be able to chat with AI about issues, pull requests, and collaborate more effectively.
                 </p>
                 
                 {/* Features list */}

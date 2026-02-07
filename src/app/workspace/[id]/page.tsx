@@ -85,11 +85,19 @@ export default function WorkspacePage() {
 
     const hasGitHubWriteAccess =
         !!session?.provider_token && workspace.detected_access !== "read";
+
+    const configuredRole =
+        workspace.role === "contributor" ||
+        workspace.role === "maintainer" ||
+        workspace.role === "both"
+            ? workspace.role
+            : "contributor";
+
     const effectiveRole =
-        (workspace.role === "maintainer" || workspace.role === "both") &&
+        (configuredRole === "maintainer" || configuredRole === "both") &&
             !hasGitHubWriteAccess
             ? "contributor"
-            : workspace.role;
+            : configuredRole;
 
     return (
         <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -130,7 +138,7 @@ export default function WorkspacePage() {
                             repo: workspace.repo_name,
                             token: session?.provider_token ?? undefined,
                             instructions:
-                                "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests, getIssueComments, getRepoMaintainers), always use these credentials. For long lists, prefer rendering IssueList/PullRequestList via issuesRequest/pullRequestsRequest (do not pass tokens in component props). For ANY write actions (createRepoIssue, createRepoPullRequest, createIssueComment, setIssueAssignees, closeRepoIssue), you MUST first render the corresponding confirmation component (GitHubCreateIssue / GitHubCreatePullRequest / GitHubCreateComment / ConfirmAssignIssue / ConfirmCloseIssue) and let the user click confirm. Never call write tools directly without a real confirmationId (confirmation tokens are short-lived and single-use).",
+                                "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests, getIssueComments, getRepoMaintainers), always use these credentials. For long lists, prefer rendering IssueList/PullRequestList via issuesRequest/pullRequestsRequest (do not pass tokens in component props). For ANY write actions (createRepoIssue, createRepoPullRequest, createIssueComment, setIssueAssignees, closeRepoIssue, mergePullRequest, closePullRequest), you MUST first render the corresponding confirmation component (GitHubCreateIssue / GitHubCreatePullRequest / GitHubCreateComment / ConfirmAssignIssue / ConfirmCloseIssue / ConfirmMergePR / ConfirmClosePR) and let the user click confirm. Never call write tools directly without a real confirmationId (confirmation tokens are short-lived and single-use).",
                         }),
                     }}
                 >
