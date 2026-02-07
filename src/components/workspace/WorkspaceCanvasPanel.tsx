@@ -45,6 +45,7 @@ const VIEW_LABELS: Record<Exclude<CanvasView, "list">, string> = {
 export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [view, setView] = React.useState<CanvasView>("list");
   const [preferredTab, setPreferredTab] = React.useState<WorkspaceTab>(() =>
     role === "maintainer" ? "maintainer" : "contributor",
   );
@@ -70,13 +71,18 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   const pinsIsOpen = getInteractable("RepoPinsCanvas")?.state?.isOpen === true;
   const findingsIsOpen = getInteractable("RepoFindingsCanvas")?.state?.isOpen === true;
 
-  const view: CanvasView = pinsIsOpen
+  const viewFromState: CanvasView = pinsIsOpen
     ? "repoPins"
     : findingsIsOpen
       ? "repoFindings"
       : contributorIsOpen || maintainerIsOpen
         ? "workboards"
         : "list";
+
+  React.useEffect(() => {
+    if (viewFromState === "list") return;
+    setView(viewFromState);
+  }, [viewFromState]);
 
   const visibleTab: WorkspaceTab = role === "maintainer"
     ? "maintainer"
@@ -159,7 +165,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     setIsOpen,
   ]);
 
-  const closeAll = React.useCallback(() => {
+  const closeAllCanvases = React.useCallback(() => {
     pendingOpenRef.current = null;
     setIsOpen("ContributorPlanningCanvas", false);
     setIsOpen("MaintainerTriageCanvas", false);
@@ -167,12 +173,24 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     setIsOpen("RepoFindingsCanvas", false);
   }, [setIsOpen]);
 
+  const backToList = React.useCallback(() => {
+    setView("list");
+    closeAllCanvases();
+  }, [closeAllCanvases]);
+
+  const viewForComponent = React.useCallback((componentName: InteractableComponentName) => {
+    if (componentName === "RepoPinsCanvas") return "repoPins";
+    if (componentName === "RepoFindingsCanvas") return "repoFindings";
+    return "workboards";
+  }, []);
+
   const openOnly = React.useCallback(
     (componentName: InteractableComponentName) => {
-      closeAll();
+      setView(viewForComponent(componentName));
+      closeAllCanvases();
       setIsOpen(componentName, true);
     },
-    [closeAll, setIsOpen],
+    [closeAllCanvases, setIsOpen, viewForComponent],
   );
 
   React.useEffect(() => {
@@ -450,7 +468,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
             <div className="px-4 py-2 border-b border-muted-foreground/20 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={closeAll}
+                onClick={backToList}
                 className="inline-flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/40 transition-colors text-muted-foreground hover:text-foreground"
                 title="Back"
               >
