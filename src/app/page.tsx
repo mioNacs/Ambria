@@ -132,7 +132,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: "easeOut", delay: 0.05 }}
-              className="relative"
+              className="relative order-2 lg:order-1"
             >
               <div className="rounded-3xl border border-gray-200 bg-white/75 backdrop-blur shadow-sm overflow-hidden">
                 <div className="p-6 sm:p-8">
@@ -229,6 +229,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: "easeOut" }}
+              className="order-1 lg:order-2"
             >
               <div className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1 text-sm text-gray-700">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />

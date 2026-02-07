@@ -17,7 +17,7 @@ const roleColors = {
 export function WorkspaceHeader({ workspace }: WorkspaceHeaderProps) {
     return (
         <header className="bg-white/80 backdrop-blur border-b border-gray-200 px-4">
-            <div className="mx-auto w-full max-w-7xl flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-16">
                 {/* Left: Back + Repo Info */}
                 <div className="flex items-center gap-4 min-w-0">
                     <Link
