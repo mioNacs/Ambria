@@ -48,9 +48,49 @@ const VIEW_LABELS: Record<Exclude<CanvasView, "list">, string> = {
 };
 
 function viewForInteractable(componentName: InteractableComponentName): CanvasView {
+  // Pure mapping (intentionally stateless).
   if (componentName === "RepoPinsCanvas") return "repoPins";
   if (componentName === "RepoFindingsCanvas") return "repoFindings";
   return "workboards";
+}
+
+function resolveViewSync(params: {
+  view: CanvasView;
+  viewFromState: CanvasView;
+  pendingOpen: InteractableComponentName | null;
+}): {
+  nextView: CanvasView;
+  clearPendingOpen: boolean;
+} {
+  const { view, viewFromState, pendingOpen } = params;
+
+  if (viewFromState === view) {
+    return { nextView: view, clearPendingOpen: false };
+  }
+
+  if (pendingOpen) {
+    const pendingTargetView = viewForInteractable(pendingOpen);
+    if (viewFromState !== "list" && viewFromState !== pendingTargetView) {
+      return { nextView: viewFromState, clearPendingOpen: true };
+    }
+
+    return { nextView: view, clearPendingOpen: false };
+  }
+
+  return { nextView: viewFromState, clearPendingOpen: false };
+}
+
+function resolveWorkboardToKeep(params: {
+  preferredTab: WorkspaceTab;
+  maintainerIsOpen: boolean;
+  contributorIsOpen: boolean;
+}): InteractableComponentName | null {
+  const { preferredTab, maintainerIsOpen, contributorIsOpen } = params;
+  if (preferredTab === "maintainer" && maintainerIsOpen) return "MaintainerTriageCanvas";
+  if (preferredTab === "contributor" && contributorIsOpen) return "ContributorPlanningCanvas";
+  if (maintainerIsOpen) return "MaintainerTriageCanvas";
+  if (contributorIsOpen) return "ContributorPlanningCanvas";
+  return null;
 }
 
 export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
@@ -80,6 +120,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
         if (!c) continue;
         if (c.name !== componentName) continue;
         const candidateWorkspaceId = (c.props as WorkspaceScopedProps).workspaceId;
+        if (typeof candidateWorkspaceId !== "string") continue;
         if (candidateWorkspaceId !== workspaceId) continue;
         return c;
       }
@@ -106,23 +147,22 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   React.useEffect(() => {
     if (suppressStateNavigationRef.current) return;
-    if (viewFromState === view) return;
 
-    // While we're intentionally opening a specific canvas, keep the local `view` stable.
-    // If something else opens while we're pending, treat that as an override.
-    if (pendingOpen) {
-      const pendingTargetView = viewForInteractable(pendingOpen);
+    const { nextView, clearPendingOpen } = resolveViewSync({
+      view,
+      viewFromState,
+      pendingOpen,
+    });
 
-      if (viewFromState !== "list" && viewFromState !== pendingTargetView) {
-        pendingOpenRef.current = null;
-        setPendingOpen(null);
-        setView(viewFromState);
-      }
-      return;
+    if (clearPendingOpen) {
+      pendingOpenRef.current = null;
+      setPendingOpen(null);
     }
 
-    setView(viewFromState);
-  }, [pendingOpen, setPendingOpen, setView, view, viewFromState]);
+    if (nextView !== view) {
+      setView(nextView);
+    }
+  }, [pendingOpen, view, viewFromState]);
 
   React.useEffect(() => {
     const prevViewFromState = lastViewFromStateRef.current;
@@ -229,15 +269,11 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       : viewFromState === "repoFindings"
         ? "RepoFindingsCanvas"
         : viewFromState === "workboards"
-          ? preferredTab === "maintainer" && maintainerIsOpen
-            ? "MaintainerTriageCanvas"
-            : preferredTab === "contributor" && contributorIsOpen
-              ? "ContributorPlanningCanvas"
-              : maintainerIsOpen
-                ? "MaintainerTriageCanvas"
-                : contributorIsOpen
-                  ? "ContributorPlanningCanvas"
-                  : null
+          ? resolveWorkboardToKeep({
+            preferredTab,
+            maintainerIsOpen,
+            contributorIsOpen,
+          })
           : null;
 
     const keep = pendingOpen ?? keepByOpenState ?? openNames[0] ?? null;
