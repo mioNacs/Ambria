@@ -40,7 +40,7 @@ function consumeUserConfirmedGitHubWrite(params: {
 
     if (!confirmationId) {
         throw new Error(
-            "User confirmation required. Render the GitHubCreateIssue, GitHubCreatePullRequest, or GitHubCreateComment component and have the user click the confirm button.",
+            "User confirmation required. Render the matching confirmation component (GitHubCreateIssue, GitHubCreatePullRequest, GitHubCreateComment, ConfirmAssignIssue, ConfirmCloseIssue) and have the user click confirm.",
         );
     }
 
@@ -51,6 +51,35 @@ function consumeUserConfirmedGitHubWrite(params: {
     }
 
     consumeGitHubWriteConfirmation({ id: confirmationId, owner, repo, kind });
+}
+
+async function assertRepoWriteAccess(params: {
+    octokit: Octokit;
+    owner: string;
+    repo: string;
+}) {
+    const { octokit, owner, repo } = params;
+
+    try {
+        const { data } = await octokit.rest.repos.get({ owner, repo });
+        const permissions = (data as { permissions?: Record<string, boolean> })
+            .permissions;
+
+        if (!permissions?.push && !permissions?.admin) {
+            throw new Error(
+                `Write access required for ${owner}/${repo}. Connect GitHub with a user/token that has repository permission "write" (or higher) and try again.`,
+            );
+        }
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Write access required")) {
+            throw error;
+        }
+
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Unable to verify write access for ${owner}/${repo}. This may be due to missing permissions/scopes. Underlying error: ${message}`,
+        );
+    }
 }
 
 export interface RepoTreeItem {
@@ -885,8 +914,9 @@ export async function createRepoIssue(params: {
     const { owner, repo, title, body, labels, assignees, token, confirmationId } =
         params;
 
-    consumeUserConfirmedGitHubWrite({ confirmationId, owner, repo, kind: "issue" });
     const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({ confirmationId, owner, repo, kind: "issue" });
+    await assertRepoWriteAccess({ octokit, owner, repo });
 
     try {
         const payload: Parameters<typeof octokit.rest.issues.create>[0] = {
@@ -950,13 +980,14 @@ export async function createRepoPullRequest(params: {
         confirmationId,
     } = params;
 
+    const octokit = new Octokit({ auth: token });
     consumeUserConfirmedGitHubWrite({
         confirmationId,
         owner,
         repo,
         kind: "pull_request",
     });
-    const octokit = new Octokit({ auth: token });
+    await assertRepoWriteAccess({ octokit, owner, repo });
 
     try {
         const payload: Parameters<typeof octokit.rest.pulls.create>[0] = {
@@ -1011,8 +1042,9 @@ export async function createIssueComment(params: {
         throw new Error("Comment body must not be empty.");
     }
 
-    consumeUserConfirmedGitHubWrite({ confirmationId, owner, repo, kind: "comment" });
     const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({ confirmationId, owner, repo, kind: "comment" });
+    await assertRepoWriteAccess({ octokit, owner, repo });
 
     try {
         const { data } = await octokit.rest.issues.createComment({
@@ -1034,6 +1066,201 @@ export async function createIssueComment(params: {
         const message = toErrorMessage(error);
         throw new Error(
             `Failed to create comment. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
+        );
+    }
+}
+
+export interface RepoMaintainer {
+    login: string;
+    permission: "write" | "maintain" | "admin";
+    source: "collaborator" | "team";
+    sourceName: string | null;
+}
+
+function permissionRank(permission: RepoMaintainer["permission"]) {
+    switch (permission) {
+        case "admin":
+            return 3;
+        case "maintain":
+            return 2;
+        case "write":
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+function resolveMaintainerPermission(permissions: Record<string, boolean> | undefined): RepoMaintainer["permission"] | null {
+    if (!permissions) return null;
+    if (permissions.admin) return "admin";
+    if (permissions.maintain) return "maintain";
+    if (permissions.push) return "write";
+    return null;
+}
+
+/**
+* List repository maintainers.
+*
+* Practical definition: users with permission >= write.
+*/
+export async function getRepoMaintainers(params: {
+    owner: string;
+    repo: string;
+    token: string;
+}): Promise<RepoMaintainer[]> {
+    const { owner, repo, token } = params;
+    const octokit = new Octokit({ auth: token });
+
+    try {
+        const collaborators = await octokit.paginate(
+            octokit.rest.repos.listCollaborators,
+            {
+                owner,
+                repo,
+                affiliation: "all",
+                per_page: 100,
+            },
+            (response) => response.data,
+        );
+
+        const maintainers = collaborators
+            .reduce<RepoMaintainer[]>((acc, collab) => {
+                const permission = resolveMaintainerPermission(
+                    (collab as { permissions?: Record<string, boolean> }).permissions,
+                );
+
+                if (!permission) {
+                    return acc;
+                }
+
+                acc.push({
+                    login: collab.login ?? "unknown",
+                    permission,
+                    source: "collaborator",
+                    sourceName: null,
+                });
+
+                return acc;
+            }, [])
+            .sort((a, b) => {
+                const delta = permissionRank(b.permission) - permissionRank(a.permission);
+                return delta !== 0 ? delta : a.login.localeCompare(b.login);
+            });
+
+        return maintainers;
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to list maintainers for ${owner}/${repo}. This may require additional GitHub permissions/scopes. Underlying error: ${message}`,
+        );
+    }
+}
+
+export interface UpdatedIssueAssignees {
+    issueNumber: number;
+    state: string;
+    assignees: string[];
+    htmlUrl: string;
+}
+
+/**
+* Assign or unassign users on an issue (WRITE).
+*
+* Passing an empty list clears all assignees.
+*/
+export async function setIssueAssignees(params: {
+    owner: string;
+    repo: string;
+    issueNumber: number;
+    assignees: string[];
+    token: string;
+    confirmationId: string;
+}): Promise<UpdatedIssueAssignees> {
+    const { owner, repo, issueNumber, assignees, token, confirmationId } = params;
+
+    const normalizedAssignees = assignees
+        .map((a) => a.trim())
+        .filter(Boolean);
+
+    const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({
+        confirmationId,
+        owner,
+        repo,
+        kind: "issue_assignees",
+    });
+    await assertRepoWriteAccess({ octokit, owner, repo });
+
+    try {
+        const { data } = await octokit.rest.issues.update({
+            owner,
+            repo,
+            issue_number: issueNumber,
+            assignees: normalizedAssignees,
+        });
+
+        return {
+            issueNumber: data.number,
+            state: data.state,
+            assignees: (data.assignees ?? [])
+                .map((a) => a.login)
+                .filter((login): login is string => typeof login === "string"),
+            htmlUrl: data.html_url,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to update issue assignees. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
+        );
+    }
+}
+
+export interface ClosedIssue {
+    issueNumber: number;
+    state: string;
+    htmlUrl: string;
+    closedAt: string | null;
+}
+
+/**
+* Close an issue (WRITE).
+*/
+export async function closeRepoIssue(params: {
+    owner: string;
+    repo: string;
+    issueNumber: number;
+    token: string;
+    confirmationId: string;
+}): Promise<ClosedIssue> {
+    const { owner, repo, issueNumber, token, confirmationId } = params;
+
+    const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({
+        confirmationId,
+        owner,
+        repo,
+        kind: "issue_close",
+    });
+    await assertRepoWriteAccess({ octokit, owner, repo });
+
+    try {
+        const { data } = await octokit.rest.issues.update({
+            owner,
+            repo,
+            issue_number: issueNumber,
+            state: "closed",
+        });
+
+        return {
+            issueNumber: data.number,
+            state: data.state,
+            htmlUrl: data.html_url,
+            closedAt: data.closed_at,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to close issue. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
         );
     }
 }
