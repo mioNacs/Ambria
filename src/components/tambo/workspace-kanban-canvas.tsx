@@ -41,22 +41,21 @@ export const kanbanCanvasPropsSchema = z.object({
   title: z.string(),
   instructions: z.string().optional(),
   workspaceId: z.string().optional(),
+  defaultOpen: z.boolean().optional(),
 });
 
 export const kanbanCanvasStateSchema = z.object({
   columns: kanbanColumnsSchema,
+  isOpen: z.boolean().optional(),
 });
 
 type KanbanCanvasProps = z.infer<typeof kanbanCanvasPropsSchema>;
 type KanbanCard = z.infer<typeof kanbanCardSchema>;
 type KanbanColumn = z.infer<typeof kanbanColumnSchema>;
 
-const interactableKeyToId = new Map<string, string>();
-
 function createStableInteractableComponent<ComponentProps extends object>(
   WrappedComponent: React.ComponentType<ComponentProps>,
   config: InteractableConfig<ComponentProps>,
-  stableKeyFn: (props: ComponentProps) => string,
 ) {
   const displayName =
     WrappedComponent.displayName ?? WrappedComponent.name ?? "Component";
@@ -64,13 +63,12 @@ function createStableInteractableComponent<ComponentProps extends object>(
   const StableInteractableWrapper: React.FC<ComponentProps> = (props) => {
     const {
       addInteractableComponent,
+      removeInteractableComponent,
       updateInteractableComponentProps,
       getInteractableComponent,
     } = useTamboInteractable();
 
     const { componentName, description, propsSchema, stateSchema } = config;
-
-    const stableKey = stableKeyFn(props);
     const [interactableId, setInteractableId] = React.useState<string | null>(
       null,
     );
@@ -84,24 +82,8 @@ function createStableInteractableComponent<ComponentProps extends object>(
     const [createdAt] = React.useState(() => new Date().toISOString());
 
     React.useEffect(() => {
-      const cachedId = interactableKeyToId.get(stableKey);
-      const cachedComponent = cachedId
-        ? getInteractableComponent(cachedId)
-        : undefined;
-
-      if (cachedId && !cachedComponent) {
-        interactableKeyToId.delete(stableKey);
-      }
-
-      if (cachedId && cachedComponent) {
-        setInteractableId(cachedId);
-        return () => {
-          if (process.env.NODE_ENV !== "development") {
-            interactableKeyToId.delete(stableKey);
-          }
-        };
-      }
-
+      // Interactable IDs are intentionally UI-scoped here (not stable across unmount/remount).
+      // Persistent data for these canvases lives in Supabase via `useKanbanPersistence`.
       const id = addInteractableComponent({
         name: componentName,
         description,
@@ -111,23 +93,23 @@ function createStableInteractableComponent<ComponentProps extends object>(
         stateSchema,
       });
 
-      interactableKeyToId.set(stableKey, id);
       lastSerializedProps.current = propsRef.current as Record<string, unknown>;
       setInteractableId(id);
 
       return () => {
-        if (process.env.NODE_ENV !== "development") {
-          interactableKeyToId.delete(stableKey);
-        }
+        // Interactables are UI-scoped here; removing them on unmount prevents stale
+        // duplicates (dev/StrictMode + HMR) and keeps the registry aligned with what's
+        // actually mounted.
+        // `removeInteractableComponent` is idempotent (no-op if the ID isn't present).
+        removeInteractableComponent(id);
       };
     }, [
       addInteractableComponent,
-      getInteractableComponent,
+      removeInteractableComponent,
       componentName,
       description,
       propsSchema,
       stateSchema,
-      stableKey,
     ]);
 
     const currentInteractable = interactableId
@@ -310,11 +292,16 @@ function KanbanBoard({
   accentClass,
   workspaceId,
   boardType,
+  defaultOpen,
 }: KanbanCanvasProps & { 
   initialColumns: KanbanColumn[]; 
   accentClass: string;
   boardType: BoardType;
 }) {
+  // `defaultOpen` is only used to seed the initial value; `state.isOpen` is the source of truth after that.
+  const [isOpen] = useTamboComponentState("isOpen", defaultOpen ?? true);
+  const effectiveIsOpen = typeof isOpen === "boolean" ? isOpen : (defaultOpen ?? true);
+
   // Use persisted state if workspaceId is provided, otherwise fall back to Tambo state
   const persistedState = useKanbanPersistence(workspaceId, boardType, initialColumns);
   const [tamboColumns, setTamboColumns] = useTamboComponentState("columns", initialColumns);
@@ -404,6 +391,16 @@ function KanbanBoard({
   const [expandedCard, setExpandedCard] = React.useState<
     { card: KanbanCard; columnId: string } | null
   >(null);
+
+  React.useEffect(() => {
+    if (!effectiveIsOpen) {
+      setExpandedCard(null);
+    }
+  }, [effectiveIsOpen]);
+
+  if (!effectiveIsOpen) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -923,7 +920,7 @@ function MaintainerTriageCanvasBase(props: KanbanCanvasProps) {
 const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
   componentName: "ContributorPlanningCanvas",
   description:
-    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks.",
+    "A kanban-style planning canvas for contributors to track issues, work-in-progress, PR-ready items, and done tasks. Use props.defaultOpen for initial visibility; use state.isOpen to show/hide after initialization.",
   propsSchema: kanbanCanvasPropsSchema,
   stateSchema: kanbanCanvasStateSchema,
 };
@@ -931,7 +928,7 @@ const contributorCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
 const maintainerCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
   componentName: "MaintainerTriageCanvas",
   description:
-    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed).",
+    "A kanban-style triage canvas for maintainers to organize issues and PR work (needs triage, needs info, ready to act, closed). Use props.defaultOpen for initial visibility; use state.isOpen to show/hide after initialization.",
   propsSchema: kanbanCanvasPropsSchema,
   stateSchema: kanbanCanvasStateSchema,
 };
@@ -939,13 +936,9 @@ const maintainerCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
 export const ContributorPlanningCanvas = createStableInteractableComponent(
   ContributorPlanningCanvasBase,
   contributorCanvasConfig,
-  (props) =>
-    `${contributorCanvasConfig.componentName}:${props.workspaceId ?? "local"}`,
 );
 
 export const MaintainerTriageCanvas = createStableInteractableComponent(
   MaintainerTriageCanvasBase,
   maintainerCanvasConfig,
-  (props) =>
-    `${maintainerCanvasConfig.componentName}:${props.workspaceId ?? "local"}`,
 );
