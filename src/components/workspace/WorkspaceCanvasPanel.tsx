@@ -115,16 +115,30 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   const getInteractable = React.useCallback(
     (componentName: InteractableComponentName) => {
       // Walk from the end so the newest interactable wins (avoids stale duplicates in dev/StrictMode).
+      let found: (typeof interactables)[number] | undefined;
+
       for (let i = interactables.length - 1; i >= 0; i--) {
         const c = interactables[i];
         if (!c) continue;
         if (c.name !== componentName) continue;
         const candidateWorkspaceId = (c.props as WorkspaceScopedProps).workspaceId;
         if (candidateWorkspaceId !== workspaceId) continue;
-        return c;
+
+        if (!found) {
+          found = c;
+          continue;
+        }
+
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Multiple interactables found for", {
+            componentName,
+            workspaceId,
+          });
+        }
+        break;
       }
 
-      return undefined;
+      return found;
     },
     [interactables, workspaceId],
   );
