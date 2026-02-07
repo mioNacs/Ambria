@@ -85,11 +85,19 @@ export default function WorkspacePage() {
 
     const hasGitHubWriteAccess =
         !!session?.provider_token && workspace.detected_access !== "read";
+
+    const configuredRole =
+        workspace.role === "contributor" ||
+        workspace.role === "maintainer" ||
+        workspace.role === "both"
+            ? workspace.role
+            : "contributor";
+
     const effectiveRole =
-        (workspace.role === "maintainer" || workspace.role === "both") &&
+        (configuredRole === "maintainer" || configuredRole === "both") &&
             !hasGitHubWriteAccess
             ? "contributor"
-            : workspace.role;
+            : configuredRole;
 
     return (
         <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">

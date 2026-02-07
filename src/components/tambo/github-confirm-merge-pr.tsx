@@ -20,9 +20,10 @@ export const confirmMergePRSchema = z
   .object({
     owner: z
       .string()
+      .trim()
       .min(1)
       .describe("GitHub repository owner/organization name"),
-    repo: z.string().min(1).describe("GitHub repository name"),
+    repo: z.string().trim().min(1).describe("GitHub repository name"),
     pullNumber: z.coerce
       .number()
       .int()
@@ -74,9 +75,6 @@ function ConfirmMergePRForm({
 }: ConfirmMergePRProps) {
   const { session } = useAuth();
 
-  const normalizedOwner = owner.trim();
-  const normalizedRepo = repo.trim();
-
   const effectiveToken = token ?? session?.provider_token ?? undefined;
   const [mergeMethod, setMergeMethod] = useState<PullRequestMergeMethod>("merge");
   const [deleteBranch, setDeleteBranch] = useState(false);
@@ -115,15 +113,15 @@ function ConfirmMergePRForm({
       try {
         const [prInfo, perms, reviews] = await Promise.all([
           getPullRequestConfirmationInfo({
-            owner: normalizedOwner,
-            repo: normalizedRepo,
+            owner,
+            repo,
             pullNumber,
             token: effectiveToken,
           }),
-          checkRepoPermissions(normalizedOwner, normalizedRepo, effectiveToken),
+          checkRepoPermissions(owner, repo, effectiveToken),
           getPRReviews({
-            owner: normalizedOwner,
-            repo: normalizedRepo,
+            owner,
+            repo,
             pullNumber,
             token: effectiveToken,
           }),
@@ -143,7 +141,7 @@ function ConfirmMergePRForm({
     return () => {
       cancelled = true;
     };
-  }, [effectiveToken, normalizedOwner, normalizedRepo, pullNumber]);
+  }, [effectiveToken, owner, repo, pullNumber]);
 
   const hasWriteAccess = !!permission && (permission.push || permission.admin);
   const canSubmit = !!effectiveToken && hasWriteAccess && !isSubmitting;
@@ -161,14 +159,14 @@ function ConfirmMergePRForm({
 
     try {
       const confirmationId = createGitHubWriteConfirmation({
-        owner: normalizedOwner,
-        repo: normalizedRepo,
+        owner,
+        repo,
         kind: "pull_request_merge",
       });
 
       const merged = await mergePullRequest({
-        owner: normalizedOwner,
-        repo: normalizedRepo,
+        owner,
+        repo,
         pullNumber,
         mergeMethod,
         deleteBranch,
