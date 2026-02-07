@@ -7,11 +7,6 @@ import {
   MessageInputTextarea,
   MessageInputToolbar,
 } from "@/components/tambo/message-input";
-import {
-  MessageSuggestions,
-  MessageSuggestionsList,
-  MessageSuggestionsStatus,
-} from "@/components/tambo/message-suggestions";
 import { ScrollableMessageContainer } from "@/components/tambo/scrollable-message-container";
 import { ThreadContainer } from "@/components/tambo/thread-container";
 import {
@@ -22,7 +17,7 @@ import { askAmbriaComponents, askAmbriaTools } from "@/lib/ask-ambria/tambo-regi
 import { searchOpenSourceProjects } from "@/services/ask-ambria/search-open-source-projects";
 import { cn } from "@/lib/utils";
 import type { InitialTamboThreadMessage, Suggestion } from "@tambo-ai/react";
-import { TamboProvider, useTambo } from "@tambo-ai/react";
+import { TamboProvider, useTambo, useTamboThreadInput } from "@tambo-ai/react";
 import { MessageSquareText, X } from "lucide-react";
 import * as React from "react";
 
@@ -76,6 +71,7 @@ const defaultSuggestions: Suggestion[] = [
 
 function AskAmbriaChat() {
   const { thread } = useTambo();
+  const { setValue, isPending } = useTamboThreadInput();
   const hasUserMessages =
     thread?.messages?.some((message) => message.role === "user") ?? false;
 
@@ -102,16 +98,38 @@ function AskAmbriaChat() {
         </MessageInput>
       </div>
 
-      <MessageSuggestions initialSuggestions={defaultSuggestions}>
-        <MessageSuggestionsStatus />
-        <MessageSuggestionsList />
-      </MessageSuggestions>
+      {!hasUserMessages && (
+        <div className="px-4 pb-4">
+          <div className="flex space-x-2 overflow-x-auto pb-2 rounded-md bg-transparent min-h-[2.5rem]">
+            {defaultSuggestions.map((suggestion) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                className={cn(
+                  "py-2 px-2.5 rounded-2xl text-xs transition-colors",
+                  "border border-flat",
+                  "bg-background hover:bg-accent hover:text-accent-foreground",
+                  isPending ? "opacity-70" : "",
+                )}
+                onClick={() => {
+                  if (isPending) return;
+                  setValue(suggestion.detailedSuggestion ?? suggestion.title);
+                }}
+                disabled={isPending}
+              >
+                <span className="font-medium">{suggestion.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </ThreadContainer>
   );
 }
 
 export interface AskAmbriaWidgetProps {
   contextKey: string;
+  userToken?: string;
   githubToken?: string;
 }
 
@@ -120,7 +138,7 @@ type SearchOpenSourceProjectsInput = Omit<
   "token"
 >;
 
-export function AskAmbriaWidget({ contextKey, githubToken }: AskAmbriaWidgetProps) {
+export function AskAmbriaWidget({ contextKey, userToken, githubToken }: AskAmbriaWidgetProps) {
   const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
   const [isOpen, setIsOpen] = React.useState(false);
   const openButtonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -288,7 +306,8 @@ export function AskAmbriaWidget({ contextKey, githubToken }: AskAmbriaWidgetProp
                 tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
                 components={askAmbriaComponents}
                 tools={tools}
-                contextKey={contextKey}
+                userToken={userToken}
+                contextKey={userToken ? undefined : contextKey}
                 initialMessages={initialMessages}
                 contextHelpers={{
                   open_source_mode: () => ({
