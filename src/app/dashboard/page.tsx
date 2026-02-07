@@ -24,18 +24,7 @@ export default function Dashboard() {
     authProvider === "github" || linkedProviders.includes("github");
 
   const providerToken = session?.provider_token ?? undefined;
-
-  const looksLikeGitHubToken =
-    !!providerToken &&
-    (providerToken.startsWith("gho_") ||
-      providerToken.startsWith("ghp_") ||
-      providerToken.startsWith("github_pat_"));
-
-  const githubToken = providerToken
-    ? hasGitHubLink || (!authProvider && looksLikeGitHubToken)
-      ? providerToken
-      : undefined
-    : undefined;
+  const githubToken = hasGitHubLink ? providerToken : undefined;
 
   if (
     process.env.NODE_ENV !== "production" &&
