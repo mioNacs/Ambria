@@ -53,6 +53,15 @@ function consumeUserConfirmedGitHubWrite(params: {
     consumeGitHubWriteConfirmation({ id: confirmationId, owner, repo, kind });
 }
 
+function isOctokitErrorWithStatus(error: unknown): error is { status: number } {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        "status" in error &&
+        typeof (error as { status?: unknown }).status === "number"
+    );
+}
+
 async function assertRepoWriteAccess(params: {
     octokit: Octokit;
     owner: string;
@@ -73,6 +82,26 @@ async function assertRepoWriteAccess(params: {
     } catch (error) {
         if (error instanceof Error && error.message.startsWith("Write access required")) {
             throw error;
+        }
+
+        if (isOctokitErrorWithStatus(error)) {
+            if (error.status === 401) {
+                throw new Error(
+                    "GitHub authentication failed. Reconnect GitHub (OAuth) or provide a valid token.",
+                );
+            }
+
+            if (error.status === 403 || error.status === 404) {
+                throw new Error(
+                    `Unable to access ${owner}/${repo}. The repository may not exist, or your token may lack access.`,
+                );
+            }
+
+            if (error.status >= 500) {
+                throw new Error(
+                    "GitHub is currently unavailable (5xx). Try again later.",
+                );
+            }
         }
 
         const message = toErrorMessage(error);
@@ -141,6 +170,8 @@ async function getCombinedStatusSummary(params: {
     const { octokit, owner, repo, ref } = params;
 
     try {
+        // Note: This uses the legacy Status API. Some repositories rely on the Checks API,
+        // so required check runs may not be reflected here.
         const { data } = await octokit.rest.repos.getCombinedStatusForRef({
             owner,
             repo,
@@ -1460,6 +1491,24 @@ export async function mergePullRequest(params: {
             );
         }
 
+        if (pr.mergeable === null || pr.mergeable_state === "unknown") {
+            throw new Error(
+                "GitHub has not yet determined mergeability for this pull request. Please retry in a few seconds.",
+            );
+        }
+
+        if (pr.mergeable_state === "blocked") {
+            throw new Error(
+                "This pull request is blocked (e.g., missing required approvals or branch protection rules). Resolve blocking conditions before merging.",
+            );
+        }
+
+        if (pr.mergeable_state === "unstable") {
+            throw new Error(
+                "This pull request is unstable (e.g., failing checks). Fix failing checks before merging.",
+            );
+        }
+
         const checks = await getCombinedStatusSummary({
             octokit,
             owner,
@@ -1563,7 +1612,11 @@ export async function closePullRequest(params: {
         });
 
         if (pr.state !== "open") {
-            throw new Error(`Pull request #${pullNumber} is not open.`);
+            if (pr.merged_at) {
+                throw new Error(`Pull request #${pullNumber} is already merged.`);
+            }
+
+            throw new Error(`Pull request #${pullNumber} is already closed.`);
         }
 
         const { data } = await octokit.rest.pulls.update({
