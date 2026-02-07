@@ -91,11 +91,14 @@ export async function POST(request: Request) {
     const limit = parsed.data.limit ?? 20;
     const page = parsed.data.page ?? 1;
 
-    const supabase = await createSupabaseClient().catch(() => null);
-    const session = supabase
-      ? await supabase.auth.getSession().catch(() => null)
-      : null;
-    const token = session?.data.session?.provider_token ?? undefined;
+    let token: string | undefined;
+    try {
+      const supabase = await createSupabaseClient();
+      const { data } = await supabase.auth.getSession();
+      token = data.session?.provider_token ?? undefined;
+    } catch {
+      token = undefined;
+    }
 
     const issues = await getRepoIssues({
       owner,

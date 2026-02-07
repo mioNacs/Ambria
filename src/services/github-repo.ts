@@ -641,9 +641,11 @@ export async function getRepoIssues(params: {
     const normalizedLimit = Number.isFinite(limit)
         ? Math.max(1, Math.min(Math.trunc(limit), 50))
         : 20;
-    const normalizedPage = Number.isFinite(page)
-        ? Math.max(1, Math.min(Math.trunc(page), 100))
-        : 1;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+
+    if (normalizedPage > 100) {
+        throw new Error("Page out of range (max 100)");
+    }
 
     try {
         const { data } = await octokit.rest.issues.listForRepo({
@@ -753,9 +755,11 @@ export async function getRepoPullRequests(params: {
     const normalizedLimit = Number.isFinite(limit)
         ? Math.max(1, Math.min(Math.trunc(limit), 50))
         : 20;
-    const normalizedPage = Number.isFinite(page)
-        ? Math.max(1, Math.min(Math.trunc(page), 100))
-        : 1;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+
+    if (normalizedPage > 100) {
+        throw new Error("Page out of range (max 100)");
+    }
 
     try {
         const { data } = await octokit.rest.pulls.list({
