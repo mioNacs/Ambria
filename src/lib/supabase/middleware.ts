@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_GITHUB_API_ROUTES = new Set([
     "/api/github/issues",
     "/api/github/pull-requests",
+    "/api/github/pull-request-files",
 ]);
 
 export async function updateSession(request: NextRequest) {

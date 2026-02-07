@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { parseGitHubUrl } from "@/lib/github";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, FileDiff, FileText } from "lucide-react";
 import * as React from "react";
@@ -31,6 +32,74 @@ const pullRequestFileSchema = z
   })
   .describe("A file changed in a GitHub pull request");
 
+const pullRequestFilesApiResponseSchema = z.object({
+  files: z.array(pullRequestFileSchema),
+});
+
+const pullRequestFilesRequestSchema = z
+  .object({
+    repository: z
+      .string()
+      .optional()
+      .describe(
+        "Optional repository identifier (owner/repo or URL). If provided, owner/repo can be omitted.",
+      ),
+    owner: z
+      .string()
+      .optional()
+      .describe("GitHub repository owner/organization name"),
+    repo: z.string().optional().describe("GitHub repository name"),
+    pullNumber: z.coerce.number().int().positive().describe("Pull request number"),
+    limit: z
+      .coerce
+      .number()
+      .int()
+      .positive()
+      .max(50)
+      .optional()
+      .describe("Number of files to fetch per page (default 20, max 50)"),
+    page: z
+      .coerce
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .optional()
+      .describe("Page number (1-indexed)"),
+  })
+  .describe(
+    "A pull request files request. Prefer passing this instead of a large files array.",
+  );
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function resolveOwnerRepo(input: {
+  repository?: string;
+  owner?: string;
+  repo?: string;
+}): { owner: string; repo: string } | null {
+  const owner = normalizeOptionalString(input.owner);
+  const repo = normalizeOptionalString(input.repo);
+
+  if (owner && repo) return { owner, repo };
+
+  const candidate =
+    normalizeOptionalString(input.repository) ??
+    normalizeOptionalString(input.repo) ??
+    normalizeOptionalString(input.owner);
+
+  if (!candidate) return null;
+  const parsed = parseGitHubUrl(candidate);
+  if (!parsed) return null;
+  const parsedOwner = normalizeOptionalString(parsed.owner);
+  const parsedRepo = normalizeOptionalString(parsed.repo);
+  return parsedOwner && parsedRepo ? { owner: parsedOwner, repo: parsedRepo } : null;
+}
+
 export const githubPullRequestFilesSchema = z
   .object({
     title: z
@@ -51,8 +120,16 @@ export const githubPullRequestFilesSchema = z
       ),
     files: z
       .array(pullRequestFileSchema)
+      .optional()
       .default([])
-      .describe("Files changed in the pull request"),
+      .describe(
+        "Files to display. If non-empty, filesRequest will be ignored.",
+      ),
+    filesRequest: pullRequestFilesRequestSchema
+      .optional()
+      .describe(
+        "Optional pull request files request. When provided and files are omitted, the component will fetch files itself.",
+      ),
     emptyMessage: z
       .string()
       .optional()
@@ -101,20 +178,226 @@ export function GitHubPullRequestFiles({
   title = "Changed files",
   repoUrl,
   ref,
-  files,
+  files: filesProp,
+  filesRequest,
   emptyMessage = "No changed files.",
   showPatchPreview,
   className,
   ...props
 }: GitHubPullRequestFilesProps) {
+  const [items, setItems] = React.useState(() => filesProp ?? []);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(filesRequest?.page ?? 1);
+  const [hasMore, setHasMore] = React.useState(false);
+
+  const filesPropLength = filesProp?.length ?? 0;
+  const hasRequest = Boolean(filesRequest);
+
+  const repository = filesRequest?.repository;
+  const owner = filesRequest?.owner;
+  const repo = filesRequest?.repo;
+  const pullNumber = filesRequest?.pullNumber;
+  const limit = filesRequest?.limit;
+  const page = filesRequest?.page;
+
+  const normalizedRequest = React.useMemo(() => {
+    if (!hasRequest) return null;
+
+    const ownerRepo = resolveOwnerRepo({
+      repository,
+      owner,
+      repo,
+    });
+
+    if (!ownerRepo) return null;
+
+    if (typeof pullNumber !== "number" || !Number.isFinite(pullNumber)) {
+      return null;
+    }
+
+    return {
+      owner: ownerRepo.owner,
+      repo: ownerRepo.repo,
+      pullNumber: Math.trunc(pullNumber),
+      limit,
+      page,
+    };
+  }, [hasRequest, limit, owner, page, pullNumber, repo, repository]);
+
+  const pageSize = React.useMemo(() => {
+    const limit = normalizedRequest?.limit;
+    if (!limit) return 20;
+    return Math.max(1, Math.min(limit, 50));
+  }, [normalizedRequest?.limit]);
+
+  const requestIdRef = React.useRef(0);
+  const abortRef = React.useRef<AbortController | null>(null);
+
+  const cancelInFlight = React.useCallback(() => {
+    requestIdRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
+
+  const fetchPage = React.useCallback(
+    async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
+      if (!normalizedRequest) return;
+
+      const requestId = ++requestIdRef.current;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/github/pull-request-files", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            ...normalizedRequest,
+            includePatch: Boolean(showPatchPreview),
+            limit: pageSize,
+            page,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | {
+                error?: string;
+                details?: {
+                  fieldErrors?: Record<string, string[] | undefined>;
+                  formErrors?: string[];
+                };
+              }
+            | null;
+
+          const formErrors = payload?.details?.formErrors ?? [];
+          const fieldErrors = payload?.details?.fieldErrors ?? {};
+
+          const fieldErrorMessages = Object.entries(fieldErrors).flatMap(
+            ([field, errors]) =>
+              Array.isArray(errors)
+                ? errors.map((error) => `${field}: ${error}`)
+                : [],
+          );
+          const detailsMessage = [...formErrors, ...fieldErrorMessages]
+            .filter(Boolean)
+            .join("; ");
+
+          const statusMessage =
+            !detailsMessage && !payload?.error
+              ? `Request failed (${response.status}). The server did not provide additional error details.`
+              : undefined;
+
+          throw new Error(
+            detailsMessage ||
+              payload?.error ||
+              statusMessage ||
+              `Request failed (${response.status})`,
+          );
+        }
+
+        const payload = (await response.json().catch(() => null)) as unknown;
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          throw new Error("Received an invalid response from the server");
+        }
+        const parsed = pullRequestFilesApiResponseSchema.safeParse(payload);
+        if (!parsed.success) {
+          throw new Error("Received an invalid response from the server");
+        }
+
+        const next = parsed.data.files;
+
+        if (requestId !== requestIdRef.current) return;
+
+        setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
+        setCurrentPage(page);
+        setHasMore(next.length > 0 && next.length === pageSize);
+      } catch (e) {
+        if (controller.signal.aborted) return;
+
+        if (requestId !== requestIdRef.current) return;
+
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [normalizedRequest, pageSize, showPatchPreview],
+  );
+
   const normalizedRepoUrl = React.useMemo(() => {
     if (!repoUrl) return undefined;
     return repoUrl.replace(/\/+$/, "");
   }, [repoUrl]);
 
+  React.useEffect(() => {
+    // Precedence: explicit files props override filesRequest (no client-side pagination).
+    if (filesPropLength > 0) {
+      cancelInFlight();
+      setItems(filesProp ?? []);
+      setError(null);
+      setIsLoading(false);
+      setHasMore(false);
+      setCurrentPage(1);
+      return;
+    }
+
+    if (!hasRequest) {
+      cancelInFlight();
+      setItems([]);
+      setError(null);
+      setHasMore(false);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!normalizedRequest) {
+      cancelInFlight();
+      setItems([]);
+      setError(
+        "Invalid request (missing repository). Provide owner+repo or a repository URL.",
+      );
+      setHasMore(false);
+      setIsLoading(false);
+      return;
+    }
+
+    cancelInFlight();
+    const startPage = normalizedRequest.page ?? 1;
+    setItems([]);
+    setHasMore(false);
+    setCurrentPage(startPage);
+    void fetchPage({ page: startPage, mode: "replace" });
+  }, [
+    cancelInFlight,
+    fetchPage,
+    filesProp,
+    filesPropLength,
+    hasRequest,
+    normalizedRequest,
+  ]);
+
+  React.useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const grouped = React.useMemo(() => {
     const groups = new Map<string, z.infer<typeof pullRequestFileSchema>[]>();
-    for (const file of files ?? []) {
+    for (const file of items ?? []) {
       if (!file?.filename) continue;
       const folder = getFolderLabel(file.filename);
       const existing = groups.get(folder);
@@ -132,7 +415,7 @@ export function GitHubPullRequestFiles({
       groupFiles.sort((a, b) => a.filename.localeCompare(b.filename));
     }
     return result;
-  }, [files]);
+  }, [items]);
 
   return (
     <div
@@ -147,14 +430,22 @@ export function GitHubPullRequestFiles({
       <div className="flex items-baseline justify-between gap-4">
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
         <div className="text-xs text-muted-foreground">
-          {(files?.length ?? 0).toLocaleString("en-US")} files
+          {items.length.toLocaleString("en-US")} files
         </div>
       </div>
 
       {grouped.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
+        <div className="mt-3 space-y-2">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          )}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </div>
       ) : (
         <div className="mt-3 space-y-4">
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {grouped.map(([folder, groupFiles]) => (
             <div key={folder} className="rounded-lg border border-muted-foreground/20 bg-muted/10">
               <div className="flex items-center gap-2 border-b border-muted-foreground/20 bg-muted/30 px-3 py-2">
@@ -267,6 +558,25 @@ export function GitHubPullRequestFiles({
               </div>
             </div>
           ))}
+
+          {hasRequest && hasMore ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (isLoading) return;
+                void fetchPage({ page: currentPage + 1, mode: "append" });
+              }}
+              className={cn(
+                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
+                "px-3 py-2 text-sm text-foreground",
+                "hover:bg-muted/50 transition-colors",
+                "disabled:opacity-60",
+              )}
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading…" : "Load more"}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

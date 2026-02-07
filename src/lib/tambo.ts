@@ -619,12 +619,32 @@ export const tools: TamboTool[] = [
   {
     name: "getPullRequestFiles",
     description:
-      "Get the list of files changed in a pull request with their individual patches and stats.",
+      "Get the list of files changed in a pull request with basic stats. Supports pagination with page + limit; patches are optional.",
     tool: getPullRequestFiles,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
       repo: z.string().describe("GitHub repository name"),
       pullNumber: z.number().describe("Pull request number"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe("Number of files to fetch (default 50, max 50)"),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe("Page number (1-indexed, default 1)"),
+      includePatch: z
+        .boolean()
+        .optional()
+        .describe(
+          "Whether to include a truncated diff patch snippet per file (may be large for big PRs)",
+        ),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),
     outputSchema: z.array(
@@ -636,6 +656,7 @@ export const tools: TamboTool[] = [
         changes: z.number(),
         patch: z.string().optional(),
         previousFilename: z.string().optional(),
+        htmlUrl: z.string().optional(),
       })
     ),
   },
@@ -727,7 +748,7 @@ export const components: TamboComponent[] = [
   {
     name: "GitHubPullRequestFiles",
     description:
-      "Shows a pull request's changed files grouped by folder path with basic change stats. Useful after calling getPullRequestFiles.",
+      "Shows a pull request's changed files grouped by folder path with basic change stats. Prefer passing filesRequest so the component can fetch and render long lists without large JSON payloads. If files are provided and non-empty, filesRequest is ignored.",
     component: GitHubPullRequestFiles,
     propsSchema: githubPullRequestFilesSchema,
   },

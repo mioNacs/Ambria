@@ -1189,6 +1189,7 @@ export interface PRFile {
     changes: number;
     patch?: string;
     previousFilename?: string;
+    htmlUrl?: string;
 }
 
 /**
@@ -1198,17 +1199,29 @@ export async function getPullRequestFiles(params: {
     owner: string;
     repo: string;
     pullNumber: number;
+    limit?: number;
+    page?: number;
+    includePatch?: boolean;
     token?: string;
 }): Promise<PRFile[]> {
-    const { owner, repo, pullNumber, token } = params;
+    const { owner, repo, pullNumber, limit, page, includePatch, token } = params;
     const octokit = new Octokit({ auth: token });
+
+    const normalizedLimit = typeof limit === "number" && Number.isFinite(limit)
+        ? Math.max(1, Math.min(Math.trunc(limit), 50))
+        : 50;
+    const normalizedPage = typeof page === "number" && Number.isFinite(page)
+        ? Math.max(1, Math.min(Math.trunc(page), 100))
+        : 1;
+    const shouldIncludePatch = Boolean(includePatch);
 
     try {
         const { data } = await octokit.rest.pulls.listFiles({
             owner,
             repo,
             pull_number: pullNumber,
-            per_page: 100,
+            per_page: normalizedLimit,
+            page: normalizedPage,
         });
 
         return data.map((file) => ({
@@ -1217,8 +1230,12 @@ export async function getPullRequestFiles(params: {
             additions: file.additions,
             deletions: file.deletions,
             changes: file.changes,
-            patch: file.patch ? file.patch.slice(0, 5000) : undefined,
+            patch:
+                shouldIncludePatch && file.patch
+                    ? file.patch.slice(0, 2000)
+                    : undefined,
             previousFilename: file.previous_filename,
+            htmlUrl: file.blob_url,
         }));
     } catch (error) {
         throw new Error(`Failed to fetch PR files: ${error}`);
