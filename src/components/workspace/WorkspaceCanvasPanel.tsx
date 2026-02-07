@@ -52,6 +52,8 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   );
   const [pendingOpen, setPendingOpen] = React.useState<InteractableComponentName | null>(null);
   const suppressStateNavigationRef = React.useRef(false);
+  // Reset suppression in a microtask so state-driven navigation doesn't immediately
+  // override user-driven "Back to list". Token prevents stale resets.
   const suppressResetTokenRef = React.useRef(0);
 
   const pendingOpenRef = React.useRef<InteractableComponentName | null>(null);
@@ -240,6 +242,8 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       }
       setView(viewForComponent(componentName));
       closeAllCanvases();
+      pendingOpenRef.current = componentName;
+      setPendingOpen(componentName);
       setIsOpen(componentName, true);
     },
     [closeAllCanvases, setIsOpen, viewForComponent],
@@ -610,8 +614,12 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
           <div className={cn(!anyCanvasOpen ? "block" : "hidden")}>
             <div className="h-full flex items-center justify-center p-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Opening canvas...</span>
+                {pendingOpen ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : null}
+                <span>
+                  {pendingOpen ? "Opening canvas..." : "No canvas is currently open."}
+                </span>
               </div>
             </div>
           </div>
