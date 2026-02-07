@@ -632,10 +632,20 @@ export async function getRepoIssues(params: {
     state?: "open" | "closed" | "all";
     labels?: string;
     limit?: number;
+    page?: number;
     token?: string;
 }): Promise<Issue[]> {
-    const { owner, repo, state = "open", labels, limit = 20, token } = params;
+    const { owner, repo, state = "open", labels, limit = 20, page = 1, token } = params;
     const octokit = new Octokit({ auth: token });
+
+    const normalizedLimit = Number.isFinite(limit)
+        ? Math.max(1, Math.min(Math.trunc(limit), 50))
+        : 20;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+
+    if (normalizedPage > 100) {
+        throw new Error("Page out of range (max 100)");
+    }
 
     try {
         const { data } = await octokit.rest.issues.listForRepo({
@@ -643,7 +653,8 @@ export async function getRepoIssues(params: {
             repo,
             state,
             labels,
-            per_page: Math.min(limit, 50),
+            per_page: normalizedLimit,
+            page: normalizedPage,
         });
 
         // Filter out pull requests (they appear in issues API)
@@ -735,17 +746,28 @@ export async function getRepoPullRequests(params: {
     repo: string;
     state?: "open" | "closed" | "all";
     limit?: number;
+    page?: number;
     token?: string;
 }): Promise<PullRequest[]> {
-    const { owner, repo, state = "open", limit = 20, token } = params;
+    const { owner, repo, state = "open", limit = 20, page = 1, token } = params;
     const octokit = new Octokit({ auth: token });
+
+    const normalizedLimit = Number.isFinite(limit)
+        ? Math.max(1, Math.min(Math.trunc(limit), 50))
+        : 20;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+
+    if (normalizedPage > 100) {
+        throw new Error("Page out of range (max 100)");
+    }
 
     try {
         const { data } = await octokit.rest.pulls.list({
             owner,
             repo,
             state,
-            per_page: Math.min(limit, 50),
+            per_page: normalizedLimit,
+            page: normalizedPage,
         });
 
         return data.map((pr) => ({
@@ -1167,26 +1189,44 @@ export interface PRFile {
     changes: number;
     patch?: string;
     previousFilename?: string;
+    htmlUrl?: string;
 }
 
+const MAX_PR_FILE_PATCH_CHARS = 2000;
+
 /**
- * Get the list of files changed in a pull request with their patches
- */
+* Get the list of files changed in a pull request.
+*
+* Supports pagination via `limit` and `page`. Patch snippets are optional and
+* truncated to keep payload size bounded.
+*/
 export async function getPullRequestFiles(params: {
     owner: string;
     repo: string;
     pullNumber: number;
+    limit?: number;
+    page?: number;
+    includePatch?: boolean;
     token?: string;
 }): Promise<PRFile[]> {
-    const { owner, repo, pullNumber, token } = params;
+    const { owner, repo, pullNumber, limit, page, includePatch, token } = params;
     const octokit = new Octokit({ auth: token });
+
+    const normalizedLimit = typeof limit === "number" && Number.isFinite(limit)
+        ? Math.max(1, Math.min(Math.trunc(limit), 50))
+        : 20;
+    const normalizedPage = typeof page === "number" && Number.isFinite(page)
+        ? Math.max(1, Math.min(Math.trunc(page), 100))
+        : 1;
+    const shouldIncludePatch = Boolean(includePatch);
 
     try {
         const { data } = await octokit.rest.pulls.listFiles({
             owner,
             repo,
             pull_number: pullNumber,
-            per_page: 100,
+            per_page: normalizedLimit,
+            page: normalizedPage,
         });
 
         return data.map((file) => ({
@@ -1195,11 +1235,18 @@ export async function getPullRequestFiles(params: {
             additions: file.additions,
             deletions: file.deletions,
             changes: file.changes,
-            patch: file.patch ? file.patch.slice(0, 5000) : undefined,
+            patch:
+                shouldIncludePatch && file.patch
+                    ? file.patch.slice(0, MAX_PR_FILE_PATCH_CHARS)
+                    : undefined,
             previousFilename: file.previous_filename,
+            htmlUrl: file.blob_url,
         }));
     } catch (error) {
-        throw new Error(`Failed to fetch PR files: ${error}`);
+        if (error instanceof Error) {
+            throw new Error(`Failed to fetch PR files: ${error.message}`);
+        }
+        throw new Error(`Failed to fetch PR files: ${String(error)}`);
     }
 }
 

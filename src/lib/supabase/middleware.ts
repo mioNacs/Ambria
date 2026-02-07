@@ -1,6 +1,12 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PUBLIC_GITHUB_API_ROUTES = new Set([
+    "/api/github/issues",
+    "/api/github/pull-requests",
+    "/api/github/pull-request-files",
+]);
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -35,6 +41,14 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     const pathname = request.nextUrl.pathname;
+
+    // GitHub proxy endpoints are intentionally allowed to be called from public pages (e.g. `/chat`).
+    // Avoid middleware redirects that would turn these into HTML responses.
+    const isPublicGitHubApiRoute = PUBLIC_GITHUB_API_ROUTES.has(pathname);
+
+    if (isPublicGitHubApiRoute) {
+        return supabaseResponse;
+    }
 
     const isAuthRoute = pathname.startsWith("/auth");
     const isPublicRoute = pathname === "/" || pathname.startsWith("/login") || isAuthRoute;

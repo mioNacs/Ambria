@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { parseGitHubUrl } from "@/lib/github";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, GitBranch, GitMerge } from "lucide-react";
 import * as React from "react";
@@ -53,6 +54,77 @@ export const githubPullRequestSchema = z
       .optional()
       .describe("Base branch name (target)"),
   });
+
+const pullRequestsApiResponseSchema = z.object({
+  pullRequests: z.array(githubPullRequestSchema),
+});
+
+const pullRequestsRequestSchema = z
+  .object({
+    repository: z
+      .string()
+      .optional()
+      .describe(
+        "Optional repository identifier (owner/repo or URL). If provided, owner/repo can be omitted.",
+      ),
+    owner: z
+      .string()
+      .optional()
+      .describe("GitHub repository owner/organization name"),
+    repo: z.string().optional().describe("GitHub repository name"),
+    state: z
+      .enum(["open", "closed", "all"])
+      .optional()
+      .describe("Filter pull requests by state"),
+    limit: z
+      .coerce
+      .number()
+      .int()
+      .positive()
+      .max(50)
+      .optional()
+      .describe("Number of pull requests to fetch per page (default 20, max 50)"),
+    page: z
+      .coerce
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .optional()
+      .describe("Page number (1-indexed)"),
+  })
+  .describe(
+    "A GitHub pull requests request. Prefer passing this instead of a large pullRequests array.",
+  );
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function resolveOwnerRepo(input: {
+  repository?: string;
+  owner?: string;
+  repo?: string;
+}): { owner: string; repo: string } | null {
+  const owner = normalizeOptionalString(input.owner);
+  const repo = normalizeOptionalString(input.repo);
+
+  if (owner && repo) return { owner, repo };
+
+  const candidate =
+    normalizeOptionalString(input.repository) ??
+    normalizeOptionalString(input.repo) ??
+    normalizeOptionalString(input.owner);
+
+  if (!candidate) return null;
+  const parsed = parseGitHubUrl(candidate);
+  if (!parsed) return null;
+  const parsedOwner = normalizeOptionalString(parsed.owner);
+  const parsedRepo = normalizeOptionalString(parsed.repo);
+  return parsedOwner && parsedRepo ? { owner: parsedOwner, repo: parsedRepo } : null;
+}
 
 export const pullRequestCardSchema = githubPullRequestSchema
   .extend({
@@ -209,7 +281,16 @@ export const pullRequestListSchema = z
       .describe("Title displayed above the pull request list"),
     pullRequests: z
       .array(githubPullRequestSchema)
-      .describe("Pull requests to display"),
+      .optional()
+      .default([])
+      .describe(
+        "Pull requests to display. If non-empty, pullRequestsRequest will be ignored.",
+      ),
+    pullRequestsRequest: pullRequestsRequestSchema
+      .optional()
+      .describe(
+        "Optional pull requests request. When provided and pullRequests are omitted, the component will fetch pull requests itself.",
+      ),
     showBodyPreview: z
       .boolean()
       .optional()
@@ -226,13 +307,223 @@ export type PullRequestListProps = z.infer<typeof pullRequestListSchema> &
 
 export function PullRequestList({
   title = "Pull requests",
-  pullRequests = [],
+  pullRequests: pullRequestsProp,
+  pullRequestsRequest,
   showBodyPreview,
   emptyMessage = "No pull requests.",
   className,
   ...props
 }: PullRequestListProps) {
-  const items = pullRequests;
+  const [items, setItems] = React.useState(() => pullRequestsProp ?? []);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(
+    pullRequestsRequest?.page ?? 1,
+  );
+  const [hasMore, setHasMore] = React.useState(false);
+
+  const pullRequestsPropLength = pullRequestsProp?.length ?? 0;
+  const hasRequest = Boolean(pullRequestsRequest);
+
+  const repository = pullRequestsRequest?.repository;
+  const owner = pullRequestsRequest?.owner;
+  const repo = pullRequestsRequest?.repo;
+  const state = pullRequestsRequest?.state;
+  const limit = pullRequestsRequest?.limit;
+  const page = pullRequestsRequest?.page;
+
+  const normalizedRequest = React.useMemo(() => {
+    if (!hasRequest) return null;
+
+    const ownerRepo = resolveOwnerRepo({
+      repository,
+      owner,
+      repo,
+    });
+
+    if (!ownerRepo) return null;
+
+    return {
+      owner: ownerRepo.owner,
+      repo: ownerRepo.repo,
+      state,
+      limit,
+      page,
+    };
+  }, [
+    hasRequest,
+    limit,
+    owner,
+    page,
+    repo,
+    repository,
+    state,
+  ]);
+
+  const pageSize = React.useMemo(() => {
+    const normalizedLimit = normalizedRequest?.limit;
+    if (!normalizedLimit) return 20;
+    return Math.max(1, Math.min(normalizedLimit, 50));
+  }, [normalizedRequest?.limit]);
+
+  const requestIdRef = React.useRef(0);
+  const abortRef = React.useRef<AbortController | null>(null);
+
+  const cancelInFlight = React.useCallback(() => {
+    requestIdRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
+
+  const fetchPage = React.useCallback(
+    async ({ page, mode }: { page: number; mode: "replace" | "append" }) => {
+      if (!normalizedRequest) return;
+
+      const requestId = ++requestIdRef.current;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/github/pull-requests", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            ...normalizedRequest,
+            limit: pageSize,
+            page,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | {
+                error?: string;
+                details?: {
+                  fieldErrors?: Record<string, string[] | undefined>;
+                  formErrors?: string[];
+                };
+              }
+            | null;
+
+          const formErrors = payload?.details?.formErrors ?? [];
+          const fieldErrors = payload?.details?.fieldErrors ?? {};
+
+          const fieldErrorMessages = Object.entries(fieldErrors).flatMap(
+            ([field, errors]) =>
+              Array.isArray(errors)
+                ? errors.map((error) => `${field}: ${error}`)
+                : [],
+          );
+          const detailsMessage = [...formErrors, ...fieldErrorMessages]
+            .filter(Boolean)
+            .join("; ");
+
+          const statusMessage =
+            !detailsMessage && !payload?.error
+              ? `Request failed (${response.status}). The server did not provide additional error details.`
+              : undefined;
+
+          throw new Error(
+            detailsMessage ||
+              payload?.error ||
+              statusMessage ||
+              `Request failed (${response.status})`,
+          );
+        }
+
+        const payload = (await response.json().catch(() => null)) as unknown;
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          throw new Error("Received an invalid response from the server");
+        }
+        const parsed = pullRequestsApiResponseSchema.safeParse(payload);
+        if (!parsed.success) {
+          throw new Error("Received an invalid response from the server");
+        }
+
+        const next = parsed.data.pullRequests;
+
+        if (requestId !== requestIdRef.current) return;
+
+        setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
+        setCurrentPage(page);
+        setHasMore(next.length === pageSize && page < 100);
+      } catch (e) {
+        if (controller.signal.aborted) return;
+
+        if (requestId !== requestIdRef.current) return;
+
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [normalizedRequest, pageSize],
+  );
+
+  React.useEffect(() => {
+    // Precedence: explicit pullRequests props override pullRequestsRequest (no client-side pagination).
+    if (pullRequestsPropLength > 0) {
+      cancelInFlight();
+      setItems(pullRequestsProp ?? []);
+      setError(null);
+      setIsLoading(false);
+      setHasMore(false);
+      setCurrentPage(1);
+      return;
+    }
+
+    if (!hasRequest) {
+      cancelInFlight();
+      setItems([]);
+      setError(null);
+      setHasMore(false);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!normalizedRequest) {
+      cancelInFlight();
+      setItems([]);
+      setError(
+        "Invalid request (missing repository). Provide owner+repo or a repository URL.",
+      );
+      setHasMore(false);
+      setIsLoading(false);
+      return;
+    }
+
+    cancelInFlight();
+    const startPage = normalizedRequest.page ?? 1;
+    setItems([]);
+    setHasMore(false);
+    setCurrentPage(startPage);
+    void fetchPage({ page: startPage, mode: "replace" });
+  }, [
+    cancelInFlight,
+    fetchPage,
+    hasRequest,
+    normalizedRequest,
+    pullRequestsProp,
+    pullRequestsPropLength,
+  ]);
+
+  React.useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const bodyPreviewProps =
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
@@ -246,9 +537,21 @@ export function PullRequestList({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
+        <div className="mt-3 space-y-2">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          )}
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
+        </div>
       ) : (
         <div className="mt-3 space-y-3">
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
           {items.map((pr) => (
             <PullRequestCard
               key={pr.htmlUrl ?? `pr:${pr.number}`}
@@ -256,6 +559,24 @@ export function PullRequestList({
               {...bodyPreviewProps}
             />
           ))}
+          {hasRequest && hasMore ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (isLoading) return;
+                void fetchPage({ page: currentPage + 1, mode: "append" });
+              }}
+              className={cn(
+                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
+                "px-3 py-2 text-sm text-foreground",
+                "hover:bg-muted/50 transition-colors",
+                "disabled:opacity-60",
+              )}
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading…" : "Load more"}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

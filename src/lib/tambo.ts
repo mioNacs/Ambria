@@ -392,14 +392,27 @@ export const tools: TamboTool[] = [
   {
     name: "getRepoIssues",
     description:
-      "Get issues from a repository with filters for state and labels.",
+      "Get issues from a repository with filters for state and labels. Supports pagination with page + limit.",
     tool: getRepoIssues,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
       repo: z.string().describe("GitHub repository name"),
       state: z.enum(["open", "closed", "all"]).optional().describe("Issue state filter"),
       labels: z.string().optional().describe("Comma-separated list of label names"),
-      limit: z.number().optional().describe("Number of issues to fetch (default 20, max 50)"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe("Number of issues to fetch (default 20, max 50)"),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe("Page number (1-indexed, default 1)"),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),
     outputSchema: z.array(
@@ -444,13 +457,26 @@ export const tools: TamboTool[] = [
   {
     name: "getRepoPullRequests",
     description:
-      "Get pull requests from a repository with state filter.",
+      "Get pull requests from a repository with state filter. Supports pagination with page + limit.",
     tool: getRepoPullRequests,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
       repo: z.string().describe("GitHub repository name"),
       state: z.enum(["open", "closed", "all"]).optional().describe("PR state filter"),
-      limit: z.number().optional().describe("Number of PRs to fetch (default 20, max 50)"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe("Number of PRs to fetch (default 20, max 50)"),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe("Page number (1-indexed, default 1)"),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),
     outputSchema: z.array(
@@ -593,12 +619,32 @@ export const tools: TamboTool[] = [
   {
     name: "getPullRequestFiles",
     description:
-      "Get the list of files changed in a pull request with their individual patches and stats.",
+      "Get the list of files changed in a pull request with basic stats. Supports pagination with page + limit; patches are optional and can make responses large on big PRs.",
     tool: getPullRequestFiles,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
       repo: z.string().describe("GitHub repository name"),
       pullNumber: z.number().describe("Pull request number"),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe("Number of files to fetch (default 20, max 50)"),
+      page: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe("Page number (1-indexed, default 1)"),
+      includePatch: z
+        .boolean()
+        .optional()
+        .describe(
+          "Whether to include a truncated diff patch snippet per file (avoid unless needed; increases payload size)",
+        ),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),
     outputSchema: z.array(
@@ -608,8 +654,12 @@ export const tools: TamboTool[] = [
         additions: z.number(),
         deletions: z.number(),
         changes: z.number(),
-        patch: z.string().optional(),
+        patch: z
+          .string()
+          .optional()
+          .describe("Truncated diff patch snippet (up to 2000 characters)"),
         previousFilename: z.string().optional(),
+        htmlUrl: z.string().optional(),
       })
     ),
   },
@@ -666,28 +716,28 @@ export const components: TamboComponent[] = [
   {
     name: "IssueCard",
     description:
-      "Shows a single GitHub issue as a card. Useful after calling getRepoIssues.",
+      "Shows a single GitHub issue as a card. Use this for one specific issue; for lists, use IssueList.",
     component: IssueCard,
     propsSchema: issueCardSchema,
   },
   {
     name: "IssueList",
     description:
-      "Shows a list of GitHub issues as cards. Useful after calling getRepoIssues.",
+      "Shows a list of GitHub issues as cards. Prefer passing issuesRequest so the component can fetch and render long lists without large JSON payloads. If issues are provided and non-empty, issuesRequest is ignored.",
     component: IssueList,
     propsSchema: issueListSchema,
   },
   {
     name: "PullRequestCard",
     description:
-      "Shows a single GitHub pull request as a card. Useful after calling getRepoPullRequests.",
+      "Shows a single GitHub pull request as a card. Use this for one specific PR; for lists, use PullRequestList.",
     component: PullRequestCard,
     propsSchema: pullRequestCardSchema,
   },
   {
     name: "PullRequestList",
     description:
-      "Shows a list of GitHub pull requests as cards. Useful after calling getRepoPullRequests.",
+      "Shows a list of GitHub pull requests as cards. Prefer passing pullRequestsRequest so the component can fetch and render long lists without large JSON payloads. If pullRequests are provided and non-empty, pullRequestsRequest is ignored.",
     component: PullRequestList,
     propsSchema: pullRequestListSchema,
   },
@@ -701,7 +751,7 @@ export const components: TamboComponent[] = [
   {
     name: "GitHubPullRequestFiles",
     description:
-      "Shows a pull request's changed files grouped by folder path with basic change stats. Useful after calling getPullRequestFiles.",
+      "Shows a pull request's changed files grouped by folder path with basic change stats. Prefer passing filesRequest so the component can fetch and render long lists without large JSON payloads. If files are provided and non-empty, filesRequest is ignored.",
     component: GitHubPullRequestFiles,
     propsSchema: githubPullRequestFilesSchema,
   },
