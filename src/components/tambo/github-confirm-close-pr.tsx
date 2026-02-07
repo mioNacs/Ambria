@@ -223,16 +223,18 @@ function ConfirmClosePRForm({
       </div>
 
       {info ? (
-        <div className={cn(chatRenderableStyles.section, "space-y-2")}>
-          <div className="truncate text-sm font-semibold text-foreground">
-            {info.title}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">
-              {info.headRef} → {info.baseRef}
-            </span>
-            <span>•</span>
-            <span className="capitalize">{info.state}</span>
+        <div className={chatRenderableStyles.section}>
+          <div className="space-y-2">
+            <div className="truncate text-sm font-semibold text-foreground">
+              {info.title}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-mono">
+                {info.headRef} → {info.baseRef}
+              </span>
+              <span>•</span>
+              <span className="capitalize">{info.state}</span>
+            </div>
           </div>
         </div>
       ) : null}

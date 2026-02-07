@@ -63,7 +63,7 @@ export function CommunityHealth({
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="flex items-baseline justify-between gap-4">
+      <div className={chatRenderableStyles.header}>
         <h3 className={cn(chatRenderableStyles.title, "mt-0 text-base")}>{title}</h3>
         <div className={chatRenderableStyles.kicker}>
           <span className="font-medium text-foreground">{presentCount}</span> present
@@ -84,7 +84,6 @@ export function CommunityHealth({
                 key={path}
                 className={cn(
                   chatRenderableStyles.subcard,
-                  "py-2",
                   file.exists
                     ? "bg-emerald-500/5 dark:bg-emerald-500/10"
                     : "bg-destructive/5 dark:bg-destructive/10",
