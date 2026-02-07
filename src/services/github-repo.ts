@@ -40,7 +40,7 @@ function consumeUserConfirmedGitHubWrite(params: {
 
     if (!confirmationId) {
         throw new Error(
-            "User confirmation required. Render the matching confirmation component (GitHubCreateIssue, GitHubCreatePullRequest, GitHubCreateComment, ConfirmAssignIssue, ConfirmCloseIssue) and have the user click confirm.",
+            "User confirmation required. Render the matching confirmation component (GitHubCreateIssue, GitHubCreatePullRequest, GitHubCreateComment, ConfirmAssignIssue, ConfirmCloseIssue, ConfirmMergePR, ConfirmClosePR) and have the user click confirm.",
         );
     }
 
@@ -79,6 +79,140 @@ async function assertRepoWriteAccess(params: {
         throw new Error(
             `Unable to verify write access for ${owner}/${repo}. This may be due to missing permissions/scopes. Underlying error: ${message}`,
         );
+    }
+}
+
+async function sleep(ms: number) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getPullRequestWithMergeability(params: {
+    octokit: Octokit;
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    retries?: number;
+}): Promise<Awaited<ReturnType<Octokit["rest"]["pulls"]["get"]>>> {
+    const { octokit, owner, repo, pullNumber, retries = 4 } = params;
+
+    let attempt = 0;
+    let last: Awaited<ReturnType<typeof octokit.rest.pulls.get>> | null = null;
+
+    while (attempt < retries) {
+        const result = await octokit.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: pullNumber,
+        });
+
+        last = result;
+        if (result.data.mergeable !== null) {
+            return result;
+        }
+
+        attempt += 1;
+        if (attempt < retries) {
+            await sleep(250 * attempt);
+        }
+    }
+
+    if (!last) {
+        throw new Error("Failed to fetch pull request.");
+    }
+
+    return last;
+}
+
+type CombinedStatusState = "error" | "failure" | "pending" | "success";
+
+export interface PullRequestChecksSummary {
+    state: CombinedStatusState;
+    totalCount: number;
+    failingCount: number;
+    pendingCount: number;
+}
+
+async function getCombinedStatusSummary(params: {
+    octokit: Octokit;
+    owner: string;
+    repo: string;
+    ref: string;
+}): Promise<PullRequestChecksSummary | null> {
+    const { octokit, owner, repo, ref } = params;
+
+    try {
+        const { data } = await octokit.rest.repos.getCombinedStatusForRef({
+            owner,
+            repo,
+            ref,
+        });
+
+        const failingCount = data.statuses.filter(
+            (s) => s.state === "error" || s.state === "failure",
+        ).length;
+        const pendingCount = data.statuses.filter((s) => s.state === "pending").length;
+
+        return {
+            state: data.state as CombinedStatusState,
+            totalCount: data.total_count,
+            failingCount,
+            pendingCount,
+        };
+    } catch {
+        return null;
+    }
+}
+
+export interface PullRequestConfirmationInfo {
+    number: number;
+    title: string;
+    state: string;
+    htmlUrl: string;
+    baseRef: string;
+    headRef: string;
+    mergeable: boolean | null;
+    mergeableState: string | null;
+    checks: PullRequestChecksSummary | null;
+}
+
+export async function getPullRequestConfirmationInfo(params: {
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    token?: string;
+}): Promise<PullRequestConfirmationInfo> {
+    const { owner, repo, pullNumber, token } = params;
+    const octokit = new Octokit({ auth: token });
+
+    try {
+        const { data: pr } = await getPullRequestWithMergeability({
+            octokit,
+            owner,
+            repo,
+            pullNumber,
+        });
+
+        const checks = await getCombinedStatusSummary({
+            octokit,
+            owner,
+            repo,
+            ref: pr.head.sha,
+        });
+
+        return {
+            number: pr.number,
+            title: pr.title,
+            state: pr.state,
+            htmlUrl: pr.html_url,
+            baseRef: pr.base.ref,
+            headRef: pr.head.ref,
+            mergeable: pr.mergeable,
+            mergeableState: pr.mergeable_state,
+            checks,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(`Failed to fetch pull request info: ${message}`);
     }
 }
 
@@ -278,7 +412,7 @@ export async function getRepoOverview(params: {
                 path: readmePath.path,
                 token,
             });
-        } catch (e) {
+        } catch {
             console.warn("Could not fetch README");
         }
     }
@@ -296,7 +430,7 @@ export async function getRepoOverview(params: {
                 path: "package.json",
                 token,
             });
-        } catch (e) {
+        } catch {
             console.warn("Could not fetch package.json");
         }
     }
@@ -1262,6 +1396,191 @@ export async function closeRepoIssue(params: {
         throw new Error(
             `Failed to close issue. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
         );
+    }
+}
+
+export type PullRequestMergeMethod = "merge" | "squash" | "rebase";
+
+export interface MergedPullRequest {
+    number: number;
+    merged: boolean;
+    message: string;
+    htmlUrl: string;
+    sha: string;
+    branchDeleted: boolean;
+}
+
+/**
+* Merge a pull request.
+*/
+export async function mergePullRequest(params: {
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    mergeMethod?: PullRequestMergeMethod;
+    deleteBranch?: boolean;
+    token: string;
+    confirmationId: string;
+}): Promise<MergedPullRequest> {
+    const {
+        owner,
+        repo,
+        pullNumber,
+        mergeMethod = "merge",
+        deleteBranch = false,
+        token,
+        confirmationId,
+    } = params;
+
+    const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({
+        confirmationId,
+        owner,
+        repo,
+        kind: "pull_request_merge",
+    });
+    await assertRepoWriteAccess({ octokit, owner, repo });
+
+    try {
+        const prResult = await getPullRequestWithMergeability({
+            octokit,
+            owner,
+            repo,
+            pullNumber,
+        });
+        const pr = prResult.data;
+
+        if (pr.state !== "open") {
+            throw new Error(`Pull request #${pullNumber} is not open.`);
+        }
+
+        if (pr.mergeable === false || pr.mergeable_state === "dirty") {
+            throw new Error(
+                "This pull request has merge conflicts and cannot be merged automatically.",
+            );
+        }
+
+        const checks = await getCombinedStatusSummary({
+            octokit,
+            owner,
+            repo,
+            ref: pr.head.sha,
+        });
+
+        if (checks && checks.state !== "success") {
+            if (checks.state === "pending") {
+                throw new Error(
+                    "Required checks are still running. Wait for checks to complete before merging.",
+                );
+            }
+
+            throw new Error(
+                "Required checks are failing. Fix failing checks before merging.",
+            );
+        }
+
+        const { data } = await octokit.rest.pulls.merge({
+            owner,
+            repo,
+            pull_number: pullNumber,
+            merge_method: mergeMethod,
+        });
+
+        let branchDeleted = false;
+        if (deleteBranch) {
+            const sameRepo =
+                pr.head.repo?.full_name &&
+                pr.base.repo?.full_name &&
+                pr.head.repo.full_name === pr.base.repo.full_name;
+
+            if (sameRepo) {
+                try {
+                    await octokit.rest.git.deleteRef({
+                        owner,
+                        repo,
+                        ref: `heads/${pr.head.ref}`,
+                    });
+                    branchDeleted = true;
+                } catch {
+                    branchDeleted = false;
+                }
+            }
+        }
+
+        return {
+            number: pr.number,
+            merged: data.merged,
+            message: data.message,
+            htmlUrl: pr.html_url,
+            sha: data.sha,
+            branchDeleted,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+
+        if (message.toLowerCase().includes("merge conflict")) {
+            throw new Error(
+                "This pull request has merge conflicts and cannot be merged automatically.",
+            );
+        }
+
+        throw new Error(`Failed to merge pull request: ${message}`);
+    }
+}
+
+export interface ClosedPullRequest {
+    number: number;
+    state: string;
+    htmlUrl: string;
+}
+
+/**
+* Close a pull request.
+*/
+export async function closePullRequest(params: {
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    token: string;
+    confirmationId: string;
+}): Promise<ClosedPullRequest> {
+    const { owner, repo, pullNumber, token, confirmationId } = params;
+
+    const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({
+        confirmationId,
+        owner,
+        repo,
+        kind: "pull_request_close",
+    });
+    await assertRepoWriteAccess({ octokit, owner, repo });
+
+    try {
+        const { data: pr } = await octokit.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: pullNumber,
+        });
+
+        if (pr.state !== "open") {
+            throw new Error(`Pull request #${pullNumber} is not open.`);
+        }
+
+        const { data } = await octokit.rest.pulls.update({
+            owner,
+            repo,
+            pull_number: pullNumber,
+            state: "closed",
+        });
+
+        return {
+            number: data.number,
+            state: data.state,
+            htmlUrl: data.html_url,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(`Failed to close pull request: ${message}`);
     }
 }
 
