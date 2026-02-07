@@ -9,6 +9,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { WorkspaceList } from "@/components/workspace/WorkspaceList";
 import { AddWorkspaceModal } from "@/components/workspace/AddWorkspaceModal";
+import { Logo } from "@/components/ui/Logo";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -42,31 +43,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center shadow-sm">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 12l2 2 4-4"
-                  />
-                </svg>
-              </div>
+              <Logo className="w-10 h-10 text-gray-900" />
               <div className="leading-tight">
                 <div className="text-lg font-semibold text-gray-900">Ambria</div>
                 <div className="text-xs text-gray-500 hidden sm:block">
-                  AI companion for open source work
+                  Open Source Simplified
                 </div>
               </div>
             </div>

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { LoginButton } from "@/components/auth/LoginButton";
+import { Logo } from "@/components/ui/Logo";
 
 function FeatureCard({
   icon,
@@ -96,13 +97,11 @@ export default function LandingPage() {
         <div className="mx-auto w-full max-w-6xl px-6">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center shadow-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
+              <Logo className="w-9 h-9 text-gray-900" />
               <div className="leading-tight">
                 <div className="text-sm font-semibold text-gray-900">Ambria</div>
                 <div className="text-[11px] text-gray-500 hidden sm:block">
-                  AI companion for open source work
+                  Open Source Simplified
                 </div>
               </div>
             </div>
