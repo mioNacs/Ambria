@@ -8,6 +8,9 @@ import {
   Loader2,
   Plus,
   Trash2,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useTamboComponentState, withInteractable } from "@tambo-ai/react";
 import type { InteractableConfig } from "@tambo-ai/react";
@@ -165,6 +168,7 @@ function RepoFindingsCanvasBase({
     setTamboFindings(next);
   };
 
+  const [showAddForm, setShowAddForm] = React.useState(false);
   const [draftTitle, setDraftTitle] = React.useState("");
   const [draftSummary, setDraftSummary] = React.useState("");
   const [draftSeverity, setDraftSeverity] = React.useState<RepoFinding["severity"]>(
@@ -193,286 +197,503 @@ function RepoFindingsCanvasBase({
     setDraftSeverity("info");
     setDraftStatus("open");
     setDraftRefs("");
+    setShowAddForm(false);
   };
 
   return (
     // Keep mounted (hidden) so the workspace panel can open this interactable later.
-    <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-card">
-      <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15">
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-                <div className="font-medium text-foreground text-sm truncate">{title}</div>
-              </div>
+    <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-background">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground text-base">{title}</h2>
               {instructions ? (
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {instructions}
-                </div>
+                </p>
               ) : null}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {persistedState.isSaving ? (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Saving</span>
-                </div>
-              ) : null}
-            </div>
-      </div>
-
-      <div className="p-4 space-y-3">
-        <div className="rounded-xl border border-muted-foreground/20 bg-muted/10 p-3">
-          <div className="grid grid-cols-1 gap-2">
-            <input
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value.slice(0, MAX_TITLE))}
-              placeholder="Finding title (e.g. 'Too many ad-hoc fetch() calls')"
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm",
-                "border border-muted-foreground/20 bg-card text-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              )}
-            />
-
-            <textarea
-              value={draftSummary}
-              onChange={(e) => setDraftSummary(e.target.value.slice(0, MAX_SUMMARY))}
-              placeholder="Summary / suggested fix (optional)"
-              rows={2}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm resize-none",
-                "border border-muted-foreground/20 bg-card text-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              )}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <select
-                value={draftSeverity}
-                onChange={(e) =>
-                  setDraftSeverity(e.target.value as RepoFinding["severity"]) }
-                className={cn(
-                  "px-3 py-2 rounded-lg text-sm",
-                  "border border-muted-foreground/20 bg-card text-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                )}
-              >
-                <option value="info">Info</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-
-              <select
-                value={draftStatus}
-                onChange={(e) =>
-                  setDraftStatus(e.target.value as RepoFinding["status"]) }
-                className={cn(
-                  "px-3 py-2 rounded-lg text-sm",
-                  "border border-muted-foreground/20 bg-card text-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                )}
-              >
-                <option value="open">Open</option>
-                <option value="in_progress">In progress</option>
-                <option value="resolved">Resolved</option>
-              </select>
-            </div>
-
-            <textarea
-              value={draftRefs}
-              onChange={(e) => setDraftRefs(e.target.value)}
-              placeholder="References (optional, one per line: file paths or URLs)"
-              rows={2}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm resize-none",
-                "border border-muted-foreground/20 bg-card text-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              )}
-            />
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={addFinding}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium",
-                  "bg-primary text-primary-foreground hover:bg-primary/90",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                )}
-                disabled={!draftTitle.trim() && !draftSummary.trim() && !draftRefs.trim()}
-              >
-                <Plus className="w-4 h-4" />
-                Add finding
-              </button>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          {findings.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No findings yet. Ask the assistant to summarize risk areas and log findings here.
-            </div>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {persistedState.isSaving ? (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/30">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Saving...</span>
+              </div>
+            ) : null}
 
-          {findings.map((finding) => (
-            <div
-              key={finding.id}
+            <button
+              type="button"
+              onClick={() => setShowAddForm(!showAddForm)}
               className={cn(
-                "rounded-xl border border-muted-foreground/20 bg-card",
-                "p-3 space-y-2",
+                "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium",
+                "transition-all duration-200",
+                showAddForm
+                  ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <input
-                    value={finding.title}
-                    onChange={(e) =>
-                      setFindings((prev) =>
-                        prev.map((f) =>
-                          f.id === finding.id
-                            ? { ...f, title: e.target.value.slice(0, MAX_TITLE) }
-                            : f,
-                        ),
-                      )
-                    }
-                    className={cn(
-                      "w-full bg-transparent text-sm font-medium text-foreground",
-                      "focus:outline-none",
-                    )}
-                  />
+              {showAddForm ? (
+                <>
+                  <X className="w-4 h-4" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Add finding
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
-                  {finding.summary ? (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {finding.summary}
-                    </div>
-                  ) : null}
-                </div>
+      <div className="overflow-y-auto h-[calc(100%-73px)]">
+        <div className="p-6 space-y-6">
+          {/* Add Finding Form - Collapsible */}
+          {showAddForm && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <div className="rounded-xl border border-border bg-card shadow-lg p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <div className="w-1 h-4 bg-primary rounded-full" />
+                  New Finding
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={draftTitle}
+                      onChange={(e) => setDraftTitle(e.target.value.slice(0, MAX_TITLE))}
+                      placeholder="e.g., 'Too many ad-hoc fetch() calls' or 'Missing error handling'"
+                      className={cn(
+                        "w-full px-3 py-2.5 rounded-lg text-sm",
+                        "border border-input bg-background text-foreground",
+                        "placeholder:text-muted-foreground/60",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                        "transition-all duration-200",
+                      )}
+                    />
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFindings((prev) => prev.filter((f) => f.id !== finding.id))
-                  }
-                  className="p-2 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground shrink-0"
-                  title="Remove finding"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Summary / Suggested Fix
+                    </label>
+                    <textarea
+                      value={draftSummary}
+                      onChange={(e) => setDraftSummary(e.target.value.slice(0, MAX_SUMMARY))}
+                      placeholder="Describe the issue and potential solutions..."
+                      rows={3}
+                      className={cn(
+                        "w-full px-3 py-2.5 rounded-lg text-sm resize-none",
+                        "border border-input bg-background text-foreground",
+                        "placeholder:text-muted-foreground/60",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                        "transition-all duration-200",
+                      )}
+                    />
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <select
-                  value={finding.severity ?? "info"}
-                  onChange={(e) =>
-                    setFindings((prev) =>
-                      prev.map((f) =>
-                        f.id === finding.id
-                          ? { ...f, severity: e.target.value as RepoFinding["severity"] }
-                          : f,
-                      ),
-                    )
-                  }
-                  className={cn(
-                    "px-2 py-1.5 rounded-lg text-xs font-medium border",
-                    severityStyles(finding.severity),
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  )}
-                >
-                  <option value="info">Info</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-
-                <select
-                  value={finding.status ?? "open"}
-                  onChange={(e) =>
-                    setFindings((prev) =>
-                      prev.map((f) =>
-                        f.id === finding.id
-                          ? { ...f, status: e.target.value as RepoFinding["status"] }
-                          : f,
-                      ),
-                    )
-                  }
-                  className={cn(
-                    "px-2 py-1.5 rounded-lg text-xs font-medium border",
-                    statusStyles(finding.status),
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  )}
-                >
-                  <option value="open">Open</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="resolved">Resolved</option>
-                </select>
-              </div>
-
-              <textarea
-                value={finding.summary ?? ""}
-                onChange={(e) =>
-                  setFindings((prev) =>
-                    prev.map((f) =>
-                      f.id === finding.id
-                        ? {
-                            ...f,
-                            summary:
-                              e.target.value.slice(0, MAX_SUMMARY) || undefined,
-                          }
-                        : f,
-                    ),
-                  )
-                }
-                placeholder="Summary / suggested fix (optional)"
-                rows={2}
-                className={cn(
-                  "w-full px-2 py-1.5 rounded-lg text-xs resize-none",
-                  "border border-muted-foreground/20 bg-muted/10 text-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                )}
-              />
-
-              {finding.references?.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {finding.references.map((ref, idx) => {
-                    const isLink = /^https?:\/\//.test(ref);
-                    const key = `${finding.id}:${idx}`;
-                    return (
-                      <div
-                        key={key}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Severity
+                      </label>
+                      <select
+                        value={draftSeverity}
+                        onChange={(e) =>
+                          setDraftSeverity(e.target.value as RepoFinding["severity"]) }
                         className={cn(
-                          "inline-flex items-center gap-1",
-                          "px-2 py-1 rounded-lg text-xs",
-                          "border border-muted-foreground/20 bg-muted/10",
-                          "text-muted-foreground",
+                          "w-full px-3 py-2.5 rounded-lg text-sm",
+                          "border border-input bg-background text-foreground",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                          "transition-all duration-200 cursor-pointer",
                         )}
                       >
-                        <span className="truncate max-w-[14rem]">{ref}</span>
-                        {isLink ? (
-                          <a
-                            href={ref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 rounded hover:bg-muted/40 text-muted-foreground hover:text-foreground"
-                            title="Open link"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                        <option value="info">Info</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Status
+                      </label>
+                      <select
+                        value={draftStatus}
+                        onChange={(e) =>
+                          setDraftStatus(e.target.value as RepoFinding["status"]) }
+                        className={cn(
+                          "w-full px-3 py-2.5 rounded-lg text-sm",
+                          "border border-input bg-background text-foreground",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                          "transition-all duration-200 cursor-pointer",
+                        )}
+                      >
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      References
+                    </label>
+                    <textarea
+                      value={draftRefs}
+                      onChange={(e) => setDraftRefs(e.target.value)}
+                      placeholder="One per line: file paths or URLs&#10;e.g., src/api/users.ts&#10;https://example.com/docs"
+                      rows={3}
+                      className={cn(
+                        "w-full px-3 py-2.5 rounded-lg text-sm resize-none font-mono",
+                        "border border-input bg-background text-foreground",
+                        "placeholder:text-muted-foreground/60",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                        "transition-all duration-200",
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddForm(false);
+                        setDraftTitle("");
+                        setDraftSummary("");
+                        setDraftSeverity("info");
+                        setDraftStatus("open");
+                        setDraftRefs("");
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium",
+                        "bg-muted text-muted-foreground hover:bg-muted/80",
+                        "transition-colors duration-200",
+                      )}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addFinding}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium",
+                        "bg-primary text-primary-foreground hover:bg-primary/90",
+                        "disabled:opacity-50 disabled:cursor-not-allowed",
+                        "transition-all duration-200 shadow-sm hover:shadow-md",
+                      )}
+                      disabled={!draftTitle.trim()}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Finding
+                    </button>
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
-          ))}
+          )}
+
+          {/* Findings List */}
+          <div className="space-y-4">
+            {findings.length === 0 ? (
+              <div className="text-center py-12 px-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+                  <AlertTriangle className="w-8 h-8 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  No findings yet. Click <strong>Add finding</strong> above or ask the assistant to analyze and log potential issues.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {findings.length} {findings.length === 1 ? 'finding' : 'findings'}
+                  </p>
+                </div>
+
+                {findings.map((finding) => (
+                  <FindingCard
+                    key={finding.id}
+                    finding={finding}
+                    onUpdate={(updates) =>
+                      setFindings((prev) =>
+                        prev.map((f) =>
+                          f.id === finding.id ? { ...f, ...updates } : f
+                        )
+                      )
+                    }
+                    onDelete={() =>
+                      setFindings((prev) => prev.filter((f) => f.id !== finding.id))
+                    }
+                  />
+                ))}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+interface FindingCardProps {
+  finding: RepoFinding;
+  onUpdate: (updates: Partial<RepoFinding>) => void;
+  onDelete: () => void;
+}
+
+function FindingCard({ finding, onUpdate, onDelete }: FindingCardProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  return (
+    <div
+      className={cn(
+        "group rounded-xl border bg-card",
+        "transition-all duration-200",
+        "hover:shadow-md hover:border-primary/20",
+        severityStyles(finding.severity),
+      )}
+    >
+      {/* Card Header */}
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2 mb-3">
+              <div className="flex gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border",
+                    severityStyles(finding.severity),
+                  )}
+                >
+                  {(finding.severity ?? "info").toUpperCase()}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border",
+                    statusStyles(finding.status),
+                  )}
+                >
+                  {finding.status === "in_progress"
+                    ? "In Progress"
+                    : (finding.status ?? "open").charAt(0).toUpperCase() +
+                      (finding.status ?? "open").slice(1)}
+                </span>
+              </div>
+            </div>
+
+            {!isExpanded ? (
+              <>
+                <h3 className="text-base font-semibold text-foreground leading-snug">
+                  {finding.title}
+                </h3>
+                {finding.summary && (
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                    {finding.summary}
+                  </p>
+                )}
+              </>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                isExpanded
+                  ? "bg-primary/10 text-primary hover:bg-primary/20"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+              )}
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"
+              title="Delete finding"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-5 border-t border-border/50 pt-5 animate-in slide-in-from-top-1 duration-200 bg-muted/20">
+          {/* Title Editor */}
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+              <div className="w-1 h-3.5 bg-primary rounded-full" />
+              Finding Title
+            </label>
+            <input
+              value={finding.title}
+              onChange={(e) =>
+                onUpdate({ title: e.target.value.slice(0, MAX_TITLE) })
+              }
+              className={cn(
+                "w-full px-3.5 py-2.5 rounded-lg text-sm font-medium",
+                "border-2 border-border bg-card text-foreground",
+                "placeholder:text-muted-foreground/60",
+                "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
+                "transition-all duration-200",
+                "shadow-sm hover:shadow-md",
+              )}
+              placeholder="Enter finding title..."
+            />
+          </div>
+
+          {/* Summary Editor */}
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+              <div className="w-1 h-3.5 bg-primary rounded-full" />
+              Summary / Suggested Fix
+            </label>
+            <div className="relative">
+              <textarea
+                value={finding.summary ?? ""}
+                onChange={(e) =>
+                  onUpdate({
+                    summary: e.target.value.slice(0, MAX_SUMMARY) || undefined,
+                  })
+                }
+                placeholder="Describe the issue in detail and suggest potential solutions or remediation steps..."
+                rows={5}
+                className={cn(
+                  "w-full px-3.5 py-3 rounded-lg text-sm resize-y min-h-[120px]",
+                  "border-2 border-border bg-card text-foreground leading-relaxed",
+                  "placeholder:text-muted-foreground/60",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
+                  "transition-all duration-200",
+                  "shadow-sm hover:shadow-md",
+                )}
+              />
+              <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/60 bg-card/80 px-2 py-0.5 rounded">
+                {(finding.summary ?? "").length} / {MAX_SUMMARY}
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-border/50" />
+
+          {/* Severity & Status */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-2 block">
+                Severity Level
+              </label>
+              <select
+                value={finding.severity ?? "info"}
+                onChange={(e) =>
+                  onUpdate({ severity: e.target.value as RepoFinding["severity"] })
+                }
+                className={cn(
+                  "w-full px-3 py-2 rounded-lg text-sm font-medium border-2",
+                  severityStyles(finding.severity),
+                  "focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer",
+                  "transition-all duration-200",
+                  "shadow-sm hover:shadow-md",
+                )}
+              >
+                <option value="info">ℹ️ Info</option>
+                <option value="low">🔵 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-2 block">
+                Status
+              </label>
+              <select
+                value={finding.status ?? "open"}
+                onChange={(e) =>
+                  onUpdate({ status: e.target.value as RepoFinding["status"] })
+                }
+                className={cn(
+                  "w-full px-3 py-2 rounded-lg text-sm font-medium border-2",
+                  statusStyles(finding.status),
+                  "focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer",
+                  "transition-all duration-200",
+                  "shadow-sm hover:shadow-md",
+                )}
+              >
+                <option value="open">📋 Open</option>
+                <option value="in_progress">⚙️ In Progress</option>
+                <option value="resolved">✅ Resolved</option>
+              </select>
+            </div>
+          </div>
+
+          {/* References */}
+          {finding.references?.length ? (
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+                <div className="w-1 h-3.5 bg-primary rounded-full" />
+                References ({finding.references.length})
+              </label>
+              <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-card border border-border">
+                {finding.references.map((ref, idx) => {
+                  const isLink = /^https?:\/\//.test(ref);
+                  const key = `${finding.id}:${idx}`;
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        "inline-flex items-center gap-2",
+                        "px-3 py-2 rounded-lg",
+                        "border border-border bg-muted/50",
+                        "text-foreground font-mono text-xs",
+                        "hover:bg-muted transition-all hover:shadow-sm",
+                      )}
+                    >
+                      <span className="truncate max-w-[18rem]">{ref}</span>
+                      {isLink && (
+                        <a
+                          href={ref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded hover:bg-primary/20 text-primary transition-colors"
+                          title="Open in new tab"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }
 

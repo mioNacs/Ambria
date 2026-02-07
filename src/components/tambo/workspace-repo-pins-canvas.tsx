@@ -8,6 +8,9 @@ import {
   Loader2,
   Plus,
   Trash2,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useTamboComponentState, withInteractable } from "@tambo-ai/react";
 import type { InteractableConfig } from "@tambo-ai/react";
@@ -202,6 +205,7 @@ function RepoPinsCanvasBase({
     setTamboPins(next);
   };
 
+  const [showAddForm, setShowAddForm] = React.useState(false);
   const [draftUrl, setDraftUrl] = React.useState("");
   const [draftTitle, setDraftTitle] = React.useState("");
   const [draftNote, setDraftNote] = React.useState("");
@@ -227,263 +231,475 @@ function RepoPinsCanvasBase({
     setDraftTitle("");
     setDraftNote("");
     setDraftStatus("todo");
+    setShowAddForm(false);
   };
 
   return (
     // Keep mounted (hidden) so the workspace panel can open this interactable later.
-    <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-card">
-      <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15">
-                  <Bookmark className="w-4 h-4" />
-                </div>
-                <div className="font-medium text-foreground text-sm truncate">{title}</div>
-              </div>
+    <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-background">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+              <Bookmark className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground text-base">{title}</h2>
               {instructions ? (
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {instructions}
-                </div>
+                </p>
               ) : null}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {persistedState.isSaving ? (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Saving</span>
-                </div>
-              ) : null}
-            </div>
-      </div>
-
-      <div className="p-4 space-y-3">
-        <div className="rounded-xl border border-muted-foreground/20 bg-muted/10 p-3">
-          <div className="grid grid-cols-1 gap-2">
-            <input
-              value={draftUrl}
-              onChange={(e) => setDraftUrl(e.target.value.slice(0, MAX_URL))}
-              placeholder="Paste a GitHub URL (issue, PR, file)…"
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm",
-                "border border-muted-foreground/20 bg-card text-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              )}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <input
-                value={draftTitle}
-                onChange={(e) => setDraftTitle(e.target.value.slice(0, MAX_TITLE))}
-                placeholder="Title (optional)"
-                className={cn(
-                  "sm:col-span-2 px-3 py-2 rounded-lg text-sm",
-                  "border border-muted-foreground/20 bg-card text-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                )}
-              />
-
-              <select
-                value={draftStatus}
-                onChange={(e) =>
-                  setDraftStatus(e.target.value as RepoPin["status"]) }
-                className={cn(
-                  "px-3 py-2 rounded-lg text-sm",
-                  "border border-muted-foreground/20 bg-card text-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                )}
-              >
-                <option value="todo">Todo</option>
-                <option value="watching">Watching</option>
-                <option value="blocked">Blocked</option>
-                <option value="done">Done</option>
-              </select>
-            </div>
-
-            <textarea
-              value={draftNote}
-              onChange={(e) => setDraftNote(e.target.value.slice(0, MAX_NOTE))}
-              placeholder="Note (optional)"
-              rows={2}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm resize-none",
-                "border border-muted-foreground/20 bg-card text-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              )}
-            />
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={addPin}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium",
-                  "bg-primary text-primary-foreground hover:bg-primary/90",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                )}
-                disabled={!draftUrl.trim() && !draftTitle.trim() && !draftNote.trim()}
-              >
-                <Plus className="w-4 h-4" />
-                Add pin
-              </button>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          {pins.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No pins yet. Ask the assistant to add issues/PRs/files you want to track.
-            </div>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {persistedState.isSaving ? (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/30">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Saving...</span>
+              </div>
+            ) : null}
 
-          {pins.map((pin) => (
-            <div
-              key={pin.id}
+            <button
+              type="button"
+              onClick={() => setShowAddForm(!showAddForm)}
               className={cn(
-                "rounded-xl border border-muted-foreground/20 bg-card",
-                "p-3 space-y-2",
+                "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium",
+                "transition-all duration-200",
+                showAddForm
+                  ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "text-[11px] px-2 py-0.5 rounded-full border",
-                        "bg-muted/30 border-muted-foreground/20 text-muted-foreground",
-                      )}
-                    >
-                      {kindLabel(pin.kind)}
-                    </span>
+              {showAddForm ? (
+                <>
+                  <X className="w-4 h-4" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Add pin
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
+      <div className="overflow-y-auto h-[calc(100%-73px)]">
+        <div className="p-6 space-y-6">
+          {/* Add Pin Form - Collapsible */}
+          {showAddForm && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <div className="rounded-xl border border-border bg-card shadow-lg p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <div className="w-1 h-4 bg-primary rounded-full" />
+                  New Pin
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      GitHub URL
+                    </label>
                     <input
-                      value={pin.title}
-                      onChange={(e) =>
-                        setPins((prev) =>
-                          prev.map((p) =>
-                            p.id === pin.id
-                              ? { ...p, title: e.target.value.slice(0, MAX_TITLE) }
-                              : p,
-                          ),
-                        )
-                      }
+                      value={draftUrl}
+                      onChange={(e) => setDraftUrl(e.target.value.slice(0, MAX_URL))}
+                      placeholder="https://github.com/owner/repo/issues/123"
                       className={cn(
-                        "flex-1 bg-transparent text-sm font-medium text-foreground",
-                        "focus:outline-none",
+                        "w-full px-3 py-2.5 rounded-lg text-sm font-mono",
+                        "border border-input bg-background text-foreground",
+                        "placeholder:text-muted-foreground/60",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                        "transition-all duration-200",
                       )}
                     />
                   </div>
 
-                  {pin.url ? (
-                    <div className="mt-1 text-xs text-muted-foreground truncate">
-                      {pin.url}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Title
+                      </label>
+                      <input
+                        value={draftTitle}
+                        onChange={(e) => setDraftTitle(e.target.value.slice(0, MAX_TITLE))}
+                        placeholder="Auto-generated from URL if left empty"
+                        className={cn(
+                          "w-full px-3 py-2.5 rounded-lg text-sm",
+                          "border border-input bg-background text-foreground",
+                          "placeholder:text-muted-foreground/60",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                          "transition-all duration-200",
+                        )}
+                      />
                     </div>
-                  ) : null}
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Status
+                      </label>
+                      <select
+                        value={draftStatus}
+                        onChange={(e) =>
+                          setDraftStatus(e.target.value as RepoPin["status"]) }
+                        className={cn(
+                          "w-full px-3 py-2.5 rounded-lg text-sm",
+                          "border border-input bg-background text-foreground",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                          "transition-all duration-200 cursor-pointer",
+                        )}
+                      >
+                        <option value="todo">📋 Todo</option>
+                        <option value="watching">👀 Watching</option>
+                        <option value="blocked">🚫 Blocked</option>
+                        <option value="done">✅ Done</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Notes
+                    </label>
+                    <textarea
+                      value={draftNote}
+                      onChange={(e) => setDraftNote(e.target.value.slice(0, MAX_NOTE))}
+                      placeholder="Add context, next steps, or reminders..."
+                      rows={3}
+                      className={cn(
+                        "w-full px-3 py-2.5 rounded-lg text-sm resize-none",
+                        "border border-input bg-background text-foreground",
+                        "placeholder:text-muted-foreground/60",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                        "transition-all duration-200",
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddForm(false);
+                        setDraftUrl("");
+                        setDraftTitle("");
+                        setDraftNote("");
+                        setDraftStatus("todo");
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium",
+                        "bg-muted text-muted-foreground hover:bg-muted/80",
+                        "transition-colors duration-200",
+                      )}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addPin}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium",
+                        "bg-primary text-primary-foreground hover:bg-primary/90",
+                        "disabled:opacity-50 disabled:cursor-not-allowed",
+                        "transition-all duration-200 shadow-sm hover:shadow-md",
+                      )}
+                      disabled={!draftUrl.trim() && !draftTitle.trim()}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Pin
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pins List */}
+          <div className="space-y-4">
+            {pins.length === 0 ? (
+              <div className="text-center py-12 px-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+                  <Bookmark className="w-8 h-8 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  No pins yet. Click <strong>Add pin</strong> above or ask the assistant to track important issues, PRs, or files.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {pins.length} {pins.length === 1 ? 'pin' : 'pins'}
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  {pin.url ? (
-                    <a
-                      href={pin.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                      title="Open link"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() =>
+                {pins.map((pin) => (
+                  <PinCard
+                    key={pin.id}
+                    pin={pin}
+                    onUpdate={(updates) =>
+                      setPins((prev) =>
+                        prev.map((p) =>
+                          p.id === pin.id ? { ...p, ...updates } : p
+                        )
+                      )
+                    }
+                    onDelete={() =>
                       setPins((prev) => prev.filter((p) => p.id !== pin.id))
                     }
-                    className="p-2 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                    title="Remove pin"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <select
-                  value={pin.status ?? "todo"}
-                  onChange={(e) =>
-                    setPins((prev) =>
-                      prev.map((p) =>
-                        p.id === pin.id
-                          ? { ...p, status: e.target.value as RepoPin["status"] }
-                          : p,
-                      ),
-                    )
-                  }
-                  className={cn(
-                    "px-2 py-1.5 rounded-lg text-xs font-medium border",
-                    statusStyles(pin.status),
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  )}
-                >
-                  <option value="todo">Todo</option>
-                  <option value="watching">Watching</option>
-                  <option value="blocked">Blocked</option>
-                  <option value="done">Done</option>
-                </select>
-
-                <input
-                  value={pin.url ?? ""}
-                  onChange={(e) =>
-                    setPins((prev) =>
-                      prev.map((p) =>
-                        p.id === pin.id
-                          ? {
-                              ...p,
-                              url:
-                                e.target.value.slice(0, MAX_URL) || undefined,
-                            }
-                          : p,
-                      ),
-                    )
-                  }
-                  placeholder="URL (optional)"
-                  className={cn(
-                    "sm:col-span-2 px-2 py-1.5 rounded-lg text-xs",
-                    "border border-muted-foreground/20 bg-muted/10 text-foreground",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  )}
-                />
-              </div>
-
-              <textarea
-                value={pin.note ?? ""}
-                onChange={(e) =>
-                  setPins((prev) =>
-                    prev.map((p) =>
-                      p.id === pin.id
-                        ? {
-                            ...p,
-                            note:
-                              e.target.value.slice(0, MAX_NOTE) || undefined,
-                          }
-                        : p,
-                    ),
-                  )
-                }
-                placeholder="Note (optional)"
-                rows={2}
-                className={cn(
-                  "w-full px-2 py-1.5 rounded-lg text-xs resize-none",
-                  "border border-muted-foreground/20 bg-muted/10 text-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                )}
-              />
-            </div>
-          ))}
+                  />
+                ))}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+interface PinCardProps {
+  pin: RepoPin;
+  onUpdate: (updates: Partial<RepoPin>) => void;
+  onDelete: () => void;
+}
+
+function PinCard({ pin, onUpdate, onDelete }: PinCardProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  return (
+    <div
+      className={cn(
+        "group rounded-xl border bg-card",
+        "transition-all duration-200",
+        "hover:shadow-md hover:border-primary/20",
+        statusStyles(pin.status),
+      )}
+    >
+      {/* Card Header */}
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-3">
+              <span
+                className={cn(
+                  "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border",
+                  "bg-muted/50 border-muted-foreground/30 text-muted-foreground",
+                )}
+              >
+                {kindLabel(pin.kind)}
+              </span>
+              <span
+                className={cn(
+                  "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border",
+                  statusStyles(pin.status),
+                )}
+              >
+                {pin.status === "todo"
+                  ? "Todo"
+                  : pin.status === "watching"
+                    ? "Watching"
+                    : pin.status === "blocked"
+                      ? "Blocked"
+                      : "Done"}
+              </span>
+            </div>
+
+            {!isExpanded ? (
+              <>
+                <h3 className="text-base font-semibold text-foreground leading-snug">
+                  {pin.title}
+                </h3>
+                {pin.url && (
+                  <a
+                    href={pin.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 text-xs text-primary hover:underline truncate block font-mono"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {pin.url}
+                  </a>
+                )}
+                {pin.note && (
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                    {pin.note}
+                  </p>
+                )}
+              </>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {pin.url && !isExpanded && (
+              <a
+                href={pin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-primary"
+                title="Open link"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                isExpanded
+                  ? "bg-primary/10 text-primary hover:bg-primary/20"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+              )}
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"
+              title="Delete pin"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-5 border-t border-border/50 pt-5 animate-in slide-in-from-top-1 duration-200 bg-muted/20">
+          {/* Title Editor */}
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+              <div className="w-1 h-3.5 bg-primary rounded-full" />
+              Title
+            </label>
+            <input
+              value={pin.title}
+              onChange={(e) =>
+                onUpdate({ title: e.target.value.slice(0, MAX_TITLE) })
+              }
+              className={cn(
+                "w-full px-3.5 py-2.5 rounded-lg text-sm font-medium",
+                "border-2 border-border bg-card text-foreground",
+                "placeholder:text-muted-foreground/60",
+                "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
+                "transition-all duration-200",
+                "shadow-sm hover:shadow-md",
+              )}
+              placeholder="Enter pin title..."
+            />
+          </div>
+
+          {/* URL Editor */}
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+              <div className="w-1 h-3.5 bg-primary rounded-full" />
+              URL
+            </label>
+            <div className="relative">
+              <input
+                value={pin.url ?? ""}
+                onChange={(e) =>
+                  onUpdate({ url: e.target.value.slice(0, MAX_URL) || undefined })
+                }
+                className={cn(
+                  "w-full px-3.5 py-2.5 rounded-lg text-sm font-mono",
+                  "border-2 border-border bg-card text-foreground",
+                  "placeholder:text-muted-foreground/60",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
+                  "transition-all duration-200",
+                  "shadow-sm hover:shadow-md",
+                  pin.url ? "pr-10" : "",
+                )}
+                placeholder="https://github.com/..."
+              />
+              {pin.url && (
+                <a
+                  href={pin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-primary/10 text-primary"
+                  title="Open in new tab"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Note Editor */}
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-2 flex items-center gap-2">
+              <div className="w-1 h-3.5 bg-primary rounded-full" />
+              Notes
+            </label>
+            <div className="relative">
+              <textarea
+                value={pin.note ?? ""}
+                onChange={(e) =>
+                  onUpdate({
+                    note: e.target.value.slice(0, MAX_NOTE) || undefined,
+                  })
+                }
+                placeholder="Add context, next steps, or reminders..."
+                rows={4}
+                className={cn(
+                  "w-full px-3.5 py-3 rounded-lg text-sm resize-y min-h-[100px]",
+                  "border-2 border-border bg-card text-foreground leading-relaxed",
+                  "placeholder:text-muted-foreground/60",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
+                  "transition-all duration-200",
+                  "shadow-sm hover:shadow-md",
+                )}
+              />
+              <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/60 bg-card/80 px-2 py-0.5 rounded">
+                {(pin.note ?? "").length} / {MAX_NOTE}
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-border/50" />
+
+          {/* Status */}
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-2 block">
+              Status
+            </label>
+            <select
+              value={pin.status ?? "todo"}
+              onChange={(e) =>
+                onUpdate({ status: e.target.value as RepoPin["status"] })
+              }
+              className={cn(
+                "w-full px-3 py-2 rounded-lg text-sm font-medium border-2",
+                statusStyles(pin.status),
+                "focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer",
+                "transition-all duration-200",
+                "shadow-sm hover:shadow-md",
+              )}
+            >
+              <option value="todo">📋 Todo</option>
+              <option value="watching">👀 Watching</option>
+              <option value="blocked">🚫 Blocked</option>
+              <option value="done">✅ Done</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
