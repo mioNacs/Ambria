@@ -78,7 +78,9 @@ function GitHubCreateIssueForm({
   >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
-  const canSubmit = !!issueTitle.trim() && !!effectiveToken && !isSubmitting;
+  const trimmedTitle = issueTitle.trim();
+  const trimmedBody = issueBody.trim();
+  const canSubmit = !!trimmedTitle && !!effectiveToken && !isSubmitting;
 
   async function handleCreate() {
     if (!canSubmit) return;
@@ -100,8 +102,8 @@ function GitHubCreateIssueForm({
       const created = await createRepoIssue({
         owner,
         repo,
-        title: issueTitle.trim(),
-        body: issueBody.trim() ? issueBody : undefined,
+        title: trimmedTitle,
+        body: trimmedBody ? trimmedBody : undefined,
         labels: parseCsv(labelsCsv),
         assignees: parseCsv(assigneesCsv),
         token: effectiveToken,

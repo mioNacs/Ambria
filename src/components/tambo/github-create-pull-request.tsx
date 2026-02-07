@@ -76,10 +76,14 @@ function GitHubCreatePullRequestForm({
   >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
+  const trimmedTitle = prTitle.trim();
+  const trimmedHead = prHead.trim();
+  const trimmedBase = prBase.trim();
+  const trimmedBody = prBody.trim();
   const canSubmit =
-    !!prTitle.trim() &&
-    !!prHead.trim() &&
-    !!prBase.trim() &&
+    !!trimmedTitle &&
+    !!trimmedHead &&
+    !!trimmedBase &&
     !!effectiveToken &&
     !isSubmitting;
 
@@ -103,10 +107,10 @@ function GitHubCreatePullRequestForm({
       const created = await createRepoPullRequest({
         owner,
         repo,
-        title: prTitle.trim(),
-        body: prBody.trim() ? prBody : undefined,
-        head: prHead.trim(),
-        base: prBase.trim(),
+        title: trimmedTitle,
+        body: trimmedBody ? trimmedBody : undefined,
+        head: trimmedHead,
+        base: trimmedBase,
         draft: isDraft,
         maintainerCanModify: canModify,
         token: effectiveToken,
