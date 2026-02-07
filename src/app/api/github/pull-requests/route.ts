@@ -1,6 +1,5 @@
 import { resolveGitHubRepoFromRequest } from "@/lib/github";
 import { getRepoPullRequests } from "@/services/github-repo";
-import { parseGitHubUrl } from "@/lib/github";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -42,46 +41,16 @@ export async function POST(request: Request) {
   const input =
     body && typeof body === "object" ? (body as Record<string, unknown>) : null;
 
-  let owner = normalizeOptionalString(input?.owner);
-  let repo = normalizeOptionalString(input?.repo);
-
-  if (!owner || !repo) {
-    const candidates = [
-      normalizeOptionalString(input?.repository),
-      normalizeOptionalString(input?.repo),
-      normalizeOptionalString(input?.owner),
-    ].filter(Boolean) as string[];
-
-    for (const candidate of candidates) {
-      const parsed = parseGitHubUrl(candidate);
-      if (!parsed) continue;
-      owner ??= parsed.owner;
-      repo ??= parsed.repo;
-      break;
-    }
-  }
-
-  if (!owner || !repo) {
-    return NextResponse.json(
-      {
-        error: "Invalid request",
-        details: {
-          formErrors: [],
-          fieldErrors: {
-            repository: [
-              "Missing repository information. Provide owner+repo or a repository URL.",
-            ],
-          },
-        },
-      },
-      { status: 400 },
-    );
-  }
-
   const normalizedBody = {
-    ...(input ?? {}),
-    owner,
-    repo,
+    owner: normalizeOptionalString(input?.owner),
+    repo: normalizeOptionalString(input?.repo),
+    repoUrl:
+      normalizeOptionalString(input?.repoUrl) ??
+      normalizeOptionalString(input?.repository),
+    fullName: normalizeOptionalString(input?.fullName),
+    state: input?.state,
+    limit: input?.limit,
+    page: input?.page,
     token: normalizeOptionalString(input?.token),
   };
 
