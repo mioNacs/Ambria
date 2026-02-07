@@ -619,7 +619,7 @@ export const tools: TamboTool[] = [
   {
     name: "getPullRequestFiles",
     description:
-      "Get the list of files changed in a pull request with basic stats. Supports pagination with page + limit; patches are optional.",
+      "Get the list of files changed in a pull request with basic stats. Supports pagination with page + limit; patches are optional and can make responses large on big PRs.",
     tool: getPullRequestFiles,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
@@ -643,7 +643,7 @@ export const tools: TamboTool[] = [
         .boolean()
         .optional()
         .describe(
-          "Whether to include a truncated diff patch snippet per file (may be large for big PRs)",
+          "Whether to include a truncated diff patch snippet per file (avoid unless needed; increases payload size)",
         ),
       token: z.string().optional().describe("GitHub access token for private repos"),
     }),

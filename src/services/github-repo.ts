@@ -1243,7 +1243,10 @@ export async function getPullRequestFiles(params: {
             htmlUrl: file.blob_url,
         }));
     } catch (error) {
-        throw new Error(`Failed to fetch PR files: ${error}`);
+        if (error instanceof Error) {
+            throw new Error(`Failed to fetch PR files: ${error.message}`);
+        }
+        throw new Error(`Failed to fetch PR files: ${String(error)}`);
     }
 }
 
