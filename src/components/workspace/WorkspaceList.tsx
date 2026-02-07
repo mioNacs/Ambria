@@ -45,7 +45,7 @@ export function WorkspaceList({
                 <span className="sr-only" role="status" aria-live="polite">
                     Loading workspaces…
                 </span>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[...Array(6)].map((_, i) => (
                         <WorkspaceCardSkeleton key={i} />
                     ))}
@@ -105,7 +105,7 @@ export function WorkspaceList({
     return (
         <>
             {/* Header with count */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold text-gray-900">
                         Your Workspaces
@@ -116,7 +116,7 @@ export function WorkspaceList({
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {workspaces.map((workspace, index) => (
                     <div
                         key={workspace.id}

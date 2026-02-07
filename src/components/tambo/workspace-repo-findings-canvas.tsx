@@ -202,10 +202,14 @@ function RepoFindingsCanvasBase({
 
   return (
     // Keep mounted (hidden) so the workspace panel can open this interactable later.
-    <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-background">
+    <section
+      hidden={!effectiveIsOpen}
+      aria-hidden={!effectiveIsOpen}
+      className="h-full bg-background flex flex-col"
+    >
       {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-4">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
               <AlertTriangle className="w-5 h-5" />
@@ -220,7 +224,7 @@ function RepoFindingsCanvasBase({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {persistedState.isSaving ? (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/30">
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -255,8 +259,8 @@ function RepoFindingsCanvasBase({
         </div>
       </div>
 
-      <div className="overflow-y-auto h-[calc(100%-73px)]">
-        <div className="p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Add Finding Form - Collapsible */}
           {showAddForm && (
             <div className="animate-in slide-in-from-top-2 duration-300">

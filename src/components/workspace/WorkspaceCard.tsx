@@ -60,7 +60,7 @@ export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
                 {/* Gradient Background Accent */}
                 <div className={`absolute top-0 left-0 right-0 h-1.5 ${roleData.bg}`} />
                 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
@@ -76,7 +76,7 @@ export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
                         </div>
                         <button
                             onClick={handleDelete}
-                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-90 sm:group-hover:scale-100"
                             title="Delete workspace"
                             aria-label="Delete workspace"
                         >
