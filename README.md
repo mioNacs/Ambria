@@ -1,131 +1,130 @@
-# Tambo Template
+# Ambria - AI Companion for Open Source Work
 
-This is a starter NextJS app with Tambo hooked up to get your AI app development started quickly.
+Ambria is an intelligent workspace designed to streamline open source contributions. It leverages the power of the **Tambo AI** agent to help developers manage GitHub repositories, analyze issues, review pull requests, and perform actions directly from a unified dashboard.
 
-## Get Started
+## Features
 
-1. Run `npm create-tambo@latest my-tambo-app` for a new project
+- **AI-Powered Repository Intelligence**: Ask questions about your codebase, issues, or PRs and get context-aware answers.
+- **Unified Dashboard**: Manage multiple GitHub repositories in a single "Workspace" view.
+- **Smart Actions**:
+  - **Issue Triage**: List, filter, assign, and close issues.
+  - **PR Management**: Review diffs, file comments, and merge pull requests.
+  - **Safe Write Operations**: Critical actions like merging PRs or closing issues require explicit user confirmation via a secure UI flow.
+- **Repository Analysis**: Get insights into languages, contributors, and community health.
 
-2. `npm install`
+## Technologies Used
 
-3. `npx tambo init`
+- **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Backend & Auth**: [Supabase](https://supabase.com/)
+- **AI Agent**: [Tambo](https://tambo.ai/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
-- or rename `example.env.local` to `.env.local` and add your tambo API key you can get for free [here](https://tambo.co/dashboard).
+## Getting Started
 
-4. Run `npm run dev` and go to `localhost:3000` to use the app!
+### Prerequisites
 
-## Customizing
+- Node.js 18+ installed
+- A GitHub account
+- A Supabase project
+- A Tambo API Key
 
-### Change what components tambo can control
+### Installation
 
-You can see how components are registered with tambo in `src/lib/tambo.ts`:
+1.  **Clone the repository:**
 
-```tsx
-export const components: TamboComponent[] = [
-  {
-    name: "Graph",
-    description:
-      "A component that renders various types of charts (bar, line, pie) using Recharts. Supports customizable data visualization with labels, datasets, and styling options.",
-    component: Graph,
-    propsSchema: graphSchema,
-  },
-  // Add more components here
-];
-```
+    ```bash
+    git clone https://github.com/your-username/ambria.git
+    cd ambria
+    ```
 
-You can install the graph component into any project with:
+2.  **Install dependencies:**
+
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
+
+3.  **Environment Setup:**
+
+    Copy the example environment file to `.env.local`:
+
+    ```bash
+    cp example.env.local .env.local
+    ```
+
+    OPEN `.env.local` and fill in your credentials:
+
+    ```env
+    NEXT_PUBLIC_TAMBO_API_KEY=your_tambo_api_key_here
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+    ```
+
+### Running Locally
+
+Start the development server:
 
 ```bash
-npx tambo add graph
+npm run dev
 ```
 
-The example Graph component demonstrates several key features:
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- Different prop types (strings, arrays, enums, nested objects)
-- Multiple chart types (bar, line, pie)
-- Customizable styling (variants, sizes)
-- Optional configurations (title, legend, colors)
-- Data visualization capabilities
+## Supabase Configuration
 
-Update the `components` array with any component(s) you want tambo to be able to use in a response!
+To enable GitHub login and repository access, you must configure Supabase Auth:
 
-You can find more information about the options [here](https://docs.tambo.co/concepts/generative-interfaces/generative-components)
+1.  Go to your Supabase Project Dashboard -> **Authentication** -> **Providers**.
+2.  Enable **GitHub**.
+3.  You will need to create a **GitHub OAuth App** (in GitHub Developer Settings).
+    - **Homepage URL**: Your app's URL (e.g., `http://localhost:3000`)
+    - **Authorization callback URL**: `https://<your-project>.supabase.co/auth/v1/callback`
+4.  Copy the **Client ID** and **Client Secret** from GitHub to Supabase.
 
-### Add tools for tambo to use
+### Database Setup
 
-Tools are defined with `inputSchema` and `outputSchema`:
+To initialize the database schema (tables and security policies), run the provided SQL script:
 
-```tsx
-export const tools: TamboTool[] = [
-  {
-    name: "globalPopulation",
-    description:
-      "A tool to get global population trends with optional year range filtering",
-    tool: getGlobalPopulationTrend,
-    inputSchema: z.object({
-      startYear: z.number().optional(),
-      endYear: z.number().optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        year: z.number(),
-        population: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
-];
-```
+1.  Open your Supabase Project Dashboard.
+2.  Go to the **SQL Editor**.
+3.  Click **New Query**.
+4.  Copy and paste the contents of `supabase/schema.sql` into the editor.
+5.  Click **Run**.
 
-Find more information about tools [here.](https://docs.tambo.co/concepts/tools)
+## User Guide
 
-### The Magic of Tambo Requires the TamboProvider
+### 1. Onboarding
+- **Log in**: Sign in using your GitHub account.
+- **Create Workspace**: Click "Add Workspace" to connect a GitHub repository. You just need the owner and repo name (e.g., `facebook/react`).
 
-Make sure in the TamboProvider wrapped around your app:
+### 2. Using the Agent
+- Once a workspace is added, click on it to enter the chat interface.
+- **Ask Questions**: "Show me the latest issues", "Who are the top contributors?", "Explain the repository structure".
+- **Dynamic UI**: The agent will render interactive components (like Issue Cards or File Trees) directly in the chat stream.
 
-```tsx
-...
-<TamboProvider
-  apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
-  components={components} // Array of components to control
-  tools={tools} // Array of tools it can use
->
-  {children}
-</TamboProvider>
-```
+### 3. Performing Actions
+- When you ask the agent to perform a write action (e.g., "Close issue #42"), it will present a **Confirmation Card**.
+- You must review the details and click "Confirm" to proceed. This ensures the AI never takes destructive actions without your approval.
 
-In this example we do this in the `Layout.tsx` file, but you can do it anywhere in your app that is a client component.
+## Project Structure
 
-### Voice input
+- `src/app`: Next.js App Router pages and layouts.
+- `src/components/tambo`: Specialized UI components that the AI agent can render (e.g., `IssueList`, `ConfirmationDialog`).
+- `src/lib/tambo.ts`: Central registry for Tambo tools and components. This defines what the AI can "see" and "do".
+- `src/services/github-repo`: Logic for interacting with the GitHub API.
 
-The template includes a `DictationButton` component using the `useTamboVoice` hook for speech-to-text input.
+## Contributing
 
-### MCP (Model Context Protocol)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-The template includes MCP support for connecting to external tools and resources. You can use the MCP hooks from `@tambo-ai/react/mcp`:
+1.  Fork the repository.
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
 
-- `useTamboMcpPromptList` - List available prompts from MCP servers
-- `useTamboMcpPrompt` - Get a specific prompt
-- `useTamboMcpResourceList` - List available resources
+## License
 
-See `src/components/tambo/mcp-components.tsx` for example usage.
-
-### Change where component responses are shown
-
-The components used by tambo are shown alongside the message response from tambo within the chat thread, but you can have the result components show wherever you like by accessing the latest thread message's `renderedComponent` field:
-
-```tsx
-const { thread } = useTambo();
-const latestComponent =
-  thread?.messages[thread.messages.length - 1]?.renderedComponent;
-
-return (
-  <div>
-    {latestComponent && (
-      <div className="my-custom-wrapper">{latestComponent}</div>
-    )}
-  </div>
-);
-```
-
-For more detailed documentation, visit [Tambo's official docs](https://docs.tambo.co).
+This project is licensed under the MIT License - see the LICENSE file for details.
