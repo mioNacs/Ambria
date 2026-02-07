@@ -209,6 +209,15 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     suppressStateNavigationRef.current = true;
     setView("list");
     closeAllCanvases();
+    if (typeof queueMicrotask === "function") {
+      queueMicrotask(() => {
+        suppressStateNavigationRef.current = false;
+      });
+    } else {
+      setTimeout(() => {
+        suppressStateNavigationRef.current = false;
+      }, 0);
+    }
   }, [closeAllCanvases]);
 
   const viewForComponent = React.useCallback((componentName: InteractableComponentName) => {
@@ -239,6 +248,15 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       suppressStateNavigationRef.current = false;
     }
   }, [anyCanvasOpen]);
+
+  React.useEffect(() => {
+    suppressStateNavigationRef.current = false;
+    pendingOpenRef.current = null;
+    setPendingOpen(null);
+    setView("list");
+    setPreferredTab(role === "maintainer" ? "maintainer" : "contributor");
+    clearInteractableSelections();
+  }, [clearInteractableSelections, role, workspaceId]);
 
   React.useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return;
@@ -594,74 +612,64 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
             view === "list" ? "hidden" : "block",
           )}
         >
-          {!anyCanvasOpen ? (
+          <div className={cn(!anyCanvasOpen ? "block" : "hidden")}>
             <div className="h-full flex items-center justify-center p-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {pendingOpen ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : null}
-                <span>
-                  {pendingOpen ? "Opening canvas..." : "No canvas is currently open."}
-                </span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{pendingOpen ? "Opening canvas..." : "Opening..."}</span>
               </div>
             </div>
-          ) : (
-            <>
-              <div className={cn(view === "workboards" ? "block" : "hidden")}>
-                {role !== "maintainer" ? (
-                  <div
-                    className={cn(
-                      role === "both" && visibleTab !== "contributor"
-                        ? "hidden"
-                        : "block",
-                    )}
-                  >
-                    <ContributorPlanningCanvas
-                      workspaceId={workspaceId}
-                      title="Contributor planning"
-                      instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
-                      defaultOpen={false}
-                    />
-                  </div>
-                ) : null}
+          </div>
 
-                {role !== "contributor" ? (
-                  <div
-                    className={cn(
-                      role === "both" && visibleTab !== "maintainer"
-                        ? "hidden"
-                        : "block",
-                    )}
-                  >
-                    <MaintainerTriageCanvas
-                      workspaceId={workspaceId}
-                      title="Maintainer triage"
-                      instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
-                      defaultOpen={false}
-                    />
-                  </div>
-                ) : null}
-              </div>
-
-              <div className={cn(view === "repoPins" ? "block" : "hidden")}>
-                <RepoPinsCanvas
+          <div className={cn(view === "workboards" ? "block" : "hidden")}>
+            {role !== "maintainer" ? (
+              <div
+                className={cn(
+                  role === "both" && visibleTab !== "contributor" ? "hidden" : "block",
+                )}
+              >
+                <ContributorPlanningCanvas
                   workspaceId={workspaceId}
-                  title="Repo pins"
-                  instructions="Pin issues, PRs, and files you want to track. Ask the assistant to keep this list up to date."
+                  title="Contributor planning"
+                  instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
                   defaultOpen={false}
                 />
               </div>
+            ) : null}
 
-              <div className={cn(view === "repoFindings" ? "block" : "hidden")}>
-                <RepoFindingsCanvas
+            {role !== "contributor" ? (
+              <div
+                className={cn(
+                  role === "both" && visibleTab !== "maintainer" ? "hidden" : "block",
+                )}
+              >
+                <MaintainerTriageCanvas
                   workspaceId={workspaceId}
-                  title="Repo findings"
-                  instructions="Log analysis findings with severity, status, and references. Ask the assistant to capture findings as you explore the repo."
+                  title="Maintainer triage"
+                  instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
                   defaultOpen={false}
                 />
               </div>
-            </>
-          )}
+            ) : null}
+          </div>
+
+          <div className={cn(view === "repoPins" ? "block" : "hidden")}>
+            <RepoPinsCanvas
+              workspaceId={workspaceId}
+              title="Repo pins"
+              instructions="Pin issues, PRs, and files you want to track. Ask the assistant to keep this list up to date."
+              defaultOpen={false}
+            />
+          </div>
+
+          <div className={cn(view === "repoFindings" ? "block" : "hidden")}>
+            <RepoFindingsCanvas
+              workspaceId={workspaceId}
+              title="Repo findings"
+              instructions="Log analysis findings with severity, status, and references. Ask the assistant to capture findings as you explore the repo."
+              defaultOpen={false}
+            />
+          </div>
         </div>
       </div>
       </div>
