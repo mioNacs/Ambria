@@ -20,23 +20,31 @@ export default function Dashboard() {
   const linkedProviders = Array.isArray(user?.app_metadata?.providers)
     ? user.app_metadata.providers
     : [];
-  const isGitHubAuthProvider =
+  const hasGitHubLink =
     authProvider === "github" || linkedProviders.includes("github");
 
   const providerToken = session?.provider_token ?? undefined;
-  const githubToken =
-    providerToken && (isGitHubAuthProvider || !authProvider)
+
+  const looksLikeGitHubToken =
+    !!providerToken &&
+    (providerToken.startsWith("gho_") ||
+      providerToken.startsWith("ghp_") ||
+      providerToken.startsWith("github_pat_"));
+
+  const githubToken = providerToken
+    ? hasGitHubLink || (!authProvider && looksLikeGitHubToken)
       ? providerToken
-      : undefined;
+      : undefined
+    : undefined;
 
   if (
     process.env.NODE_ENV !== "production" &&
     providerToken &&
     !githubToken &&
-    authProvider
+    (authProvider || linkedProviders.length > 0)
   ) {
     console.warn(
-      `Dashboard: provider_token present but auth provider is '${authProvider}'. GitHub search will run unauthenticated.`,
+      `Dashboard: provider_token present but no GitHub provider is linked (authProvider='${authProvider}', linkedProviders='${linkedProviders.join(",")}'). GitHub search will run unauthenticated.`,
     );
   }
 

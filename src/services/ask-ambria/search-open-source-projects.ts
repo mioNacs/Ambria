@@ -131,6 +131,7 @@ export async function searchOpenSourceProjects(params: {
     skillLevel: params.skillLevel,
     pushedAfter: relaxedPushedAfter,
     minStars: RELAXED_MIN_STARS,
+    // Relaxed mode drops the issues qualifier.
     requireIssues: false,
   });
 
