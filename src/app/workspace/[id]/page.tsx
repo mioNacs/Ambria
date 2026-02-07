@@ -83,6 +83,14 @@ export default function WorkspacePage() {
         );
     }
 
+    const hasGitHubWriteAccess =
+        !!session?.provider_token && workspace.detected_access !== "read";
+    const effectiveRole =
+        (workspace.role === "maintainer" || workspace.role === "both") &&
+            !hasGitHubWriteAccess
+            ? "contributor"
+            : workspace.role;
+
     return (
         <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Workspace Header */}
@@ -92,8 +100,8 @@ export default function WorkspacePage() {
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <TamboProvider
                     apiKey={apiKey}
-                    components={getComponentsForRole(workspace.role)}
-                    tools={getToolsForRole(workspace.role)}
+                    components={getComponentsForRole(effectiveRole)}
+                    tools={getToolsForRole(effectiveRole)}
                     tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
                     mcpServers={mcpServers}
                     userToken={session?.access_token}
@@ -104,29 +112,36 @@ export default function WorkspacePage() {
                             description: workspace.repo_description || "",
                             language: workspace.repo_language || "",
                             stars: workspace.repo_stars || 0,
-                            userRole: workspace.role,
-                            roleDescription: workspace.role === "contributor"
-                                ? "As a contributor, help them find good first issues, understand the codebase, and prepare contributions."
-                                : workspace.role === "maintainer"
-                                    ? "As a maintainer, help them triage issues, review PRs, and manage the project."
-                                    : "As both contributor and maintainer, provide full assistance for contributing and maintaining the project.",
+                            configuredUserRole: workspace.role,
+                            userRole: effectiveRole,
+                            detectedAccess: workspace.detected_access,
+                            hasWriteAccess: hasGitHubWriteAccess,
+                            roleDescription:
+                                effectiveRole === "contributor"
+                                    ? workspace.role === "contributor"
+                                        ? "As a contributor, help them find good first issues, understand the codebase, and prepare contributions."
+                                        : "Maintainer tools are disabled because GitHub write access is missing. Explain that write access is required for maintainer actions (assign/close issues, create issues/PRs/comments)."
+                                    : effectiveRole === "maintainer"
+                                        ? "As a maintainer, help them triage issues, review PRs, and manage the project."
+                                        : "As both contributor and maintainer, provide full assistance for contributing and maintaining the project.",
                         }),
                         github_credentials: () => ({
                             owner: workspace.repo_owner,
                             repo: workspace.repo_name,
                             token: session?.provider_token ?? undefined,
-                            instructions: "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests, getIssueComments), always use these credentials. For long lists, prefer rendering IssueList/PullRequestList via issuesRequest/pullRequestsRequest (do not pass tokens in component props). For ANY write actions (createRepoIssue, createRepoPullRequest, createIssueComment), you MUST first render the corresponding GitHubCreateIssue / GitHubCreatePullRequest / GitHubCreateComment and let the user click confirm. Never call write tools directly without a real confirmationId (confirmation tokens are short-lived and single-use).",
+                            instructions:
+                                "IMPORTANT: When using GitHub tools (getRepoTree, getFileContent, getRepoOverview, searchFiles, getMultipleFiles, getRepoIssues, getRepoPullRequests, getIssueComments, getRepoMaintainers), always use these credentials. For long lists, prefer rendering IssueList/PullRequestList via issuesRequest/pullRequestsRequest (do not pass tokens in component props). For ANY write actions (createRepoIssue, createRepoPullRequest, createIssueComment, setIssueAssignees, closeRepoIssue), you MUST first render the corresponding confirmation component (GitHubCreateIssue / GitHubCreatePullRequest / GitHubCreateComment / ConfirmAssignIssue / ConfirmCloseIssue) and let the user click confirm. Never call write tools directly without a real confirmationId (confirmation tokens are short-lived and single-use).",
                         }),
                     }}
                 >
                     <div className="flex-1 min-h-0 overflow-hidden flex relative">
                         <WorkspaceChat
-                            role={workspace.role}
+                            role={effectiveRole}
                             workspaceId={workspace.id}
                             repoName={`${workspace.repo_owner}/${workspace.repo_name}`}
                         />
 
-                        <WorkspaceCanvasPanel role={workspace.role} workspaceId={workspace.id} />
+                        <WorkspaceCanvasPanel role={effectiveRole} workspaceId={workspace.id} />
                     </div>
                 </TamboProvider>
             </div>

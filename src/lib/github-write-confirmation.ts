@@ -1,4 +1,9 @@
-export type GitHubWriteKind = "issue" | "pull_request" | "comment";
+export type GitHubWriteKind =
+  | "issue"
+  | "pull_request"
+  | "comment"
+  | "issue_assignees"
+  | "issue_close";
 
 type ConfirmationStore =
   Map<string, { expiresAt: number; owner: string; repo: string; kind: GitHubWriteKind }>;
