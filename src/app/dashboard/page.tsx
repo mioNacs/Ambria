@@ -33,7 +33,7 @@ export default function Dashboard() {
     if (process.env.NODE_ENV === "production") return;
     if (!providerToken) return;
     if (githubToken) return;
-    if (!authProvider && linkedProviders.length === 0) return;
+    if (!authProvider && linkedProvidersLabel.length === 0) return;
 
     console.warn(
       `Dashboard: provider_token present but no GitHub provider is linked (authProvider='${authProvider}', linkedProviders='${linkedProvidersLabel}'). GitHub search will run unauthenticated.`,
