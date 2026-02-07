@@ -5,15 +5,19 @@ import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import * as React from "react";
 import { z } from "zod";
 
+const openSourceGuideTopics = [
+  "what_is_open_source",
+  "dos_and_donts",
+  "finding_projects",
+  "raising_a_good_pr",
+] as const;
+
+type OpenSourceGuideTopic = (typeof openSourceGuideTopics)[number];
+
 export const openSourceGuideSchema = z
   .object({
     topic: z
-      .enum([
-        "what_is_open_source",
-        "dos_and_donts",
-        "finding_projects",
-        "raising_a_good_pr",
-      ])
+      .enum(openSourceGuideTopics)
       .describe(
         "Which open source topic to show (definition, etiquette, finding projects, or PR workflow)",
       ),
@@ -26,7 +30,7 @@ export type OpenSourceGuideProps = z.infer<typeof openSourceGuideSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
 const contentByTopic: Record<
-  OpenSourceGuideProps["topic"],
+  OpenSourceGuideTopic,
   {
     title: string;
     description: string;

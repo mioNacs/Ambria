@@ -93,7 +93,7 @@ export async function searchOpenSourceProjects(params: {
   token?: string;
 }): Promise<{ query: string; totalCount: number; projects: OpenSourceProject[] }> {
   const pushedAfter = getIsoDateDaysAgo(365);
-  const query = buildRepoSearchQuery({
+  const primaryQuery = buildRepoSearchQuery({
     techStack: params.techStack,
     skillLevel: params.skillLevel,
     interest: params.interest,
@@ -107,12 +107,27 @@ export async function searchOpenSourceProjects(params: {
   try {
     const limit = Math.min(Math.max(params.limit ?? 6, 1), 10);
 
-    const { data } = await octokit.rest.search.repos({
-      q: query,
-      sort: "stars",
-      order: "desc",
-      per_page: limit,
-    });
+    const runSearch = async (query: string) => {
+      return await octokit.rest.search.repos({
+        q: query,
+        sort: "stars",
+        order: "desc",
+        per_page: limit,
+      });
+    };
+
+    let query = primaryQuery;
+    let { data } = await runSearch(query);
+
+    if (data.total_count === 0 && params.interest) {
+      query = buildRepoSearchQuery({
+        techStack: params.techStack,
+        skillLevel: params.skillLevel,
+        pushedAfter,
+      });
+
+      ({ data } = await runSearch(query));
+    }
 
     const projects: OpenSourceProject[] = data.items.map((item) => ({
       fullName: item.full_name,
@@ -131,7 +146,9 @@ export async function searchOpenSourceProjects(params: {
     };
   } catch (error) {
     const message = toErrorMessage(error);
-    console.error("Error searching open source projects:", message);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Error searching open source projects:", message);
+    }
     throw new Error(`Failed to search open source projects: ${message}`);
   }
 }

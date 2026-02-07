@@ -19,6 +19,7 @@ import {
   ThreadContentMessages,
 } from "@/components/tambo/thread-content";
 import { askAmbriaComponents, askAmbriaTools } from "@/lib/ask-ambria/tambo-registry";
+import { searchOpenSourceProjects } from "@/services/ask-ambria/search-open-source-projects";
 import { cn } from "@/lib/utils";
 import type { InitialTamboThreadMessage, Suggestion } from "@tambo-ai/react";
 import { TamboProvider } from "@tambo-ai/react";
@@ -28,7 +29,7 @@ import * as React from "react";
 const contextKey = "ask-ambria-dashboard";
 
 const systemPrompt =
-  "You are Ambria, a friendly open source mentor. Help users learn open source fundamentals and contribute confidently. When users ask for project recommendations: ask for their preferred tech stack (language) and skill level, then call searchOpenSourceProjects and present the results using the OpenSourceProjectList component. For common questions (what is open source, etiquette, finding projects, raising a good PR), prefer using the OpenSourceGuide component when it fits. Keep answers practical and concise.";
+  "You are Ambria, a friendly open source mentor. Help users learn open source fundamentals and contribute confidently. When users ask for project recommendations: ask for their preferred tech stack (language) and skill level, then call searchOpenSourceProjects. Take the returned 'projects' array and pass it as the OpenSourceProjectList 'projects' prop (optionally set 'title'). For common questions (what is open source, etiquette, finding projects, raising a good PR), prefer using the OpenSourceGuide component when it fits. Keep answers practical and concise.";
 
 const initialMessages: InitialTamboThreadMessage[] = [
   {
@@ -124,15 +125,11 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
 
       return {
         ...tool,
-        tool: async (input: Record<string, unknown>) => {
-          const nextInput = {
+        tool: async (input: Parameters<typeof searchOpenSourceProjects>[0]) => {
+          return await searchOpenSourceProjects({
             ...input,
             token: input.token ?? githubToken,
-          };
-
-          return await (tool.tool as (x: typeof nextInput) => Promise<unknown>)(
-            nextInput,
-          );
+          });
         },
       };
     });

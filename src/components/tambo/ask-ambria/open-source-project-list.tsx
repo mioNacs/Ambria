@@ -79,52 +79,61 @@ export function OpenSourceProjectList({
       </header>
 
       <div className="mt-4 grid gap-3">
-        {projects.map((project) => (
-          <article
-            key={project.fullName}
-            className="rounded-lg border border-muted-foreground/15 bg-background/50 p-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <a
-                  href={project.htmlUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 font-semibold hover:underline"
-                >
-                  <span className="truncate">{project.fullName}</span>
-                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </a>
-                {project.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {project.description}
-                  </p>
+        {projects.map((project) => {
+          const hasStars =
+            typeof project.stars === "number" && !Number.isNaN(project.stars);
+
+          return (
+            <article
+              key={project.fullName}
+              className="rounded-lg border border-muted-foreground/15 bg-background/50 p-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <a
+                    href={project.htmlUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 font-semibold hover:underline"
+                  >
+                    <span className="truncate">{project.fullName}</span>
+                    <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </a>
+                  {project.description && (
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+
+                {hasStars && (
+                  <div className="flex shrink-0 items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
+                    <Star className="h-3.5 w-3.5" />
+                    <span className="tabular-nums">
+                      {formatCompactNumber(project.stars)}
+                    </span>
+                  </div>
                 )}
               </div>
 
-              <div className="flex shrink-0 items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
-                <Star className="h-3.5 w-3.5" />
-                <span className="tabular-nums">{formatCompactNumber(project.stars)}</span>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                {project.language && (
+                  <span className="rounded-full border border-muted-foreground/20 bg-muted/30 px-2 py-0.5">
+                    {project.language}
+                  </span>
+                )}
+                {(project.topics ?? []).slice(0, 4).map((topic) => (
+                  <span
+                    key={topic}
+                    className="rounded-full border border-muted-foreground/20 bg-muted/10 px-2 py-0.5"
+                  >
+                    {topic}
+                  </span>
+                ))}
               </div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {project.language && (
-                <span className="rounded-full border border-muted-foreground/20 bg-muted/30 px-2 py-0.5">
-                  {project.language}
-                </span>
-              )}
-              {(project.topics ?? []).slice(0, 4).map((topic) => (
-                <span
-                  key={topic}
-                  className="rounded-full border border-muted-foreground/20 bg-muted/10 px-2 py-0.5"
-                >
-                  {topic}
-                </span>
-              ))}
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </section>
   );

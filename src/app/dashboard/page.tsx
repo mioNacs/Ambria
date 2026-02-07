@@ -16,6 +16,14 @@ export default function Dashboard() {
   const { workspaces, isLoading: workspacesLoading, refetch } = useWorkspaces();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  const isGitHubAuthProvider =
+    user?.app_metadata?.provider === "github" ||
+    (Array.isArray(user?.app_metadata?.providers) &&
+      user.app_metadata.providers.includes("github"));
+  const githubToken = isGitHubAuthProvider
+    ? session?.provider_token ?? undefined
+    : undefined;
+
   // Redirect to landing if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
@@ -119,7 +127,7 @@ export default function Dashboard() {
 
       <AskAmbriaWidget
         userToken={session?.access_token}
-        githubToken={session?.provider_token ?? undefined}
+        githubToken={githubToken}
       />
     </div>
   );
