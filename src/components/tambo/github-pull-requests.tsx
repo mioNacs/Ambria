@@ -123,7 +123,11 @@ function resolveOwnerRepo(input: {
     normalizeOptionalString(input.owner);
 
   if (!candidate) return null;
-  return parseGitHubUrl(candidate);
+  const parsed = parseGitHubUrl(candidate);
+  if (!parsed) return null;
+  const parsedOwner = normalizeOptionalString(parsed.owner);
+  const parsedRepo = normalizeOptionalString(parsed.repo);
+  return parsedOwner && parsedRepo ? { owner: parsedOwner, repo: parsedRepo } : null;
 }
 
 export const pullRequestCardSchema = githubPullRequestSchema
@@ -460,7 +464,10 @@ export function PullRequestList({
                 ([, value]) => (value?.length ?? 0) > 0,
               )
             : undefined;
-          const detail = fieldError ? `${fieldError[0]}: ${fieldError[1]?.[0]}` : null;
+          let detail = fieldError ? `${fieldError[0]}: ${fieldError[1]?.[0]}` : null;
+          if (!detail && (payload?.details?.formErrors?.length ?? 0) > 0) {
+            detail = payload?.details?.formErrors?.[0] ?? null;
+          }
 
           throw new Error(
             `${payload?.error ?? `Request failed (${response.status})`}${detail ? ` (${detail})` : ""}`,

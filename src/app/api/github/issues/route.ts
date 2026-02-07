@@ -46,6 +46,23 @@ export async function POST(request: Request) {
     }
   }
 
+  if (!owner || !repo) {
+    return NextResponse.json(
+      {
+        error: "Invalid request",
+        details: {
+          formErrors: [],
+          fieldErrors: {
+            repository: [
+              "Missing repository information. Provide owner+repo or a repository URL.",
+            ],
+          },
+        },
+      },
+      { status: 400 },
+    );
+  }
+
   const normalizedBody = {
     ...(input ?? {}),
     owner,
