@@ -110,16 +110,52 @@ export interface AskAmbriaWidgetProps {
 export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps) {
   const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
   const [isOpen, setIsOpen] = React.useState(false);
+  const openButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const dialogRef = React.useRef<HTMLDivElement | null>(null);
+
+  const close = React.useCallback(() => {
+    setIsOpen(false);
+    requestAnimationFrame(() => openButtonRef.current?.focus());
+  }, []);
+
+  const tools = React.useMemo(() => {
+    return askAmbriaTools.map((tool) => {
+      if (tool.name !== "searchOpenSourceProjects") return tool;
+
+      return {
+        ...tool,
+        tool: async (input: Record<string, unknown>) => {
+          const nextInput = {
+            ...input,
+            token: input.token ?? githubToken,
+          };
+
+          return await (tool.tool as (x: typeof nextInput) => Promise<unknown>)(
+            nextInput,
+          );
+        },
+      };
+    });
+  }, [githubToken]);
 
   React.useEffect(() => {
     if (!isOpen) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === "Escape") close();
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, [close, isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const focusTarget = dialogRef.current?.querySelector<HTMLElement>(
+      '[contenteditable="true"], textarea, input, button, a[href], [tabindex]:not([tabindex="-1"])',
+    );
+    focusTarget?.focus();
   }, [isOpen]);
 
   React.useEffect(() => {
@@ -132,11 +168,19 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
     };
   }, [isOpen]);
 
-  if (!apiKey) return null;
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "AskAmbriaWidget: NEXT_PUBLIC_TAMBO_API_KEY is missing; widget will not render.",
+      );
+    }
+    return null;
+  }
 
   return (
     <>
       <button
+        ref={openButtonRef}
         type="button"
         onClick={() => setIsOpen(true)}
         className={cn(
@@ -150,17 +194,46 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
 
       {isOpen && (
         <div className="fixed inset-0 z-[100]">
-          <button
-            type="button"
+          <div
+            role="presentation"
+            aria-hidden="true"
             className="absolute inset-0 bg-black/40"
-            aria-label="Close Ask Ambria"
-            onClick={() => setIsOpen(false)}
+            onClick={close}
           />
 
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Ask Ambria"
+            ref={dialogRef}
+            onKeyDown={(event) => {
+              if (event.key !== "Tab") return;
+
+              const focusables = Array.from(
+                dialogRef.current?.querySelectorAll<HTMLElement>(
+                  'button, [href], input, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
+                ) ?? [],
+              ).filter(
+                (el) =>
+                  !el.hasAttribute("disabled") &&
+                  el.getAttribute("aria-hidden") !== "true",
+              );
+
+              if (focusables.length === 0) return;
+
+              const active = document.activeElement as HTMLElement | null;
+              const currentIndex = active ? focusables.indexOf(active) : -1;
+              const nextIndex = event.shiftKey
+                ? currentIndex <= 0
+                  ? focusables.length - 1
+                  : currentIndex - 1
+                : currentIndex === focusables.length - 1
+                  ? 0
+                  : currentIndex + 1;
+
+              event.preventDefault();
+              focusables[nextIndex]?.focus();
+            }}
             className={cn(
               "absolute bottom-6 right-6 flex h-[70vh] w-[min(420px,calc(100vw-3rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl",
               "sm:h-[620px]",
@@ -177,7 +250,7 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
               </div>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={close}
                 className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 aria-label="Close"
               >
@@ -190,7 +263,7 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
                 apiKey={apiKey}
                 tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
                 components={askAmbriaComponents}
-                tools={askAmbriaTools}
+                tools={tools}
                 userToken={userToken}
                 contextKey={contextKey}
                 initialMessages={initialMessages}
@@ -199,14 +272,6 @@ export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps
                     assistantStyle:
                       "Be practical and encouraging. Prefer checklists, short examples, and next steps.",
                   }),
-                  github_token: () =>
-                    githubToken
-                      ? {
-                          token: githubToken,
-                          instructions:
-                            "When calling searchOpenSourceProjects, pass this token as the token param to reduce rate limits.",
-                        }
-                      : null,
                 }}
               >
                 <AskAmbriaChat />
