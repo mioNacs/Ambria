@@ -41,6 +41,10 @@ export const githubCreateIssueSchema = z
 export type GitHubCreateIssueProps = z.infer<typeof githubCreateIssueSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
+function safeTrim(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function toCsv(value: string[] | undefined) {
   if (!value?.length) return "";
   return value.join(", ");
@@ -63,9 +67,14 @@ function GitHubCreateIssueForm({
   labels,
   assignees,
   token,
+  createdIssue,
+  setCreatedIssue,
   className,
   ...props
-}: GitHubCreateIssueProps) {
+}: GitHubCreateIssueProps & {
+  createdIssue: { htmlUrl: string; number: number } | null;
+  setCreatedIssue: (value: { htmlUrl: string; number: number } | null) => void;
+}) {
   const { session } = useAuth();
   const [issueTitle, setIssueTitle] = useState<string>(() => title ?? "");
   const [issueBody, setIssueBody] = useState(body ?? "");
@@ -73,13 +82,10 @@ function GitHubCreateIssueForm({
   const [assigneesCsv, setAssigneesCsv] = useState(toCsv(assignees));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdIssue, setCreatedIssue] = useState<
-    { htmlUrl: string; number: number } | null
-  >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
-  const trimmedTitle = issueTitle.trim();
-  const trimmedBody = issueBody.trim();
+  const trimmedTitle = safeTrim(issueTitle);
+  const trimmedBody = safeTrim(issueBody);
   const canSubmit = !!trimmedTitle && !!effectiveToken && !isSubmitting;
 
   async function handleCreate() {
@@ -242,5 +248,21 @@ export function GitHubCreateIssue(props: GitHubCreateIssueProps) {
     [assignees, body, labels, owner, repo, title],
   );
 
-  return <GitHubCreateIssueForm key={propsKey} {...props} />;
+  const [createdIssueState, setCreatedIssueState] = useState<
+    { key: string; value: { htmlUrl: string; number: number } | null }
+  >(() => ({ key: propsKey, value: null }));
+  const createdIssue =
+    createdIssueState.key === propsKey ? createdIssueState.value : null;
+  const setCreatedIssue = (value: { htmlUrl: string; number: number } | null) => {
+    setCreatedIssueState({ key: propsKey, value });
+  };
+
+  return (
+    <GitHubCreateIssueForm
+      key={propsKey}
+      {...props}
+      createdIssue={createdIssue}
+      setCreatedIssue={setCreatedIssue}
+    />
+  );
 }

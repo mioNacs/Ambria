@@ -48,6 +48,10 @@ export type GitHubCreatePullRequestProps = z.infer<
 > &
   React.HTMLAttributes<HTMLDivElement>;
 
+function safeTrim(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function GitHubCreatePullRequestForm({
   owner,
   repo,
@@ -58,9 +62,14 @@ function GitHubCreatePullRequestForm({
   draft,
   maintainerCanModify,
   token,
+  createdPullRequest,
+  setCreatedPullRequest,
   className,
   ...props
-}: GitHubCreatePullRequestProps) {
+}: GitHubCreatePullRequestProps & {
+  createdPullRequest: { htmlUrl: string; number: number } | null;
+  setCreatedPullRequest: (value: { htmlUrl: string; number: number } | null) => void;
+}) {
   const { session } = useAuth();
 
   const [prTitle, setPrTitle] = useState<string>(() => title ?? "");
@@ -71,15 +80,12 @@ function GitHubCreatePullRequestForm({
   const [canModify, setCanModify] = useState(maintainerCanModify ?? true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdPullRequest, setCreatedPullRequest] = useState<
-    { htmlUrl: string; number: number } | null
-  >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
-  const trimmedTitle = prTitle.trim();
-  const trimmedHead = prHead.trim();
-  const trimmedBase = prBase.trim();
-  const trimmedBody = prBody.trim();
+  const trimmedTitle = safeTrim(prTitle);
+  const trimmedHead = safeTrim(prHead);
+  const trimmedBase = safeTrim(prBase);
+  const trimmedBody = safeTrim(prBody);
   const canSubmit =
     !!trimmedTitle &&
     !!trimmedHead &&
@@ -291,5 +297,25 @@ export function GitHubCreatePullRequest(props: GitHubCreatePullRequestProps) {
     [base, body, draft, head, maintainerCanModify, owner, repo, title],
   );
 
-  return <GitHubCreatePullRequestForm key={propsKey} {...props} />;
+  const [createdPullRequestState, setCreatedPullRequestState] = useState<
+    { key: string; value: { htmlUrl: string; number: number } | null }
+  >(() => ({ key: propsKey, value: null }));
+  const createdPullRequest =
+    createdPullRequestState.key === propsKey
+      ? createdPullRequestState.value
+      : null;
+  const setCreatedPullRequest = (
+    value: { htmlUrl: string; number: number } | null,
+  ) => {
+    setCreatedPullRequestState({ key: propsKey, value });
+  };
+
+  return (
+    <GitHubCreatePullRequestForm
+      key={propsKey}
+      {...props}
+      createdPullRequest={createdPullRequest}
+      setCreatedPullRequest={setCreatedPullRequest}
+    />
+  );
 }
