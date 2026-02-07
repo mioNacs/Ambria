@@ -108,7 +108,7 @@ export default function Dashboard() {
           >
             <div className="text-sm font-semibold">Couldn’t load workspaces</div>
             <div className="mt-1 text-sm text-rose-800">
-              {workspacesError.message}
+              Please try again. {workspacesError.message ? `Details: ${workspacesError.message}` : null}
             </div>
             <button
               type="button"

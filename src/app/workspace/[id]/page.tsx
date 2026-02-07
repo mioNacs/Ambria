@@ -65,7 +65,7 @@ export default function WorkspacePage() {
                 </p>
                 <button
                     onClick={() => router.push("/dashboard")}
-                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
                 >
                     Go to Dashboard
                 </button>

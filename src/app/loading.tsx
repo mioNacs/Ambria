@@ -8,7 +8,7 @@ export default function Loading() {
       aria-live="polite"
     >
       <span className="sr-only" role="status">
-        Loading…
+        Loading landing page…
       </span>
 
       <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/70 backdrop-blur">

@@ -150,7 +150,7 @@ export function WorkspaceThreadHistory({
                                     key={i}
                                     className="flex items-center gap-2 px-3 py-2 rounded-xl"
                                 >
-                                    <Skeleton className="h-8 w-1 rounded-full" />
+                                    <Skeleton className="h-4 w-4 rounded-md" />
                                     <Skeleton className="h-4 w-40 flex-1 rounded-lg" />
                                     <Skeleton className="h-3 w-10 rounded-lg" />
                                 </div>
