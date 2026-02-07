@@ -66,10 +66,6 @@ function ConfirmCloseIssueForm({
 
   async function handleConfirm() {
     if (!canSubmit) return;
-    if (!effectiveToken) {
-      setError("Connect GitHub (OAuth) to close issues.");
-      return;
-    }
 
     setIsSubmitting(true);
     setError(null);

@@ -722,7 +722,7 @@ export const tools: TamboTool[] = [
   {
     name: "getRepoMaintainers",
     description:
-      "List repository maintainers (practical definition: users with permission >= write). Returns login, permission, and the source of the permission.",
+      "List repository maintainers (practical definition: users with permission >= write). Returns login, permission, and the source of the permission (currently derived from collaborator permissions).",
     tool: getRepoMaintainers,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),

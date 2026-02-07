@@ -76,10 +76,6 @@ function ConfirmAssignIssueForm({
 
   async function handleConfirm() {
     if (!canSubmit) return;
-    if (!effectiveToken) {
-      setError("Connect GitHub (OAuth) to assign issues.");
-      return;
-    }
 
     setIsSubmitting(true);
     setError(null);

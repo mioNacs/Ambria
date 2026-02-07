@@ -136,12 +136,12 @@ export default function WorkspacePage() {
                 >
                     <div className="flex-1 min-h-0 overflow-hidden flex relative">
                         <WorkspaceChat
-                            role={workspace.role}
+                            role={effectiveRole}
                             workspaceId={workspace.id}
                             repoName={`${workspace.repo_owner}/${workspace.repo_name}`}
                         />
 
-                        <WorkspaceCanvasPanel role={workspace.role} workspaceId={workspace.id} />
+                        <WorkspaceCanvasPanel role={effectiveRole} workspaceId={workspace.id} />
                     </div>
                 </TamboProvider>
             </div>
