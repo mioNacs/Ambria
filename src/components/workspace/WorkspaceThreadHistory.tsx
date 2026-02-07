@@ -21,9 +21,11 @@ export function WorkspaceThreadHistory({
         threads,
         currentThread,
         isLoading,
+        error,
         switchToThread,
         createNewThread,
         deleteThread,
+        refetch,
     } = useWorkspaceThreads(workspaceId);
 
     const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -157,24 +159,50 @@ export function WorkspaceThreadHistory({
                             ))}
                         </div>
                     </div>
-                ) : filteredThreads.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                        {searchQuery ? "No threads found" : "No conversations yet"}
-                    </div>
                 ) : (
-                    <div className="space-y-1 px-2">
-                        {filteredThreads.map((thread) => (
-                            <ThreadItem
-                                key={thread.id}
-                                thread={thread}
-                                threadLabel={getThreadLabel(thread)}
-                                isActive={currentThread?.id === thread.tambo_thread_id}
-                                onSelect={() => switchToThread(thread.tambo_thread_id)}
-                                onDelete={() => deleteThread(thread.tambo_thread_id)}
-                                formatDate={formatDate}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        {error ? (
+                            <div
+                                className="mx-2 mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-900"
+                                role="alert"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs font-medium">Error loading threads</div>
+                                    <button
+                                        type="button"
+                                        onClick={refetch}
+                                        className="text-xs font-medium text-rose-900 hover:text-rose-950 underline underline-offset-2"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {filteredThreads.length === 0 ? (
+                            <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                                {error
+                                    ? "Couldn’t load conversations"
+                                    : searchQuery
+                                        ? "No threads found"
+                                        : "No conversations yet"}
+                            </div>
+                        ) : (
+                            <div className="space-y-1 px-2">
+                                {filteredThreads.map((thread) => (
+                                    <ThreadItem
+                                        key={thread.id}
+                                        thread={thread}
+                                        threadLabel={getThreadLabel(thread)}
+                                        isActive={currentThread?.id === thread.tambo_thread_id}
+                                        onSelect={() => switchToThread(thread.tambo_thread_id)}
+                                        onDelete={() => deleteThread(thread.tambo_thread_id)}
+                                        formatDate={formatDate}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

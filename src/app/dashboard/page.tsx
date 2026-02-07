@@ -107,9 +107,13 @@ export default function Dashboard() {
             role="alert"
           >
             <div className="text-sm font-semibold">Couldn’t load workspaces</div>
-            <div className="mt-1 text-sm text-rose-800">
-              Please try again. {workspacesError.message ? `Details: ${workspacesError.message}` : null}
-            </div>
+            <div className="mt-1 text-sm text-rose-800">Please try again.</div>
+            {process.env.NODE_ENV !== "production" &&
+            workspacesError.message.trim() ? (
+              <div className="mt-1 text-xs text-rose-900/80">
+                Details: {workspacesError.message.trim()}
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={refetch}
