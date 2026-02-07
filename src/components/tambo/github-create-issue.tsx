@@ -67,13 +67,15 @@ function GitHubCreateIssueForm({
   ...props
 }: GitHubCreateIssueProps) {
   const { session } = useAuth();
-  const [issueTitle, setIssueTitle] = useState(title);
+  const [issueTitle, setIssueTitle] = useState<string>(() => title ?? "");
   const [issueBody, setIssueBody] = useState(body ?? "");
   const [labelsCsv, setLabelsCsv] = useState(toCsv(labels));
   const [assigneesCsv, setAssigneesCsv] = useState(toCsv(assignees));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [createdIssue, setCreatedIssue] = useState<
+    { htmlUrl: string; number: number } | null
+  >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
   const canSubmit = !!issueTitle.trim() && !!effectiveToken && !isSubmitting;
@@ -87,7 +89,7 @@ function GitHubCreateIssueForm({
 
     setIsSubmitting(true);
     setError(null);
-    setCreatedUrl(null);
+    setCreatedIssue(null);
 
     try {
       const confirmationId = createGitHubWriteConfirmation({
@@ -106,7 +108,7 @@ function GitHubCreateIssueForm({
         confirmationId,
       });
 
-      setCreatedUrl(created.htmlUrl);
+      setCreatedIssue({ htmlUrl: created.htmlUrl, number: created.number });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create issue");
     } finally {
@@ -195,12 +197,12 @@ function GitHubCreateIssueForm({
         </div>
       )}
 
-      {createdUrl && (
+      {createdIssue && (
         <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300">
           <div className="flex items-center justify-between gap-3">
-            <span>Issue created successfully.</span>
+            <span>Issue #{createdIssue.number} created successfully.</span>
             <a
-              href={createdUrl}
+              href={createdIssue.htmlUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"

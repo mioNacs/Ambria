@@ -63,15 +63,17 @@ function GitHubCreatePullRequestForm({
 }: GitHubCreatePullRequestProps) {
   const { session } = useAuth();
 
-  const [prTitle, setPrTitle] = useState(title);
+  const [prTitle, setPrTitle] = useState<string>(() => title ?? "");
   const [prBody, setPrBody] = useState(body ?? "");
-  const [prHead, setPrHead] = useState(head);
-  const [prBase, setPrBase] = useState(base);
+  const [prHead, setPrHead] = useState<string>(() => head ?? "");
+  const [prBase, setPrBase] = useState<string>(() => base ?? "");
   const [isDraft, setIsDraft] = useState(draft ?? false);
   const [canModify, setCanModify] = useState(maintainerCanModify ?? true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [createdPullRequest, setCreatedPullRequest] = useState<
+    { htmlUrl: string; number: number } | null
+  >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
   const canSubmit =
@@ -90,7 +92,7 @@ function GitHubCreatePullRequestForm({
 
     setIsSubmitting(true);
     setError(null);
-    setCreatedUrl(null);
+    setCreatedPullRequest(null);
 
     try {
       const confirmationId = createGitHubWriteConfirmation({
@@ -111,7 +113,7 @@ function GitHubCreatePullRequestForm({
         confirmationId,
       });
 
-      setCreatedUrl(created.htmlUrl);
+      setCreatedPullRequest({ htmlUrl: created.htmlUrl, number: created.number });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create pull request",
@@ -224,12 +226,14 @@ function GitHubCreatePullRequestForm({
         </div>
       )}
 
-      {createdUrl && (
+      {createdPullRequest && (
         <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300">
           <div className="flex items-center justify-between gap-3">
-            <span>Pull request created successfully.</span>
+            <span>
+              Pull request #{createdPullRequest.number} created successfully.
+            </span>
             <a
-              href={createdUrl}
+              href={createdPullRequest.htmlUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
