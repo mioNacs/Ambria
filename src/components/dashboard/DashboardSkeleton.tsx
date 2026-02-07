@@ -11,8 +11,8 @@ export function DashboardSkeleton({
   label = "Loading dashboard…",
 }: DashboardSkeletonProps) {
   return (
-    <div className="min-h-screen bg-gray-50" aria-busy="true" aria-live="polite">
-      <span className="sr-only" role="status">
+    <div className="min-h-screen bg-gray-50" aria-busy="true">
+      <span className="sr-only" role="status" aria-live="polite">
         {label}
       </span>
 

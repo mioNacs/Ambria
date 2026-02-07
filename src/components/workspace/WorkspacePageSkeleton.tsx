@@ -14,9 +14,8 @@ export function WorkspacePageSkeleton({
     <div
       className="h-screen bg-gray-50 flex flex-col overflow-hidden"
       aria-busy="true"
-      aria-live="polite"
     >
-      <span className="sr-only" role="status">
+      <span className="sr-only" role="status" aria-live="polite">
         {label}
       </span>
 

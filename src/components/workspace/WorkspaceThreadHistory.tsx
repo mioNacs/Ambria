@@ -140,8 +140,8 @@ export function WorkspaceThreadHistory({
             {/* Thread List */}
             <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
-                    <div className="px-2 py-3" aria-busy="true" aria-live="polite">
-                        <span className="sr-only" role="status">
+                    <div className="px-2 py-3" aria-busy="true">
+                        <span className="sr-only" role="status" aria-live="polite">
                             Loading threads…
                         </span>
                         <div className="space-y-2">

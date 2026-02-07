@@ -13,7 +13,7 @@ export function Skeleton({ className, shimmer = true, ...props }: SkeletonProps)
       className={cn(
         "rounded-md",
         shimmer
-          ? "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-white/10 dark:via-white/20 dark:to-white/10 [background-size:200%_100%] animate-[shimmer_2s_ease-in-out_infinite] motion-reduce:animate-none"
+          ? "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-white/10 dark:via-white/20 dark:to-white/10 animate-shimmer motion-reduce:animate-none"
           : "bg-gray-200/70 dark:bg-white/10",
         className,
       )}

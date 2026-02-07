@@ -222,14 +222,8 @@ Animated gradient for thinking text, creates a shimmering effect that moves acro
 }
 
 .animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
   background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+  animation: shimmer 2s ease-in-out infinite;
 }
 
 .animate-gradient-shift {

@@ -5,9 +5,8 @@ export default function Loading() {
     <div
       className="min-h-screen bg-gray-50 overflow-x-hidden"
       aria-busy="true"
-      aria-live="polite"
     >
-      <span className="sr-only" role="status">
+      <span className="sr-only" role="status" aria-live="polite">
         Loading landing page…
       </span>
 

@@ -20,8 +20,8 @@ export function WorkspaceList({
 
     if (isLoading) {
         return (
-            <div aria-busy="true" aria-live="polite">
-                <span className="sr-only" role="status">
+            <div aria-busy="true">
+                <span className="sr-only" role="status" aria-live="polite">
                     Loading workspaces…
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
