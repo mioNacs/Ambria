@@ -128,6 +128,12 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   ]);
 
   React.useEffect(() => {
+    if (!pendingFocus) return;
+    const timeout = setTimeout(() => setPendingFocus(null), 2000);
+    return () => clearTimeout(timeout);
+  }, [pendingFocus]);
+
+  React.useEffect(() => {
     const contributorOpen = view === "workboards" && visibleTab === "contributor";
     const maintainerOpen = view === "workboards" && visibleTab === "maintainer";
     const pinsOpen = view === "repoPins";
@@ -138,6 +144,15 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     setIsOpen("RepoPinsCanvas", pinsOpen);
     setIsOpen("RepoFindingsCanvas", findingsOpen);
   }, [setIsOpen, view, visibleTab]);
+
+  React.useEffect(() => {
+    return () => {
+      setIsOpen("ContributorPlanningCanvas", false);
+      setIsOpen("MaintainerTriageCanvas", false);
+      setIsOpen("RepoPinsCanvas", false);
+      setIsOpen("RepoFindingsCanvas", false);
+    };
+  }, [setIsOpen]);
 
   React.useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return;

@@ -230,7 +230,7 @@ function RepoPinsCanvasBase({
   };
 
   if (!effectiveIsOpen) {
-    return <section className="hidden" aria-hidden="true" />;
+    return <div className="hidden" />;
   }
 
   return (
