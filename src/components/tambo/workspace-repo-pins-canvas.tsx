@@ -231,10 +231,8 @@ function RepoPinsCanvasBase({
 
   return (
     // Keep mounted (hidden) so the workspace panel can open this interactable later.
-    <section className={cn("h-full bg-card", !effectiveIsOpen && "hidden")}>
-      {!effectiveIsOpen ? null : (
-        <>
-          <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
+    <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-card">
+      <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15">
@@ -257,9 +255,9 @@ function RepoPinsCanvasBase({
                 </div>
               ) : null}
             </div>
-          </div>
+      </div>
 
-          <div className="p-4 space-y-3">
+      <div className="p-4 space-y-3">
         <div className="rounded-xl border border-muted-foreground/20 bg-muted/10 p-3">
           <div className="grid grid-cols-1 gap-2">
             <input
@@ -485,8 +483,6 @@ function RepoPinsCanvasBase({
           ))}
         </div>
       </div>
-        </>
-      )}
     </section>
   );
 }

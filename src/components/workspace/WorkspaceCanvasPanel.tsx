@@ -49,9 +49,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   const [tab, setTab] = React.useState<WorkspaceTab>(() =>
     role === "maintainer" ? "maintainer" : "contributor",
   );
-  const [pendingFocus, setPendingFocus] = React.useState<
-    InteractableComponentName | null
-  >(null);
 
   const interactables = useCurrentInteractablesSnapshot();
   const { setInteractableState, clearInteractableSelections, setInteractableSelected } =
@@ -62,16 +59,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   const activeWorkboard: InteractableComponentName =
     visibleTab === "maintainer" ? "MaintainerTriageCanvas" : "ContributorPlanningCanvas";
-
-  React.useEffect(() => {
-    if (role === "contributor") {
-      setTab("contributor");
-      return;
-    }
-    if (role === "maintainer") {
-      setTab("maintainer");
-    }
-  }, [role]);
 
   const getInteractable = React.useCallback(
     (componentName: InteractableComponentName) => {
@@ -103,29 +90,15 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     [getInteractable, setInteractableState],
   );
 
-  const focusInteractable = React.useCallback((componentName: InteractableComponentName) => {
-    setPendingFocus(componentName);
-  }, []);
-
-  React.useEffect(() => {
-    if (!pendingFocus) return;
-
-    const interactable = getInteractable(pendingFocus);
-    if (interactable) {
+  const focusInteractable = React.useCallback(
+    (componentName: InteractableComponentName) => {
+      const interactable = getInteractable(componentName);
+      if (!interactable) return;
       clearInteractableSelections();
       setInteractableSelected(interactable.id, true);
-      setPendingFocus(null);
-      return;
-    }
-
-    const timeout = setTimeout(() => setPendingFocus(null), 2000);
-    return () => clearTimeout(timeout);
-  }, [
-    pendingFocus,
-    clearInteractableSelections,
-    getInteractable,
-    setInteractableSelected,
-  ]);
+    },
+    [clearInteractableSelections, getInteractable, setInteractableSelected],
+  );
 
   React.useEffect(() => {
     const contributorOpen = view === "workboards" && visibleTab === "contributor";
@@ -138,15 +111,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     setIsOpen("RepoPinsCanvas", pinsOpen);
     setIsOpen("RepoFindingsCanvas", findingsOpen);
   }, [setIsOpen, view, visibleTab]);
-
-  React.useEffect(() => {
-    return () => {
-      setIsOpen("ContributorPlanningCanvas", false);
-      setIsOpen("MaintainerTriageCanvas", false);
-      setIsOpen("RepoPinsCanvas", false);
-      setIsOpen("RepoFindingsCanvas", false);
-    };
-  }, [setIsOpen]);
 
   React.useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return;
