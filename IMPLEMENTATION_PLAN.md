@@ -312,3 +312,4 @@ src/
 - [ ] Triage/PRs display correctly (Maintainer)
 - [ ] Both mode shows all features
 - [ ] Demo video recorded
+- [ ] create Readme.md
