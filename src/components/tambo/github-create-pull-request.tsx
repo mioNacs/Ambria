@@ -48,8 +48,9 @@ export type GitHubCreatePullRequestProps = z.infer<
 > &
   React.HTMLAttributes<HTMLDivElement>;
 
-function safeTrim(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+function safeTrim(value: string | null | undefined) {
+  if (value == null) return "";
+  return value.trim();
 }
 
 function GitHubCreatePullRequestForm({

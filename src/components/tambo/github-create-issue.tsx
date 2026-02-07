@@ -41,8 +41,9 @@ export const githubCreateIssueSchema = z
 export type GitHubCreateIssueProps = z.infer<typeof githubCreateIssueSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
-function safeTrim(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+function safeTrim(value: string | null | undefined) {
+  if (value == null) return "";
+  return value.trim();
 }
 
 function toCsv(value: string[] | undefined) {
