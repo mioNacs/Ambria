@@ -229,11 +229,15 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       : viewFromState === "repoFindings"
         ? "RepoFindingsCanvas"
         : viewFromState === "workboards"
-          ? maintainerIsOpen
+          ? preferredTab === "maintainer" && maintainerIsOpen
             ? "MaintainerTriageCanvas"
-            : contributorIsOpen
+            : preferredTab === "contributor" && contributorIsOpen
               ? "ContributorPlanningCanvas"
-              : null
+              : maintainerIsOpen
+                ? "MaintainerTriageCanvas"
+                : contributorIsOpen
+                  ? "ContributorPlanningCanvas"
+                  : null
           : null;
 
     const keep = pendingOpen ?? keepByOpenState ?? openNames[0] ?? null;
@@ -249,6 +253,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     maintainerIsOpen,
     pendingOpen,
     pinsIsOpen,
+    preferredTab,
     setIsOpen,
     viewFromState,
   ]);
