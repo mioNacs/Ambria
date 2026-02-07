@@ -96,6 +96,7 @@ function resolveWorkboardToKeep(params: {
 export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [isLargeScreen, setIsLargeScreen] = React.useState(true);
   const [view, setView] = React.useState<CanvasView>("list");
   const [preferredTab, setPreferredTab] = React.useState<WorkspaceTab>(() =>
     role === "maintainer" ? "maintainer" : "contributor",
@@ -382,6 +383,26 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isFullscreen]);
 
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const update = () => {
+      const isLarge = mql.matches;
+      setIsLargeScreen(isLarge);
+      if (!isLarge) {
+        setIsCollapsed(false);
+      }
+    };
+    update();
+
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+
+  const collapseEnabled = isLargeScreen && !isFullscreen;
+  const effectiveCollapsed = collapseEnabled ? isCollapsed : false;
+
   const headerTitle = view === "list" ? "Workboards" : VIEW_LABELS[view];
   const headerSubtitle = view === "list" ? "Click an item to open it" : "Back to list";
 
@@ -389,21 +410,25 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     <>
       <div
         className={cn(
-          "flex flex-col bg-card backdrop-blur",
+          "h-full flex flex-col bg-card backdrop-blur",
           "shadow-sm",
           isFullscreen
             ? "absolute inset-0 z-50 border border-muted-foreground/20"
-            : "border-l border-muted-foreground/20",
-          isFullscreen ? "w-full" : isCollapsed ? "w-14" : "w-[30rem]",
+            : "border-t border-muted-foreground/20 lg:border-t-0 lg:border-l",
+          isFullscreen
+            ? "w-full"
+            : effectiveCollapsed
+              ? "w-14"
+              : "w-full lg:w-[30rem]",
         )}
       >
       <div
         className={cn(
           "flex items-center justify-between border-b border-muted-foreground/20",
-          isCollapsed ? "px-2 py-2" : "pl-4 pr-2 py-2",
+          effectiveCollapsed ? "px-2 py-2" : "pl-4 pr-2 py-2",
         )}
       >
-        {isCollapsed ? (
+        {effectiveCollapsed ? (
           <div className="flex flex-col items-center w-full">
             <button
               onClick={() => setIsCollapsed(false)}
@@ -443,17 +468,19 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                   <Maximize2 className="w-5 h-5 text-muted-foreground" />
                 )}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsFullscreen(false);
-                  setIsCollapsed(true);
-                }}
-                className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
-                title="Collapse canvas"
-              >
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
+              {collapseEnabled ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFullscreen(false);
+                    setIsCollapsed(true);
+                  }}
+                  className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
+                  title="Collapse canvas"
+                >
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              ) : null}
             </div>
           </>
         )}
@@ -462,7 +489,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       <div
         className={cn(
           "flex-1 min-h-0",
-          isCollapsed ? "hidden" : "flex flex-col",
+          effectiveCollapsed ? "hidden" : "flex flex-col",
         )}
       >
         {view === "list" ? (

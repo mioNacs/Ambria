@@ -218,7 +218,7 @@ function SuggestionPopover<T extends SuggestionItem>({
         side="bottom"
         align="start"
         sideOffset={sideOffset}
-        className="z-50 w-96 rounded-md border bg-popover p-0 shadow-md animate-in fade-in-0 zoom-in-95"
+        className="z-50 w-[min(24rem,calc(100vw-2rem))] rounded-md border bg-popover p-0 shadow-md animate-in fade-in-0 zoom-in-95"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => {

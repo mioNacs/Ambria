@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, MessageSquare, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, MessageSquare, Search, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 import { useWorkspaceThreads, WorkspaceThread } from "@/hooks/useWorkspaceThreads";
 import { NEW_THREAD_SHORTCUT } from "@/lib/shortcuts";
 import { getFallbackThreadTitle } from "@/lib/thread-titles";
@@ -11,11 +11,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 export interface WorkspaceThreadHistoryProps {
     workspaceId: string;
     position?: "left" | "right";
+    mode?: "sidebar" | "overlay";
+    onClose?: () => void;
 }
 
 export function WorkspaceThreadHistory({
     workspaceId,
     position = "left",
+    mode = "sidebar",
+    onClose,
 }: WorkspaceThreadHistoryProps) {
     const {
         threads,
@@ -30,6 +34,37 @@ export function WorkspaceThreadHistory({
 
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState("");
+
+    const isOverlay = mode === "overlay";
+    const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
+
+    React.useEffect(() => {
+        if (!isOverlay) return;
+        setIsCollapsed(false);
+    }, [isOverlay]);
+
+    React.useEffect(() => {
+        if (!isOverlay) return;
+        closeButtonRef.current?.focus();
+    }, [isOverlay]);
+
+
+    const handleCreateNewThread = React.useCallback(() => {
+        createNewThread();
+        if (isOverlay) {
+            onClose?.();
+        }
+    }, [createNewThread, isOverlay, onClose]);
+
+    const handleSwitchToThread = React.useCallback(
+        (tamboThreadId: string) => {
+            void switchToThread(tamboThreadId);
+            if (isOverlay) {
+                onClose?.();
+            }
+        },
+        [switchToThread, isOverlay, onClose],
+    );
 
     const getThreadLabel = (t: WorkspaceThread) =>
         t.title || getFallbackThreadTitle(t.tambo_thread_id);
@@ -58,11 +93,11 @@ export function WorkspaceThreadHistory({
         }
     };
 
-    if (isCollapsed) {
+    if (!isOverlay && isCollapsed) {
         return (
             <div
                 className={cn(
-                    "w-14 flex flex-col items-center py-4 bg-white/90 backdrop-blur border-gray-200 shadow-sm",
+                    "w-14 h-full flex flex-col items-center py-4 bg-white/90 backdrop-blur border-gray-200 shadow-sm",
                     position === "left" ? "border-r" : "border-l",
                 )}
             >
@@ -78,7 +113,7 @@ export function WorkspaceThreadHistory({
                     )}
                 </button>
                 <button
-                    onClick={createNewThread}
+                    onClick={handleCreateNewThread}
                     className="p-2 mt-2 hover:bg-gray-100 rounded-lg transition-colors"
                     title="New thread"
                 >
@@ -91,9 +126,20 @@ export function WorkspaceThreadHistory({
     return (
         <div
             className={cn(
-                "w-72 flex flex-col bg-white/80 backdrop-blur border-gray-200",
-                position === "left" ? "border-r" : "border-l",
+                "h-full flex flex-col bg-white/80 backdrop-blur border-gray-200",
+                isOverlay ? "w-full" : "w-72",
+                !isOverlay && (position === "left" ? "border-r" : "border-l"),
             )}
+            onKeyDownCapture={
+                isOverlay && onClose
+                    ? (event) => {
+                        if (event.key === "Escape") {
+                            event.stopPropagation();
+                            onClose();
+                        }
+                    }
+                    : undefined
+            }
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
@@ -101,23 +147,36 @@ export function WorkspaceThreadHistory({
                     <div className="font-medium text-gray-900 text-sm truncate">Conversations</div>
                     <div className="text-xs text-gray-500">{threads.length} threads</div>
                 </div>
-                <button
-                    onClick={() => setIsCollapsed(true)}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors"
-                    title="Collapse sidebar"
-                >
-                    {position === "left" ? (
-                        <ChevronLeft className="w-4 h-4 text-gray-500" />
-                    ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                    )}
-                </button>
+                {isOverlay ? (
+                    <button
+                        ref={closeButtonRef}
+                        type="button"
+                        onClick={onClose}
+                        className="p-2 -mr-1 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Close"
+                        aria-label="Close"
+                    >
+                        <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => setIsCollapsed(true)}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        title="Collapse sidebar"
+                    >
+                        {position === "left" ? (
+                            <ChevronLeft className="w-4 h-4 text-gray-500" />
+                        ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                        )}
+                    </button>
+                )}
             </div>
 
             {/* New Thread Button */}
             <div className="px-3 py-2">
                 <button
-                    onClick={createNewThread}
+                    onClick={handleCreateNewThread}
                     className="flex items-center gap-2 w-full px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
                 >
                     <Plus className="w-4 h-4" />
@@ -195,7 +254,7 @@ export function WorkspaceThreadHistory({
                                         thread={thread}
                                         threadLabel={getThreadLabel(thread)}
                                         isActive={currentThread?.id === thread.tambo_thread_id}
-                                        onSelect={() => switchToThread(thread.tambo_thread_id)}
+                                        onSelect={() => handleSwitchToThread(thread.tambo_thread_id)}
                                         onDelete={() => deleteThread(thread.tambo_thread_id)}
                                         formatDate={formatDate}
                                     />

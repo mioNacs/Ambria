@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 interface ConfirmationDialogProps {
@@ -28,21 +28,19 @@ export function ConfirmationDialog({
   onConfirm,
   onCancel,
 }: ConfirmationDialogProps) {
-  const [mounted, setMounted] = useState(false);
+  const canUseDom = typeof document !== "undefined";
 
   useEffect(() => {
-    setMounted(true);
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!canUseDom) return;
+    if (!isOpen) return;
+
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [canUseDom, isOpen]);
 
-  if (!mounted) return null;
+  if (!canUseDom) return null;
 
   return createPortal(
     <AnimatePresence>
@@ -66,10 +64,14 @@ export function ConfirmationDialog({
               className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-200"
               role="dialog"
               aria-modal="true"
+              aria-busy={isLoading || undefined}
             >
               <div className="relative p-6">
                 <button
+                  type="button"
                   onClick={onCancel}
+                  disabled={isLoading}
+                  aria-disabled={isLoading || undefined}
                   className="absolute right-4 top-4 text-gray-400 hover:text-gray-500 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -93,6 +95,7 @@ export function ConfirmationDialog({
                   <button
                     onClick={onCancel}
                     disabled={isLoading}
+                    aria-disabled={isLoading || undefined}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-200"
                   >
                     {cancelLabel}
@@ -100,6 +103,7 @@ export function ConfirmationDialog({
                   <button
                     onClick={onConfirm}
                     disabled={isLoading}
+                    aria-disabled={isLoading || undefined}
                     className={`px-4 py-2 text-sm font-medium text-white rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 ${
                       isDestructive
                         ? "bg-rose-600 hover:bg-rose-700 focus:ring-rose-500 shadow-rose-200"
@@ -112,7 +116,7 @@ export function ConfirmationDialog({
               </div>
               
               {isLoading && (
-                 <div className="absolute inset-0 bg-white/50 z-10" />
+                 <div className="absolute inset-0 bg-white/50 z-10" aria-hidden="true" />
               )}
             </motion.div>
           </div>
