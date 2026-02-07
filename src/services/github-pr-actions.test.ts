@@ -102,6 +102,38 @@ describe("closePullRequest", () => {
     });
     expect(closed.state).toBe("closed");
   });
+
+  test("allows maintain permission", async () => {
+    reposGetMock.mockResolvedValue({
+      data: {
+        permissions: { admin: false, maintain: true, push: false, pull: true },
+      },
+    });
+    pullsGetMock.mockResolvedValue({ data: { state: "open" } });
+    pullsUpdateMock.mockResolvedValue({
+      data: {
+        number: 2,
+        state: "closed",
+        html_url: "https://github.com/acme/repo/pull/2",
+      },
+    });
+
+    const confirmationId = createGitHubWriteConfirmation({
+      owner: "acme",
+      repo: "repo",
+      kind: "pull_request_close",
+    });
+
+    const closed = await closePullRequest({
+      owner: "acme",
+      repo: "repo",
+      pullNumber: 2,
+      token: "token",
+      confirmationId,
+    });
+
+    expect(closed.state).toBe("closed");
+  });
 });
 
 describe("mergePullRequest", () => {

@@ -74,11 +74,13 @@ async function assertRepoWriteAccess(params: {
         const permissions = (data as { permissions?: Record<string, boolean> })
             .permissions;
 
-        if (!permissions?.push && !permissions?.admin) {
-            throw new Error(
-                `Write access required for ${owner}/${repo}. Connect GitHub with a user/token that has repository permission "write" (or higher) and try again.`,
-            );
+        if (permissions?.admin || permissions?.maintain || permissions?.push) {
+            return;
         }
+
+        throw new Error(
+            `Write access required for ${owner}/${repo}. Connect GitHub with a user/token that has repository permission "write" (or higher) and try again.`,
+        );
     } catch (error) {
         if (error instanceof Error && error.message.startsWith("Write access required")) {
             throw error;
