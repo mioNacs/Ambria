@@ -52,6 +52,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   );
   const [pendingOpen, setPendingOpen] = React.useState<InteractableComponentName | null>(null);
   const suppressStateNavigationRef = React.useRef(false);
+  const suppressResetTokenRef = React.useRef(0);
 
   const pendingOpenRef = React.useRef<InteractableComponentName | null>(null);
 
@@ -209,14 +210,17 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     suppressStateNavigationRef.current = true;
     setView("list");
     closeAllCanvases();
+
+    const token = ++suppressResetTokenRef.current;
+    const reset = () => {
+      if (suppressResetTokenRef.current !== token) return;
+      suppressStateNavigationRef.current = false;
+    };
+
     if (typeof queueMicrotask === "function") {
-      queueMicrotask(() => {
-        suppressStateNavigationRef.current = false;
-      });
+      queueMicrotask(reset);
     } else {
-      setTimeout(() => {
-        suppressStateNavigationRef.current = false;
-      }, 0);
+      setTimeout(reset, 0);
     }
   }, [closeAllCanvases]);
 
@@ -248,15 +252,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       suppressStateNavigationRef.current = false;
     }
   }, [anyCanvasOpen]);
-
-  React.useEffect(() => {
-    suppressStateNavigationRef.current = false;
-    pendingOpenRef.current = null;
-    setPendingOpen(null);
-    setView("list");
-    setPreferredTab(role === "maintainer" ? "maintainer" : "contributor");
-    clearInteractableSelections();
-  }, [clearInteractableSelections, role, workspaceId]);
 
   React.useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return;
@@ -616,7 +611,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
             <div className="h-full flex items-center justify-center p-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{pendingOpen ? "Opening canvas..." : "Opening..."}</span>
+                <span>Opening canvas...</span>
               </div>
             </div>
           </div>
