@@ -407,7 +407,7 @@ export const tools: TamboTool[] = [
   {
     name: "getRepoIssues",
     description:
-      "Get issues from a repository with filters for state and labels. Supports pagination with page + limit.",
+      "Get issues from a repository with filters. IMPORTANT: Do NOT use this tool to display issues to users. Instead, render IssueList component with issuesRequest to let it fetch and render issues efficiently. Only use this tool if you need to programmatically analyze issue data.",
     tool: getRepoIssues,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
@@ -472,7 +472,7 @@ export const tools: TamboTool[] = [
   {
     name: "getRepoPullRequests",
     description:
-      "Get pull requests from a repository with state filter. Supports pagination with page + limit.",
+      "Get pull requests from a repository with state filter. IMPORTANT: Do NOT use this tool to display PRs to users. Instead, render PullRequestList component with pullRequestsRequest to let it fetch and render PRs efficiently. Only use this tool if you need to programmatically analyze PR data.",
     tool: getRepoPullRequests,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
@@ -738,7 +738,7 @@ export const tools: TamboTool[] = [
   {
     name: "getPullRequestFiles",
     description:
-      "Get the list of files changed in a pull request with basic stats. Supports pagination with page + limit; patches are optional and can make responses large on big PRs.",
+      "Get the list of files changed in a pull request with basic stats. IMPORTANT: Do NOT use this tool to display PR files to users. Instead, render GitHubPullRequestFiles component with filesRequest to let it fetch and render files efficiently. Only use this tool if you need to programmatically analyze file changes.",
     tool: getPullRequestFiles,
     inputSchema: z.object({
       owner: z.string().describe("GitHub repository owner/organization name"),
@@ -842,7 +842,7 @@ export const components: TamboComponent[] = [
   {
     name: "IssueList",
     description:
-      "Shows a list of GitHub issues as cards. Prefer passing issuesRequest so the component can fetch and render long lists without large JSON payloads. If issues are provided and non-empty, issuesRequest is ignored.",
+      "Shows a list of GitHub issues as cards. ALWAYS use issuesRequest (pass owner, repo, state, labels if needed) to let the component fetch and render issues efficiently - do NOT call getRepoIssues first. Only pass the issues array if you already have the data from another source.",
     component: IssueList,
     propsSchema: issueListSchema,
   },
@@ -856,7 +856,7 @@ export const components: TamboComponent[] = [
   {
     name: "PullRequestList",
     description:
-      "Shows a list of GitHub pull requests as cards. Prefer passing pullRequestsRequest so the component can fetch and render long lists without large JSON payloads. If pullRequests are provided and non-empty, pullRequestsRequest is ignored.",
+      "Shows a list of GitHub pull requests as cards. ALWAYS use pullRequestsRequest (pass owner, repo, state if needed) to let the component fetch and render PRs efficiently - do NOT call getRepoPullRequests first. Only pass the pullRequests array if you already have the data from another source.",
     component: PullRequestList,
     propsSchema: pullRequestListSchema,
   },
@@ -891,7 +891,7 @@ export const components: TamboComponent[] = [
   {
     name: "GitHubPullRequestFiles",
     description:
-      "Shows a pull request's changed files grouped by folder path with basic change stats. Prefer passing filesRequest so the component can fetch and render long lists without large JSON payloads. If files are provided and non-empty, filesRequest is ignored.",
+      "Shows a pull request's changed files grouped by folder path with basic change stats. ALWAYS use filesRequest (pass owner, repo, pullNumber) to let the component fetch and render files efficiently - do NOT call getPullRequestFiles first. Only pass the files array if you already have the data from another source.",
     component: GitHubPullRequestFiles,
     propsSchema: githubPullRequestFilesSchema,
   },
@@ -1001,18 +1001,11 @@ if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
 }
 
 export function getComponentsForRole(role: WorkspaceRole): TamboComponent[] {
-  if (role === "both") return components;
-
-  const allowed = role === "maintainer"
-    ? maintainerComponentNames
-    : contributorComponentNames;
-
-  return components.filter((c) => allowed.has(c.name));
+  // Allow all components for all roles
+  return components;
 }
 
 export function getToolsForRole(role: WorkspaceRole): TamboTool[] {
-  if (role === "both") return tools;
-
-  const allowed = role === "maintainer" ? maintainerToolNames : contributorToolNames;
-  return tools.filter((t) => allowed.has(t.name));
+  // Allow all tools for all roles
+  return tools;
 }
