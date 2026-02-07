@@ -109,6 +109,7 @@ export default function Dashboard() {
             <div className="text-sm font-semibold">Couldn’t load workspaces</div>
             <div className="mt-1 text-sm text-rose-800">Please try again.</div>
             {process.env.NODE_ENV !== "production" &&
+            typeof workspacesError.message === "string" &&
             workspacesError.message.trim() ? (
               <div className="mt-1 text-xs text-rose-900/80">
                 Details: {workspacesError.message.trim()}
