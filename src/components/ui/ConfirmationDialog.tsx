@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 interface ConfirmationDialogProps {
@@ -28,21 +28,19 @@ export function ConfirmationDialog({
   onConfirm,
   onCancel,
 }: ConfirmationDialogProps) {
-  const [mounted, setMounted] = useState(false);
+  const canUseDom = typeof document !== "undefined";
 
   useEffect(() => {
-    setMounted(true);
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!canUseDom) return;
+    if (!isOpen) return;
+
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [canUseDom, isOpen]);
 
-  if (!mounted) return null;
+  if (!canUseDom) return null;
 
   return createPortal(
     <AnimatePresence>
