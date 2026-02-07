@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { parseGitHubUrl } from "@/lib/github";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, MessageCircle } from "lucide-react";
 import * as React from "react";
@@ -146,7 +147,8 @@ function formatDate(value?: string | null) {
 
 function LabelPill({ label }: { label: string }) {
   return (
-    <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+    <span className={cn(chatRenderableStyles.pill, "text-muted-foreground")}
+    >
       {label}
     </span>
   );
@@ -179,22 +181,22 @@ export function IssueCard({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        chatRenderableStyles.subcard,
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-xs text-muted-foreground">{header}</div>
-          <div className="mt-1 truncate text-base font-semibold text-foreground">
+          <div className={chatRenderableStyles.kicker}>{header}</div>
+          <div className={cn(chatRenderableStyles.title, "text-base")}
+          >
             {title ?? "(no title)"}
           </div>
           {(author || state || created) && (
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <div className={chatRenderableStyles.subtitle}>
               {state ? (
-                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-muted-foreground">
+                <span className={cn(chatRenderableStyles.pill, "text-muted-foreground")}>
                   {state}
                 </span>
               ) : null}
@@ -217,11 +219,8 @@ export function IssueCard({
             target="_blank"
             rel="noreferrer"
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-md",
-              "border border-muted-foreground/20 bg-muted/40",
-              "px-2 py-1 text-xs text-foreground",
-              "hover:bg-muted/60 transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              chatRenderableStyles.button,
+              "shrink-0",
             )}
           >
             Open <ExternalLink className="size-3.5" />
@@ -235,7 +234,7 @@ export function IssueCard({
             <LabelPill key={label} label={label} />
           ))}
           {extraLabelsCount > 0 ? (
-            <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+            <span className={cn(chatRenderableStyles.pill, "text-muted-foreground")}>
               +{extraLabelsCount} more
             </span>
           ) : null}
@@ -502,21 +501,27 @@ export function IssueList({
     typeof showBodyPreview === "boolean" ? { showBodyPreview } : undefined;
 
   return (
-    <div className={cn("w-full", className)} {...pickSafeDomProps(props)}>
-      <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-        <div className="text-xs text-muted-foreground">
-          {items.length.toLocaleString("en-US")} items
+    <div
+      className={cn(chatRenderableStyles.card, className)}
+      {...pickSafeDomProps(props)}
+    >
+      <div className={chatRenderableStyles.header}>
+        <div className="min-w-0">
+          <h3 className={cn(chatRenderableStyles.title, "mt-0 text-base")}
+          >
+            {title}
+          </h3>
+          <div className={chatRenderableStyles.kicker}>
+            {items.length.toLocaleString("en-US")} items
+          </div>
         </div>
       </div>
 
       {items.length === 0 ? (
         <div className="mt-3 space-y-2">
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-          )}
+          <div className={chatRenderableStyles.emptyState}>
+            {isLoading ? "Loading…" : emptyMessage}
+          </div>
           {error ? (
             <p className="text-sm text-destructive">{error}</p>
           ) : null}
@@ -541,10 +546,8 @@ export function IssueList({
                 void fetchPage({ page: currentPage + 1, mode: "append" });
               }}
               className={cn(
-                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
-                "px-3 py-2 text-sm text-foreground",
-                "hover:bg-muted/50 transition-colors",
-                "disabled:opacity-60",
+                chatRenderableStyles.button,
+                "w-full justify-center py-2 text-sm",
               )}
               disabled={isLoading}
             >

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { CheckCircle2, XCircle } from "lucide-react";
 import * as React from "react";
@@ -57,23 +58,21 @@ export function CommunityHealth({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card",
-        "p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        chatRenderableStyles.card,
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-        <div className="text-xs text-muted-foreground">
+        <h3 className={cn(chatRenderableStyles.title, "mt-0 text-base")}>{title}</h3>
+        <div className={chatRenderableStyles.kicker}>
           <span className="font-medium text-foreground">{presentCount}</span> present
           {missingCount > 0 ? `, ${missingCount} missing` : null}
         </div>
       </div>
 
       {uniqueFiles.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No results.</p>
+        <div className={cn(chatRenderableStyles.emptyState, "mt-3")}>No results.</div>
       ) : (
         <div className="mt-3 space-y-2">
           {uniqueFiles.map((file) => {
@@ -84,8 +83,8 @@ export function CommunityHealth({
               <div
                 key={path}
                 className={cn(
-                  "rounded-lg border border-muted-foreground/20",
-                  "px-3 py-2",
+                  chatRenderableStyles.subcard,
+                  "py-2",
                   file.exists
                     ? "bg-emerald-500/5 dark:bg-emerald-500/10"
                     : "bg-destructive/5 dark:bg-destructive/10",
@@ -126,7 +125,7 @@ export function CommunityHealth({
                     <summary className="cursor-pointer text-xs text-muted-foreground">
                       Preview
                     </summary>
-                    <pre className="mt-2 max-h-56 overflow-auto rounded-md border border-muted-foreground/20 bg-background p-2 text-xs text-foreground">
+                    <pre className="mt-2 max-h-56 overflow-auto rounded-xl border border-border/60 bg-background p-2 text-xs text-foreground">
                       {file.content}
                     </pre>
                   </details>

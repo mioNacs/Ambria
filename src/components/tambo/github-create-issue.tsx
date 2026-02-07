@@ -1,6 +1,7 @@
 "use client";
 
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { useAuth } from "@/hooks/useAuth";
 import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 import { cn } from "@/lib/utils";
@@ -128,66 +129,63 @@ function GitHubCreateIssueForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-background p-4 space-y-4",
+        chatRenderableStyles.card,
+        "space-y-4",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="space-y-1">
-        <div className="text-sm font-semibold text-foreground">
+        <div className={cn(chatRenderableStyles.title, "mt-0")}>
           Create GitHub Issue
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className={chatRenderableStyles.kicker}>
           {owner}/{repo}
         </div>
       </div>
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Title
-          </label>
+          <label className={chatRenderableStyles.sectionTitle}>Title</label>
           <input
             value={issueTitle}
             onChange={(e) => setIssueTitle(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+            className={chatRenderableStyles.input}
             placeholder="Issue title"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Body
-          </label>
+          <label className={chatRenderableStyles.sectionTitle}>Body</label>
           <textarea
             value={issueBody}
             onChange={(e) => setIssueBody(e.target.value)}
-            className="min-h-28 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+            className={cn(chatRenderableStyles.textarea, "min-h-28")}
             placeholder="Describe the issue (Markdown supported)"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className={chatRenderableStyles.sectionTitle}>
               Labels (comma-separated)
             </label>
             <input
               value={labelsCsv}
               onChange={(e) => setLabelsCsv(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+              className={chatRenderableStyles.input}
               placeholder="bug, enhancement"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className={chatRenderableStyles.sectionTitle}>
               Assignees (comma-separated)
             </label>
             <input
               value={assigneesCsv}
               onChange={(e) => setAssigneesCsv(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+              className={chatRenderableStyles.input}
               placeholder="octocat"
             />
           </div>
@@ -214,7 +212,7 @@ function GitHubCreateIssueForm({
               href={createdIssue.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
+              className={cn(chatRenderableStyles.button, "bg-background")}
             >
               Open <ExternalLink className="h-3 w-3" />
             </a>
@@ -227,10 +225,7 @@ function GitHubCreateIssueForm({
           type="button"
           onClick={handleCreate}
           disabled={!canSubmit}
-          className={cn(
-            "rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity",
-            !canSubmit && "opacity-50 cursor-not-allowed",
-          )}
+          className={chatRenderableStyles.buttonPrimary}
         >
           {isSubmitting ? "Creating…" : "Confirm & create"}
         </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { useAuth } from "@/hooks/useAuth";
 import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 import { cn } from "@/lib/utils";
@@ -119,26 +120,25 @@ function ConfirmCloseIssueForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-background p-4 space-y-4",
+        chatRenderableStyles.card,
+        "space-y-4",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="space-y-1">
-        <div className="text-sm font-semibold text-foreground">Close Issue</div>
-        <div className="text-xs text-muted-foreground">
+        <div className={cn(chatRenderableStyles.title, "mt-0")}>Close Issue</div>
+        <div className={chatRenderableStyles.kicker}>
           {owner}/{repo}#{issueNumber}
         </div>
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">
-          Optional comment
-        </label>
+        <label className={chatRenderableStyles.sectionTitle}>Optional comment</label>
         <textarea
           value={commentBody}
           onChange={(e) => setCommentBody(e.target.value)}
-          className="min-h-24 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+          className={cn(chatRenderableStyles.textarea, "min-h-24")}
           placeholder="Add a closing note (optional)"
         />
       </div>
@@ -163,7 +163,7 @@ function ConfirmCloseIssueForm({
               href={result.issueUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
+              className={cn(chatRenderableStyles.button, "bg-background")}
             >
               Open <ExternalLink className="h-3 w-3" />
             </a>
@@ -176,7 +176,7 @@ function ConfirmCloseIssueForm({
                 href={result.commentUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
+                className={cn(chatRenderableStyles.button, "bg-background")}
               >
                 Open <ExternalLink className="h-3 w-3" />
               </a>
@@ -190,10 +190,7 @@ function ConfirmCloseIssueForm({
           type="button"
           onClick={handleConfirm}
           disabled={!canSubmit}
-          className={cn(
-            "rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity",
-            !canSubmit && "opacity-50 cursor-not-allowed",
-          )}
+          className={chatRenderableStyles.buttonPrimary}
         >
           {isSubmitting ? "Closing…" : "Confirm & close"}
         </button>

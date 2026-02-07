@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { parseGitHubUrl } from "@/lib/github";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, FileDiff, FileText } from "lucide-react";
@@ -451,35 +452,34 @@ export function GitHubPullRequestFiles({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card",
-        "p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        chatRenderableStyles.card,
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-        <div className="text-xs text-muted-foreground">
+        <h3 className={cn(chatRenderableStyles.title, "mt-0 text-base")}>{title}</h3>
+        <div className={chatRenderableStyles.kicker}>
           {items.length.toLocaleString("en-US")} files
         </div>
       </div>
 
       {grouped.length === 0 ? (
         <div className="mt-3 space-y-2">
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-          )}
+          <div className={chatRenderableStyles.emptyState}>
+            {isLoading ? "Loading…" : emptyMessage}
+          </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
       ) : (
         <div className="mt-3 space-y-4">
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {grouped.map(([folder, groupFiles]) => (
-            <div key={folder} className="rounded-lg border border-muted-foreground/20 bg-muted/10">
-              <div className="flex items-center gap-2 border-b border-muted-foreground/20 bg-muted/30 px-3 py-2">
+            <div
+              key={folder}
+              className="overflow-hidden rounded-xl border border-border/60 bg-muted/5"
+            >
+              <div className="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
                 <FileDiff className="size-4 text-muted-foreground" />
                 <div className="truncate font-mono text-xs text-muted-foreground">
                   {folder}
@@ -529,7 +529,7 @@ export function GitHubPullRequestFiles({
                             {statusText ? (
                               <span
                                 className={cn(
-                                  "rounded-md px-2 py-0.5 text-xs font-medium",
+                                  chatRenderableStyles.pill,
                                   getStatusTone(statusText),
                                 )}
                               >
@@ -560,13 +560,7 @@ export function GitHubPullRequestFiles({
                             href={link}
                             target="_blank"
                             rel="noreferrer"
-                            className={cn(
-                              "inline-flex shrink-0 items-center gap-1 rounded-md",
-                              "border border-muted-foreground/20 bg-muted/40",
-                              "px-2 py-1 text-xs text-foreground",
-                              "hover:bg-muted/60 transition-colors",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                            )}
+                            className={cn(chatRenderableStyles.button, "shrink-0")}
                           >
                             Open <ExternalLink className="size-3.5" />
                           </a>
@@ -578,7 +572,7 @@ export function GitHubPullRequestFiles({
                           <summary className="cursor-pointer text-xs text-muted-foreground">
                             Diff preview
                           </summary>
-                          <pre className="mt-2 max-h-80 overflow-auto rounded-md border border-muted-foreground/20 bg-background p-2 font-mono text-xs text-foreground">
+                          <pre className="mt-2 max-h-80 overflow-auto rounded-xl border border-border/60 bg-background p-2 font-mono text-xs text-foreground">
                             {file.patch}
                           </pre>
                         </details>
@@ -599,10 +593,8 @@ export function GitHubPullRequestFiles({
                 void fetchPage({ page: currentPage + 1, mode: "append" });
               }}
               className={cn(
-                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
-                "px-3 py-2 text-sm text-foreground",
-                "hover:bg-muted/50 transition-colors",
-                "disabled:opacity-60",
+                chatRenderableStyles.button,
+                "w-full justify-center py-2 text-sm",
               )}
               disabled={isLoading}
             >

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import {
   Archive,
@@ -111,7 +112,8 @@ function Stat({
   value?: number;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
+    <div className={cn(chatRenderableStyles.section, "flex items-center gap-2 py-2")}
+    >
       <div className="text-muted-foreground">{icon}</div>
       <div className="min-w-0">
         <div className="text-xs text-muted-foreground">{label}</div>
@@ -147,15 +149,15 @@ export function GitHubRepoMetadataCard({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        chatRenderableStyles.card,
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="truncate text-base font-semibold text-foreground">
+          <div className={cn(chatRenderableStyles.title, "mt-0 text-base")}
+          >
             {fullName ?? "Repository"}
           </div>
           {description ? (
@@ -169,7 +171,7 @@ export function GitHubRepoMetadataCard({
               {(topics ?? []).slice(0, 10).map((topic) => (
                 <span
                   key={topic}
-                  className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
+                  className={cn(chatRenderableStyles.pill, "text-muted-foreground")}
                 >
                   {topic}
                 </span>
@@ -180,17 +182,17 @@ export function GitHubRepoMetadataCard({
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {archived ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-foreground/80">
+            <span className={chatRenderableStyles.pill}>
               <Archive className="size-3.5" /> Archived
             </span>
           ) : null}
           {disabled ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-foreground/80">
+            <span className={chatRenderableStyles.pill}>
               Disabled
             </span>
           ) : null}
           {typeof isPrivate === "boolean" ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-foreground/80">
+            <span className={chatRenderableStyles.pill}>
               {isPrivate ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
               {isPrivate ? "Private" : "Public"}
             </span>
@@ -210,26 +212,33 @@ export function GitHubRepoMetadataCard({
       </div>
 
       <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "py-2")}
+        >
           <div className="text-xs text-muted-foreground">Primary language</div>
           <div className="font-medium text-foreground">{language ?? "—"}</div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "py-2")}
+        >
           <div className="text-xs text-muted-foreground">License</div>
           <div className="font-medium text-foreground">{license ?? "—"}</div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "py-2")}
+        >
           <div className="text-xs text-muted-foreground">Default branch</div>
           <div className="font-medium text-foreground">{defaultBranch ?? "—"}</div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "py-2")}
+        >
           <div className="text-xs text-muted-foreground">Homepage</div>
           {homepage ? (
             <a
               href={homepage}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex max-w-full items-center gap-1 truncate font-medium text-blue-600 hover:underline dark:text-blue-400"
+              className={cn(
+                chatRenderableStyles.link,
+                "inline-flex max-w-full items-center gap-1 truncate font-medium",
+              )}
             >
               <span className="truncate">{homepage}</span>
               <ExternalLink className="size-3.5" />
@@ -241,15 +250,18 @@ export function GitHubRepoMetadataCard({
       </div>
 
       <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/20 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "bg-muted/5 py-2")}
+        >
           <div className="font-medium text-foreground">Created</div>
           <div>{formatDate(createdAt)}</div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/20 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "bg-muted/5 py-2")}
+        >
           <div className="font-medium text-foreground">Updated</div>
           <div>{formatDate(updatedAt)}</div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/20 px-3 py-2">
+        <div className={cn(chatRenderableStyles.section, "bg-muted/5 py-2")}
+        >
           <div className="font-medium text-foreground">Last push</div>
           <div>{formatDate(pushedAt)}</div>
         </div>

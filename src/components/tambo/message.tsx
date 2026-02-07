@@ -7,6 +7,7 @@ import {
   getSafeContent,
 } from "@/lib/thread-hooks";
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import type { TamboThreadMessage } from "@tambo-ai/react";
 import { useTambo } from "@tambo-ai/react";
 import type TamboAI from "@tambo-ai/typescript-sdk";
@@ -1042,7 +1043,10 @@ const MessageRenderedComponentArea = React.forwardRef<
                   );
                 }
               }}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer group"
+              className={cn(
+                chatRenderableStyles.link,
+                "inline-flex items-center gap-1.5 text-xs font-medium",
+              )}
               aria-label="View component in canvas"
             >
               View component

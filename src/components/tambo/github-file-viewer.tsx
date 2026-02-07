@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
@@ -130,8 +131,8 @@ function CodeHeader({
     : "Copy file contents to clipboard";
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-t-lg bg-muted/50 px-3 py-2">
-      <div className="truncate font-mono text-xs text-muted-foreground">
+    <div className="flex items-center justify-between gap-4 rounded-t-xl bg-muted/30 px-3 py-2">
+      <div className={cn(chatRenderableStyles.kicker, "truncate font-mono")}>
         {language ?? "text"}
       </div>
       <button
@@ -139,11 +140,8 @@ function CodeHeader({
         onClick={copyToClipboard}
         title={title}
         className={cn(
-          "inline-flex items-center gap-1 rounded-md",
-          "border border-muted-foreground/20 bg-card",
-          "px-2 py-1 text-xs text-foreground",
-          "hover:bg-muted/50 transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          chatRenderableStyles.button,
+          "bg-card",
         )}
       >
         <Icon className={cn("size-3.5", iconColor)} />
@@ -205,15 +203,14 @@ export function GitHubFileViewer({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        chatRenderableStyles.card,
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-base font-semibold text-foreground">{title}</div>
+          <div className={cn(chatRenderableStyles.title, "mt-0 text-base")}>{title}</div>
           {path ? (
             <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
               {path}
@@ -227,7 +224,7 @@ export function GitHubFileViewer({
         </div>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-lg border border-muted-foreground/20">
+      <div className="mt-3 overflow-hidden rounded-xl border border-border/60">
         <CodeHeader language={inferredLanguage} code={content} />
         <div
           className={cn(

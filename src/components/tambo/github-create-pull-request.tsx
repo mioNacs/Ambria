@@ -1,6 +1,7 @@
 "use client";
 
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { useAuth } from "@/hooks/useAuth";
 import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 import { cn } from "@/lib/utils";
@@ -137,67 +138,60 @@ function GitHubCreatePullRequestForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-background p-4 space-y-4",
+        chatRenderableStyles.card,
+        "space-y-4",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="space-y-1">
-        <div className="text-sm font-semibold text-foreground">
+        <div className={cn(chatRenderableStyles.title, "mt-0")}>
           Create GitHub Pull Request
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className={chatRenderableStyles.kicker}>
           {owner}/{repo}
         </div>
       </div>
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Title
-          </label>
+          <label className={chatRenderableStyles.sectionTitle}>Title</label>
           <input
             value={prTitle}
             onChange={(e) => setPrTitle(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+            className={chatRenderableStyles.input}
             placeholder="PR title"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Head branch
-            </label>
+            <label className={chatRenderableStyles.sectionTitle}>Head branch</label>
             <input
               value={prHead}
               onChange={(e) => setPrHead(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+              className={chatRenderableStyles.input}
               placeholder="feature/my-branch"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Base branch
-            </label>
+            <label className={chatRenderableStyles.sectionTitle}>Base branch</label>
             <input
               value={prBase}
               onChange={(e) => setPrBase(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+              className={chatRenderableStyles.input}
               placeholder="main"
             />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Description
-          </label>
+          <label className={chatRenderableStyles.sectionTitle}>Description</label>
           <textarea
             value={prBody}
             onChange={(e) => setPrBody(e.target.value)}
-            className="min-h-28 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+            className={cn(chatRenderableStyles.textarea, "min-h-28")}
             placeholder="Describe the changes (Markdown supported)"
           />
         </div>
@@ -208,7 +202,7 @@ function GitHubCreatePullRequestForm({
               type="checkbox"
               checked={isDraft}
               onChange={(e) => setIsDraft(e.target.checked)}
-              className="h-4 w-4 rounded border border-border"
+              className={chatRenderableStyles.checkbox}
             />
             Create as draft
           </label>
@@ -218,7 +212,7 @@ function GitHubCreatePullRequestForm({
               type="checkbox"
               checked={canModify}
               onChange={(e) => setCanModify(e.target.checked)}
-              className="h-4 w-4 rounded border border-border"
+              className={chatRenderableStyles.checkbox}
             />
             Maintainers can modify
           </label>
@@ -247,7 +241,7 @@ function GitHubCreatePullRequestForm({
               href={createdPullRequest.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
+              className={cn(chatRenderableStyles.button, "bg-background")}
             >
               Open <ExternalLink className="h-3 w-3" />
             </a>
@@ -260,10 +254,7 @@ function GitHubCreatePullRequestForm({
           type="button"
           onClick={handleCreate}
           disabled={!canSubmit}
-          className={cn(
-            "rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity",
-            !canSubmit && "opacity-50 cursor-not-allowed",
-          )}
+          className={chatRenderableStyles.buttonPrimary}
         >
           {isSubmitting ? "Creating…" : "Confirm & create"}
         </button>

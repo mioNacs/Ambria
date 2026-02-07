@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { useTamboComponentState } from "@tambo-ai/react";
 import { ChevronDown, ChevronRight, FileText, Folder, Scissors } from "lucide-react";
@@ -319,16 +320,14 @@ export function GitHubRepoTree({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card",
-        "p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        chatRenderableStyles.card,
         className,
       )}
       {...pickSafeDomProps(props)}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-foreground">
+          <h3 className={cn(chatRenderableStyles.title, "mt-0 text-base")}>
             {title}
           </h3>
           {selectedPath ? (
@@ -339,16 +338,16 @@ export function GitHubRepoTree({
         </div>
 
         {truncated ? (
-          <div className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-xs text-foreground/80">
+          <div className={chatRenderableStyles.pill}>
             <Scissors className="size-3.5" /> Truncated
           </div>
         ) : null}
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No files.</p>
+        <div className={cn(chatRenderableStyles.emptyState, "mt-3")}>No files.</div>
       ) : (
-        <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-muted-foreground/20 bg-muted/10">
+        <div className="mt-3 max-h-96 overflow-auto rounded-xl border border-border/60 bg-muted/5">
           <div className="divide-y divide-muted-foreground/15">
             {root.children.map((child) => renderNode(child, 0))}
           </div>

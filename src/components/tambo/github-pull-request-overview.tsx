@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { chatRenderableStyles } from "@/components/tambo/shared/chat-renderable-styles";
 import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { ExternalLink, GitBranch, GitPullRequest, Minus, Plus } from "lucide-react";
 import * as React from "react";
@@ -138,29 +139,26 @@ export function GitHubPullRequestOverview({
       ) : null}
 
       <div
-        className={cn(
-          "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-          "shadow-sm shadow-black/5 dark:shadow-black/30",
-        )}
+        className={chatRenderableStyles.card}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-xs text-muted-foreground">PR #{prNumber}</div>
+              <div className={chatRenderableStyles.kicker}>PR #{prNumber}</div>
               {repoFullName ? (
                 <div className="truncate font-mono text-xs text-muted-foreground">
                   {repoFullName}
                 </div>
               ) : null}
               {draft ? (
-                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
+                <span className={cn(chatRenderableStyles.pill, "text-muted-foreground")}>
                   Draft
                 </span>
               ) : null}
               {state ? (
                 <span
                   className={cn(
-                    "rounded-md px-2 py-0.5 text-xs font-medium",
+                    chatRenderableStyles.pill,
                     getStateTone(state),
                   )}
                 >
@@ -169,12 +167,12 @@ export function GitHubPullRequestOverview({
               ) : null}
             </div>
 
-            <div className="mt-1 truncate text-base font-semibold text-foreground">
+            <div className={cn(chatRenderableStyles.title, "text-base")}>
               {title}
             </div>
 
             {(author || createdText || updatedText) && (
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <div className={chatRenderableStyles.subtitle}>
                 {author ? <span>by {author}</span> : null}
                 {createdText ? <span>• opened {createdText}</span> : null}
                 {updatedText ? <span>• updated {updatedText}</span> : null}
@@ -182,7 +180,9 @@ export function GitHubPullRequestOverview({
             )}
 
             {head || base ? (
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 font-mono text-xs text-muted-foreground">
+              <div
+                className={cn(chatRenderableStyles.pill, "mt-3 max-w-full font-mono")}
+              >
                 <GitBranch className="size-3.5" />
                 <span className="truncate">{head ?? "?"}</span>
                 <span>→</span>
@@ -196,13 +196,7 @@ export function GitHubPullRequestOverview({
               href={htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1 rounded-md",
-                "border border-muted-foreground/20 bg-muted/40",
-                "px-2 py-1 text-xs text-foreground",
-                "hover:bg-muted/60 transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              )}
+              className={cn(chatRenderableStyles.button, "shrink-0")}
             >
               Open <ExternalLink className="size-3.5" />
             </a>
@@ -213,7 +207,10 @@ export function GitHubPullRequestOverview({
           {statCards.map((stat) => (
             <div
               key={stat.label}
-              className="flex items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2"
+              className={cn(
+                chatRenderableStyles.section,
+                "flex items-center gap-2 py-2",
+              )}
             >
               <div className={cn("text-muted-foreground", stat.tone)}>
                 {stat.icon}
