@@ -235,6 +235,16 @@ export function GitHubRepoTree({
     setState({ ...state, selectedPath: path });
   };
 
+  const addToChat = (path: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Dispatch a custom event that the MessageInput component listens for
+    const event = new CustomEvent('tambo:append-input', {
+      detail: { text: `@${path} ` }
+    });
+    window.dispatchEvent(event);
+  };
+
   const renderNode = (node: TreeNode, depth: number) => {
     const label = node.name || getRowLabel(node.path);
     const isSelected = node.type === "file" && node.path === selectedPath;
@@ -243,12 +253,12 @@ export function GitHubRepoTree({
 
     if (node.type === "dir") {
       return (
-        <div key={node.path}>
+        <div key={node.path} className="group/row relative">
           <button
             type="button"
             onClick={() => toggleExpanded(node.path)}
             className={cn(
-              "flex w-full items-center gap-2 py-2 pr-3 text-left",
+              "flex w-full items-center gap-2 py-1.5 pr-3 text-left",
               "hover:bg-muted/60 active:bg-muted/70 transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             )}
@@ -256,19 +266,25 @@ export function GitHubRepoTree({
             aria-expanded={isExpanded}
           >
             {isExpanded ? (
-              <ChevronDown className="size-4 text-muted-foreground" />
+              <ChevronDown className="size-3.5 text-muted-foreground/70" />
             ) : (
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <ChevronRight className="size-3.5 text-muted-foreground/70" />
             )}
-            <Folder className="size-4 text-muted-foreground" />
+            <Folder className={cn("size-3.5", isExpanded ? "text-primary/80" : "text-muted-foreground")} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-foreground">
                 {label}
               </div>
-              <div className="truncate font-mono text-xs text-muted-foreground">
-                {node.path}
-              </div>
             </div>
+          </button>
+           <button
+            type="button"
+            onClick={(e) => addToChat(node.path, e)}
+            className="absolute right-2 top-1.5 opacity-0 group-hover/row:opacity-100 p-0.5 rounded-sm hover:bg-background/80 text-muted-foreground hover:text-primary transition-all"
+            title="Copy path for chat"
+          >
+            <span className="sr-only">Copy path</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           </button>
           {isExpanded ? node.children.map((child) => renderNode(child, depth + 1)) : null}
         </div>
@@ -276,80 +292,93 @@ export function GitHubRepoTree({
     }
 
     return (
-      <button
-        key={node.path}
-        type="button"
-        onClick={() => selectPath(node.path)}
-        className={cn(
-          "flex w-full items-center gap-2 py-2 pr-3 text-left",
-          "hover:bg-muted/60 active:bg-muted/70 transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          isSelected && "bg-primary/10 hover:bg-primary/15",
-        )}
-        style={{ paddingLeft }}
-      >
-        <FileText className="size-4 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <div
-            className={cn(
-              "truncate text-sm font-medium text-foreground",
-              isSelected && "font-semibold",
+      <div key={node.path} className="group/row relative">
+        <button
+          type="button"
+          onClick={() => selectPath(node.path)}
+          className={cn(
+            "flex w-full items-center gap-2 py-1.5 pr-3 text-left",
+            "hover:bg-muted/60 active:bg-muted/70 transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            isSelected && "bg-primary/10 hover:bg-primary/15",
+          )}
+          style={{ paddingLeft }}
+        >
+          <FileText className={cn("size-3.5", isSelected ? "text-primary" : "text-muted-foreground")} />
+          <div className="min-w-0 flex-1">
+            <div
+              className={cn(
+                "truncate text-sm font-medium text-foreground",
+                isSelected && "font-semibold",
+              )}
+            >
+              {label}
+            </div>
+            {isSelected && (
+              <div className="truncate font-mono text-[10px] text-muted-foreground/80">
+                {node.path}
+              </div>
             )}
-          >
-            {label}
           </div>
-          <div
-            className={cn(
-              "truncate font-mono text-xs text-muted-foreground",
-              isSelected && "text-muted-foreground/90",
-            )}
-          >
-            {node.path}
-          </div>
-        </div>
-        {typeof node.size === "number" ? (
-          <div className="shrink-0 font-mono text-xs text-muted-foreground">
-            {node.size.toLocaleString("en-US")}B
-          </div>
-        ) : null}
-      </button>
+          {typeof node.size === "number" ? (
+            <div className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+              {node.size.toLocaleString("en-US")}B
+            </div>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => addToChat(node.path, e)}
+          className="absolute right-2 top-1.5 opacity-0 group-hover/row:opacity-100 p-0.5 rounded-sm hover:bg-background/80 text-muted-foreground hover:text-primary transition-all"
+          title="Copy path for chat"
+        >
+          <span className="sr-only">Copy path</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </button>
+      </div>
     );
   };
 
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card",
-        "p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        "w-full rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500/5 via-card to-teal-500/5",
+        "border border-emerald-500/50",
+        "shadow-sm shadow-emerald-500/5 dark:shadow-emerald-500/10",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="flex items-center justify-between gap-4">
+      <div className="relative px-4 py-3 border-b border-emerald-500/20 bg-muted/30 flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-foreground">
+          <h3 className="truncate text-sm font-semibold text-foreground flex items-center gap-2">
+            <Folder className="size-4 text-primary/70" />
             {title}
           </h3>
           {selectedPath ? (
-            <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
-              Selected: {selectedPath}
+            <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground/80 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0" />
+              {selectedPath}
             </div>
           ) : null}
         </div>
 
         {truncated ? (
-          <div className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-xs text-foreground/80">
-            <Scissors className="size-3.5" /> Truncated
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400">
+            <Scissors className="size-3" />
+            <span>Truncated</span>
           </div>
         ) : null}
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No files.</p>
+        <div className="p-8 text-center">
+          <Folder className="size-10 text-muted-foreground/20 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No files to display</p>
+        </div>
       ) : (
-        <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-muted-foreground/20 bg-muted/10">
-          <div className="divide-y divide-muted-foreground/15">
+        <div className="max-h-[28rem] overflow-auto bg-background/30 custom-scrollbar">
+          <div className="divide-y divide-dotted divide-muted-foreground/10">
             {root.children.map((child) => renderNode(child, 0))}
           </div>
         </div>

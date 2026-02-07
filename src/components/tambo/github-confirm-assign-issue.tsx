@@ -110,31 +110,32 @@ function ConfirmAssignIssueForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-background p-4 space-y-4",
+        "rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/5 via-card to-indigo-500/5 p-5 space-y-5",
+        "shadow-sm shadow-blue-500/5",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="space-y-1">
-        <div className="text-sm font-semibold text-foreground">
+      <div className="space-y-1 border-b border-blue-500/10 pb-3">
+        <div className="text-base font-semibold text-foreground flex items-center gap-2">
           Assign / Unassign Issue
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs font-mono text-muted-foreground bg-blue-500/5 px-2 py-0.5 rounded-md inline-block border border-blue-500/10">
           {owner}/{repo}#{issueNumber}
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
           Assignees (comma-separated)
         </label>
         <input
           value={assigneesCsv}
           onChange={(e) => setAssigneesCsv(e.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
-          placeholder="octocat"
+          className="w-full rounded-lg border border-blue-500/20 bg-background/60 px-3 py-2 text-sm text-foreground outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-muted-foreground/50"
+          placeholder="octocat, monalisa"
         />
-        <div className="text-[11px] text-muted-foreground">
+        <div className="text-[11px] text-muted-foreground/80 pl-1">
           Leave blank to clear all assignees.
         </div>
       </div>
@@ -161,7 +162,7 @@ function ConfirmAssignIssueForm({
               href={updated.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
+              className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-background/50 px-2 py-1 text-xs text-foreground hover:bg-emerald-500/20 transition-colors"
             >
               Open <ExternalLink className="h-3 w-3" />
             </a>
@@ -169,14 +170,16 @@ function ConfirmAssignIssueForm({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 pt-2">
         <button
           type="button"
           onClick={handleConfirm}
           disabled={!canSubmit}
           className={cn(
-            "rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity",
-            !canSubmit && "opacity-50 cursor-not-allowed",
+            "rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all",
+            "hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20",
+            "active:scale-95",
+            !canSubmit && "opacity-50 cursor-not-allowed hover:bg-blue-600 hover:shadow-none active:scale-100",
           )}
         >
           {isSubmitting ? "Updating…" : "Confirm & update"}

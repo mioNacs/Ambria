@@ -147,111 +147,168 @@ export function GitHubRepoMetadataCard({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        "w-full rounded-xl overflow-hidden bg-gradient-to-br from-violet-500/5 via-card to-blue-500/5",
+        "border border-indigo-500/50",
+        "shadow-sm shadow-indigo-500/5 dark:shadow-indigo-500/10",
+        "group transition-all hover:shadow-md hover:shadow-indigo-500/10 hover:border-indigo-500/60",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="truncate text-base font-semibold text-foreground">
-            {fullName ?? "Repository"}
-          </div>
-          {description ? (
-            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-              {description}
-            </p>
-          ) : null}
-
-          {(topics?.length ?? 0) > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {(topics ?? []).slice(0, 10).map((topic) => (
-                <span
-                  key={topic}
-                  className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
-                >
-                  {topic}
-                </span>
-              ))}
+      {/* Header with blurred background backdrop */}
+      <div className="relative px-5 py-4 border-b border-indigo-500/20 bg-muted/30">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="truncate text-lg font-semibold text-foreground tracking-tight">
+                {fullName ?? "Repository"}
+              </div>
+              
+              <div className="flex items-center gap-1.5 ml-2">
+                {typeof isPrivate === "boolean" && (
+                  <span className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border",
+                    isPrivate 
+                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400" 
+                      : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                  )}>
+                    {isPrivate ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+                    {isPrivate ? "Private" : "Public"}
+                  </span>
+                )}
+                {archived && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400">
+                    <Archive className="size-3" /> Archived
+                  </span>
+                )}
+              </div>
             </div>
-          ) : null}
-        </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {archived ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-foreground/80">
-              <Archive className="size-3.5" /> Archived
-            </span>
-          ) : null}
-          {disabled ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-foreground/80">
-              Disabled
-            </span>
-          ) : null}
-          {typeof isPrivate === "boolean" ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-1 text-foreground/80">
-              {isPrivate ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
-              {isPrivate ? "Private" : "Public"}
-            </span>
-          ) : null}
+            {description ? (
+              <p className="line-clamp-2 text-sm text-muted-foreground/90 leading-relaxed max-w-2xl">
+                {description}
+              </p>
+            ) : null}
+
+            {(topics?.length ?? 0) > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {(topics ?? []).slice(0, 8).map((topic) => (
+                  <span
+                    key={topic}
+                    className="rounded-full border border-primary/10 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary/80 transition-colors hover:bg-primary/10"
+                  >
+                    #{topic}
+                  </span>
+                ))}
+                {(topics?.length ?? 0) > 8 && (
+                  <span className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground">
+                    +{topics!.length - 8} more
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat icon={<Star className="size-4" />} label="Stars" value={stars} />
-        <Stat icon={<GitFork className="size-4" />} label="Forks" value={forks} />
-        <Stat icon={<Users className="size-4" />} label="Watchers" value={watchers} />
-        <Stat
-          icon={<GitPullRequest className="size-4" />}
-          label="Open issues"
-          value={openIssues}
-        />
-      </div>
+      <div className="p-5 space-y-6">
+        {/* Key Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-background/50 border border-indigo-500/30 hover:border-indigo-500/60 hover:bg-indigo-500/5 transition-all group/stat">
+            <div className="flex items-center gap-1.5 text-muted-foreground mb-1 group-hover/stat:text-indigo-500 transition-colors">
+              <Star className="size-3.5" />
+              <span className="text-xs font-medium">Stars</span>
+            </div>
+            <div className="text-lg font-bold text-foreground tracking-tight">
+              {formatCompactNumber(stars)}
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-background/50 border border-indigo-500/30 hover:border-indigo-500/60 hover:bg-indigo-500/5 transition-all group/stat">
+            <div className="flex items-center gap-1.5 text-muted-foreground mb-1 group-hover/stat:text-indigo-500 transition-colors">
+              <GitFork className="size-3.5" />
+              <span className="text-xs font-medium">Forks</span>
+            </div>
+            <div className="text-lg font-bold text-foreground tracking-tight">
+              {formatCompactNumber(forks)}
+            </div>
+          </div>
 
-      <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
-          <div className="text-xs text-muted-foreground">Primary language</div>
-          <div className="font-medium text-foreground">{language ?? "—"}</div>
-        </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
-          <div className="text-xs text-muted-foreground">License</div>
-          <div className="font-medium text-foreground">{license ?? "—"}</div>
-        </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
-          <div className="text-xs text-muted-foreground">Default branch</div>
-          <div className="font-medium text-foreground">{defaultBranch ?? "—"}</div>
-        </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2">
-          <div className="text-xs text-muted-foreground">Homepage</div>
-          {homepage ? (
-            <a
-              href={homepage}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex max-w-full items-center gap-1 truncate font-medium text-blue-600 hover:underline dark:text-blue-400"
-            >
-              <span className="truncate">{homepage}</span>
-              <ExternalLink className="size-3.5" />
-            </a>
-          ) : (
-            <div className="font-medium text-foreground">—</div>
-          )}
-        </div>
-      </div>
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-background/50 border border-indigo-500/30 hover:border-indigo-500/60 hover:bg-indigo-500/5 transition-all group/stat">
+            <div className="flex items-center gap-1.5 text-muted-foreground mb-1 group-hover/stat:text-indigo-500 transition-colors">
+              <Users className="size-3.5" />
+              <span className="text-xs font-medium">Watchers</span>
+            </div>
+            <div className="text-lg font-bold text-foreground tracking-tight">
+              {formatCompactNumber(watchers)}
+            </div>
+          </div>
 
-      <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/20 px-3 py-2">
-          <div className="font-medium text-foreground">Created</div>
-          <div>{formatDate(createdAt)}</div>
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-background/50 border border-indigo-500/30 hover:border-indigo-500/60 hover:bg-indigo-500/5 transition-all group/stat">
+            <div className="flex items-center gap-1.5 text-muted-foreground mb-1 group-hover/stat:text-indigo-500 transition-colors">
+              <GitPullRequest className="size-3.5" />
+              <span className="text-xs font-medium">Issues</span>
+            </div>
+            <div className="text-lg font-bold text-foreground tracking-tight">
+              {formatCompactNumber(openIssues)}
+            </div>
+          </div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/20 px-3 py-2">
-          <div className="font-medium text-foreground">Updated</div>
-          <div>{formatDate(updatedAt)}</div>
+
+        {/* Details Grid */}
+        <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4 pt-2">
+          <div className="space-y-1">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Primary Language</div>
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-primary/60" />
+              <span className="font-medium text-foreground">{language ?? "—"}</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">License</div>
+            <div className="font-medium text-foreground truncate" title={license ?? ""}>{license ?? "—"}</div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Default Branch</div>
+            <div className="font-mono text-xs font-medium text-foreground bg-muted/50 px-2 py-0.5 rounded w-fit">
+              {defaultBranch ?? "—"}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Homepage</div>
+            {homepage ? (
+              <a
+                href={homepage}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 font-medium text-primary hover:text-primary/80 transition-colors truncate max-w-full"
+              >
+                <span className="truncate">{homepage.replace(/^https?:\/\//, '')}</span>
+                <ExternalLink className="size-3 shrink-0" />
+              </a>
+            ) : (
+              <div className="text-muted-foreground">—</div>
+            )}
+          </div>
         </div>
-        <div className="rounded-md border border-muted-foreground/20 bg-muted/20 px-3 py-2">
-          <div className="font-medium text-foreground">Last push</div>
-          <div>{formatDate(pushedAt)}</div>
+
+        {/* Timestamps Footer */}
+        <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-3 pt-4 border-t border-muted-foreground/10">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400/50" />
+            <span>Created {formatDate(createdAt)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400/50" />
+            <span>Updated {formatDate(updatedAt)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+            <span className="text-foreground/80">Pushed {formatDate(pushedAt)}</span>
+          </div>
         </div>
       </div>
     </div>

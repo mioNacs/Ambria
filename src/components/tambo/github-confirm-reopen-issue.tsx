@@ -4,13 +4,13 @@ import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import { useAuth } from "@/hooks/useAuth";
 import { createGitHubWriteConfirmation } from "@/lib/github-write-confirmation";
 import { cn } from "@/lib/utils";
-import { closeRepoIssue, createIssueComment, type Issue } from "@/services/github-repo";
+import { reopenRepoIssue, createIssueComment, type Issue } from "@/services/github-repo";
 import { ExternalLink } from "lucide-react";
 import * as React from "react";
 import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
 
-export const githubConfirmCloseIssueSchema = z
+export const githubConfirmReopenIssueSchema = z
   .object({
     owner: z.string().describe("GitHub repository owner/organization name"),
     repo: z.string().describe("GitHub repository name"),
@@ -19,7 +19,7 @@ export const githubConfirmCloseIssueSchema = z
       .string()
       .optional()
       .describe(
-        "Optional comment to post before closing the issue (Markdown supported).",
+        "Optional comment to post after reopening the issue (Markdown supported).",
       ),
     token: z
       .string()
@@ -29,10 +29,10 @@ export const githubConfirmCloseIssueSchema = z
       ),
   })
   .describe(
-    "A confirmation form to close a GitHub issue. Optionally posts a comment before closing.",
+    "A confirmation form to reopen a closed GitHub issue. Optionally posts a comment after reopening.",
   );
 
-export type ConfirmCloseIssueProps = z.infer<typeof githubConfirmCloseIssueSchema> &
+export type ConfirmReopenIssueProps = z.infer<typeof githubConfirmReopenIssueSchema> &
   React.HTMLAttributes<HTMLDivElement>;
 
 function safeTrim(value: string | null | undefined) {
@@ -64,7 +64,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-function ConfirmCloseIssueForm({
+function ConfirmReopenIssueForm({
   owner,
   repo,
   issueNumber,
@@ -72,7 +72,7 @@ function ConfirmCloseIssueForm({
   token,
   className,
   ...props
-}: ConfirmCloseIssueProps) {
+}: ConfirmReopenIssueProps) {
   const { session } = useAuth();
   const [commentBody, setCommentBody] = useState(comment ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,13 +87,14 @@ function ConfirmCloseIssueForm({
   >(null);
 
   const effectiveToken = token ?? session?.provider_token ?? undefined;
-
+  
+  // Check issue state on mount
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       if (!owner || !repo || !issueNumber) return;
-      
+
       try {
         const { issue } = await postJson<{ issue: Issue }>("/api/github/issue-info", {
           owner,
@@ -101,7 +102,7 @@ function ConfirmCloseIssueForm({
           issueNumber,
           token: effectiveToken,
         });
-        
+
         if (!cancelled) setIssueState(issue.state);
       } catch (e) {
         console.warn("Failed to check issue state", e);
@@ -112,7 +113,7 @@ function ConfirmCloseIssueForm({
     return () => { cancelled = true; };
   }, [effectiveToken, owner, repo, issueNumber]);
   
-  const canSubmit = !!effectiveToken && !isSubmitting && issueState !== "closed";
+  const canSubmit = !!effectiveToken && !isSubmitting && issueState !== "open";
 
   async function handleConfirm() {
     if (!canSubmit) return;
@@ -122,6 +123,23 @@ function ConfirmCloseIssueForm({
     setResult(null);
 
     try {
+      // Create confirmation for reopen
+      const reopenConfirmationId = createGitHubWriteConfirmation({
+        owner,
+        repo,
+        kind: "issue_reopen",
+      });
+
+      // Reopen first
+      const reopened = await reopenRepoIssue({
+        owner,
+        repo,
+        issueNumber,
+        token: effectiveToken,
+        confirmationId: reopenConfirmationId,
+      });
+
+      // Then optimize post comment if provided
       const trimmedComment = safeTrim(commentBody);
       let createdCommentUrl: string | null = null;
 
@@ -144,23 +162,9 @@ function ConfirmCloseIssueForm({
         createdCommentUrl = created.htmlUrl;
       }
 
-      const closeConfirmationId = createGitHubWriteConfirmation({
-        owner,
-        repo,
-        kind: "issue_close",
-      });
-
-      const closed = await closeRepoIssue({
-        owner,
-        repo,
-        issueNumber,
-        token: effectiveToken,
-        confirmationId: closeConfirmationId,
-      });
-
-      setResult({ issueUrl: closed.htmlUrl, commentUrl: createdCommentUrl });
+      setResult({ issueUrl: reopened.htmlUrl, commentUrl: createdCommentUrl });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to close issue");
+      setError(err instanceof Error ? err.message : "Failed to reopen issue");
     } finally {
       setIsSubmitting(false);
     }
@@ -169,40 +173,40 @@ function ConfirmCloseIssueForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-red-500/20 bg-gradient-to-br from-red-500/5 via-card to-rose-500/5 p-5 space-y-5",
-        "shadow-sm shadow-red-500/5",
+        "rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-card to-green-500/5 p-5 space-y-5",
+        "shadow-sm shadow-emerald-500/5",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="space-y-1 border-b border-red-500/10 pb-3">
-        <div className="text-base font-semibold text-foreground">Close Issue</div>
-        <div className="text-xs font-mono text-muted-foreground bg-red-500/5 px-2 py-0.5 rounded-md inline-block border border-red-500/10">
+      <div className="space-y-1 border-b border-emerald-500/10 pb-3">
+        <div className="text-base font-semibold text-foreground">Reopen Issue</div>
+        <div className="text-xs font-mono text-muted-foreground bg-emerald-500/5 px-2 py-0.5 rounded-md inline-block border border-emerald-500/10">
           {owner}/{repo}#{issueNumber}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wider">
+        <label className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
           Optional comment
         </label>
         <textarea
           value={commentBody}
           onChange={(e) => setCommentBody(e.target.value)}
-          className="min-h-24 w-full resize-y rounded-lg border border-red-500/20 bg-background/60 px-3 py-2 text-sm text-foreground outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/10 transition-all placeholder:text-muted-foreground/50"
-          placeholder="Add a closing note (optional)"
+          className="min-h-24 w-full resize-y rounded-lg border border-emerald-500/20 bg-background/60 px-3 py-2 text-sm text-foreground outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder:text-muted-foreground/50"
+          placeholder="Add a reason for reopening (optional)"
         />
       </div>
 
       {!effectiveToken && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
-          Connect GitHub (OAuth) to close issues.
+          Connect GitHub (OAuth) to reopen issues.
         </div>
       )}
 
-      {issueState === "closed" && (
+      {issueState === "open" && (
         <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-700 dark:text-blue-300">
-          This issue is currently <strong>closed</strong>.
+          This issue is currently <strong>open</strong>.
         </div>
       )}
 
@@ -215,7 +219,7 @@ function ConfirmCloseIssueForm({
       {result && (
         <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <span>Issue closed successfully.</span>
+            <span>Issue reopened successfully.</span>
             <a
               href={result.issueUrl}
               target="_blank"
@@ -248,25 +252,25 @@ function ConfirmCloseIssueForm({
           onClick={handleConfirm}
           disabled={!canSubmit}
           className={cn(
-            "rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all",
-            "hover:bg-red-700 hover:shadow-md hover:shadow-red-500/20",
+            "rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all",
+            "hover:bg-emerald-700 hover:shadow-md hover:shadow-emerald-500/20",
             "active:scale-95",
-            !canSubmit && "opacity-50 cursor-not-allowed hover:bg-red-600 hover:shadow-none active:scale-100",
+            !canSubmit && "opacity-50 cursor-not-allowed hover:bg-emerald-600 hover:shadow-none active:scale-100",
           )}
         >
-          {isSubmitting ? "Closing…" : "Confirm & close"}
+          {isSubmitting ? "Reopening…" : "Confirm & reopen"}
         </button>
       </div>
     </div>
   );
 }
 
-export function ConfirmCloseIssue(props: ConfirmCloseIssueProps) {
+export function ConfirmReopenIssue(props: ConfirmReopenIssueProps) {
   const { owner, repo, issueNumber, comment } = props;
   const propsKey = useMemo(
     () => [owner, repo, String(issueNumber), comment ?? ""].join("::"),
     [comment, issueNumber, owner, repo],
   );
 
-  return <ConfirmCloseIssueForm key={propsKey} {...props} />;
+  return <ConfirmReopenIssueForm key={propsKey} {...props} />;
 }

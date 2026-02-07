@@ -5,7 +5,7 @@ import { pickSafeDomProps } from "@/components/tambo/shared/safe-dom-props";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
-import { Check, Copy, X } from "lucide-react";
+import { Check, Copy, FileText, X } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
 
@@ -205,61 +205,87 @@ export function GitHubFileViewer({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        "w-full rounded-xl overflow-hidden bg-gradient-to-br from-amber-500/5 via-card to-orange-500/5",
+        "border border-orange-500/50",
+        "shadow-sm shadow-orange-500/5 dark:shadow-orange-500/10",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="relative px-4 py-3 border-b border-orange-500/20 bg-muted/30 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-base font-semibold text-foreground">{title}</div>
-          {path ? (
-            <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
-              {path}
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-md bg-background/50 border border-muted-foreground/10">
+              <FileText className="size-4 text-primary/70" />
+            </span>
+            <div>
+              <div className="text-sm font-semibold text-foreground tracking-tight">{title}</div>
+              {path && (
+                <div className="truncate font-mono text-[10px] text-muted-foreground/80 mt-0.5">
+                  {path}
+                </div>
+              )}
             </div>
-          ) : null}
-          {detailsText ? (
-            <div className="mt-1 text-xs text-muted-foreground">
-              {detailsText}
+          </div>
+          
+          {detailsText && (
+            <div className="mt-2 inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-background/50 border border-muted-foreground/10">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
+              <span className="text-[10px] font-medium text-muted-foreground">{detailsText}</span>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-lg border border-muted-foreground/20">
-        <CodeHeader language={inferredLanguage} code={content} />
-        <div
-          className={cn(
-            "overflow-auto bg-background",
-            "[&::-webkit-scrollbar]:w-[6px]",
-            "[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-md",
-            "[&::-webkit-scrollbar:horizontal]:h-[4px]",
-          )}
-          style={{ maxHeight: resolvedMaxHeight }}
-        >
-          <pre className="p-3 text-xs leading-relaxed">
-            {highlight.kind === "html" ? (
-              <code
-                className={cn(
-                  "hljs",
-                  inferredLanguage && `language-${inferredLanguage}`,
-                )}
-                dangerouslySetInnerHTML={{
-                  __html: sanitizedHighlightHtml,
-                }}
-              />
-            ) : (
-              <code
-                className={cn(
-                  "hljs",
-                  inferredLanguage && `language-${inferredLanguage}`,
-                )}
-              >
-                {highlight.text}
-              </code>
+      <div className="p-1 bg-muted/10">
+        <div className="overflow-hidden rounded-lg border border-muted-foreground/10 shadow-sm">
+          <CodeHeader language={inferredLanguage} code={content} />
+          <div
+            className={cn(
+              "overflow-auto bg-background/80 backdrop-blur-sm",
+              "[&::-webkit-scrollbar]:w-[6px]",
+              "[&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30",
+              "[&::-webkit-scrollbar:horizontal]:h-[6px]",
             )}
-          </pre>
+            style={{ maxHeight: resolvedMaxHeight }}
+          >
+            <pre className="p-4 text-xs leading-relaxed font-mono">
+                {highlight.kind === "html" ? (
+                <div className="relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-muted/20 border-r border-muted-foreground/10 text-[10px] text-muted-foreground/50 font-mono flex flex-col items-end pr-2 pt-4 select-none">
+                    {Array.from({ length: content.split('\n').length }).map((_, i) => (
+                      <div key={i} className="leading-relaxed h-[1.5em]">{i + 1}</div>
+                    ))}
+                  </div>
+                  <code
+                    className={cn(
+                      "hljs block !bg-transparent !p-0 !pl-10 !pt-4 !pb-4",
+                      inferredLanguage && `language-${inferredLanguage}`,
+                    )}
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizedHighlightHtml,
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="relative">
+                   <div className="absolute left-0 top-0 bottom-0 w-8 bg-muted/20 border-r border-muted-foreground/10 text-[10px] text-muted-foreground/50 font-mono flex flex-col items-end pr-2 pt-4 select-none">
+                    {Array.from({ length: content.split('\n').length }).map((_, i) => (
+                      <div key={i} className="leading-relaxed h-[1.5em]">{i + 1}</div>
+                    ))}
+                  </div>
+                  <code
+                    className={cn(
+                      "hljs block !bg-transparent !p-0 !pl-10 !pt-4 !pb-4",
+                      inferredLanguage && `language-${inferredLanguage}`,
+                    )}
+                  >
+                    {highlight.text}
+                  </code>
+                </div>
+              )}
+            </pre>
+          </div>
         </div>
       </div>
     </div>

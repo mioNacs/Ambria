@@ -902,6 +902,43 @@ export async function getRepoIssues(params: {
     }
 }
 
+/**
+ * Get a single issue
+ */
+export async function getRepoIssue(params: {
+    owner: string;
+    repo: string;
+    issueNumber: number;
+    token?: string;
+}): Promise<Issue> {
+    const { owner, repo, issueNumber, token } = params;
+    const octokit = new Octokit({ auth: token });
+
+    try {
+        const { data } = await octokit.rest.issues.get({
+            owner,
+            repo,
+            issue_number: issueNumber,
+        });
+
+        return {
+            number: data.number,
+            title: data.title,
+            state: data.state,
+            author: data.user?.login || "unknown",
+            labels: data.labels.map((l) => (typeof l === "string" ? l : l.name || "")),
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
+            closedAt: data.closed_at,
+            comments: data.comments,
+            htmlUrl: data.html_url,
+            body: data.body ? data.body.slice(0, 500) : null,
+        };
+    } catch (error) {
+        throw new Error(`Failed to fetch issue #${issueNumber}: ${error}`);
+    }
+}
+
 export interface IssueComment {
     id: number;
     author: string;
@@ -2090,5 +2127,104 @@ export async function getPRFileContent(params: {
         });
     } catch (error) {
         throw new Error(`Failed to fetch file from PR: ${error}`);
+    }
+}
+/**
+* Reopen a closed issue (WRITE).
+*/
+export async function reopenRepoIssue(params: {
+    owner: string;
+    repo: string;
+    issueNumber: number;
+    token: string;
+    confirmationId: string;
+}): Promise<ClosedIssue> {
+    const { owner, repo, issueNumber, token, confirmationId } = params;
+
+    const octokit = new Octokit({ auth: token });
+    consumeUserConfirmedGitHubWrite({
+        confirmationId,
+        owner,
+        repo,
+        kind: "issue_reopen",
+    });
+    await assertRepoWriteAccess({ octokit, owner, repo });
+
+    try {
+        const { data } = await octokit.rest.issues.update({
+            owner,
+            repo,
+            issue_number: issueNumber,
+            state: "open",
+        });
+
+        return {
+            issueNumber: data.number,
+            state: data.state,
+            htmlUrl: data.html_url,
+            closedAt: data.closed_at,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(
+            `Failed to reopen issue. This may be due to missing GitHub permissions/scopes or repository settings. Underlying error: ${message}`,
+        );
+    }
+}
+
+/**
+* Reopen a closed pull request (WRITE).
+*/
+export async function reopenPullRequest(params: {
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    token: string;
+    confirmationId: string;
+}): Promise<ClosedPullRequest> {
+    const { owner, repo, pullNumber, token, confirmationId } = params;
+
+    const octokit = new Octokit({ auth: token });
+    await assertRepoWriteAccess({ octokit, owner, repo });
+
+    try {
+        const { data: pr } = await octokit.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: pullNumber,
+        });
+
+        if (pr.state === "open") {
+            throw new Error(`Pull request #${pullNumber} is already open.`);
+        }
+
+        if (pr.merged_at) {
+             // Merged PRs can theoretically be reopened if the branch exists, but often it causes issues.
+             // GitHub API might allow it, but let's warn or try anyway.
+             // Actually, usually you can't reopen a merged PR.
+        }
+
+        consumeUserConfirmedGitHubWrite({
+            confirmationId,
+            owner,
+            repo,
+            kind: "pull_request_reopen",
+        });
+
+        const { data } = await octokit.rest.pulls.update({
+            owner,
+            repo,
+            pull_number: pullNumber,
+            state: "open",
+        });
+
+        return {
+            number: data.number,
+            state: data.state,
+            htmlUrl: data.html_url,
+        };
+    } catch (error) {
+        const message = toErrorMessage(error);
+        throw new Error(`Failed to reopen pull request: ${message}`);
     }
 }

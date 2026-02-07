@@ -139,28 +139,29 @@ export function GitHubPullRequestOverview({
 
       <div
         className={cn(
-          "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-          "shadow-sm shadow-black/5 dark:shadow-black/30",
+          "w-full rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/5 via-card to-pink-500/5",
+          "border border-purple-500/50",
+          "shadow-sm shadow-purple-500/5 dark:shadow-purple-500/10",
         )}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 p-4 border-b border-purple-500/20 bg-purple-500/5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-xs text-muted-foreground">PR #{prNumber}</div>
+              <div className="text-xs font-medium text-purple-600 dark:text-purple-400">PR #{prNumber}</div>
               {repoFullName ? (
-                <div className="truncate font-mono text-xs text-muted-foreground">
+                <div className="truncate font-mono text-xs text-muted-foreground/80">
                   {repoFullName}
                 </div>
               ) : null}
               {draft ? (
-                <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
+                <span className="rounded-full border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                   Draft
                 </span>
               ) : null}
               {state ? (
                 <span
                   className={cn(
-                    "rounded-md px-2 py-0.5 text-xs font-medium",
+                    "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
                     getStateTone(state),
                   )}
                 >
@@ -169,24 +170,24 @@ export function GitHubPullRequestOverview({
               ) : null}
             </div>
 
-            <div className="mt-1 truncate text-base font-semibold text-foreground">
+            <div className="mt-1.5 truncate text-lg font-bold text-foreground tracking-tight">
               {title}
             </div>
 
             {(author || createdText || updatedText) && (
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                {author ? <span>by {author}</span> : null}
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/80">
+                {author ? <span className="font-medium text-foreground/80">by {author}</span> : null}
                 {createdText ? <span>• opened {createdText}</span> : null}
                 {updatedText ? <span>• updated {updatedText}</span> : null}
               </div>
             )}
 
             {head || base ? (
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 font-mono text-xs text-muted-foreground">
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-purple-500/20 bg-background/50 px-2.5 py-1.5 font-mono text-xs text-purple-700 dark:text-purple-300 shadow-sm">
                 <GitBranch className="size-3.5" />
-                <span className="truncate">{head ?? "?"}</span>
-                <span>→</span>
-                <span className="truncate">{base ?? "?"}</span>
+                <span className="truncate font-semibold">{head ?? "?"}</span>
+                <span className="text-muted-foreground">→</span>
+                <span className="truncate font-semibold">{base ?? "?"}</span>
               </div>
             ) : null}
           </div>
@@ -197,44 +198,47 @@ export function GitHubPullRequestOverview({
               target="_blank"
               rel="noreferrer"
               className={cn(
-                "inline-flex shrink-0 items-center gap-1 rounded-md",
-                "border border-muted-foreground/20 bg-muted/40",
-                "px-2 py-1 text-xs text-foreground",
-                "hover:bg-muted/60 transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "inline-flex shrink-0 items-center justify-center size-8 rounded-lg",
+                "border border-purple-500/20 bg-background/50 text-purple-600 dark:text-purple-400",
+                "hover:bg-purple-500/10 hover:border-purple-500/30 transition-all shadow-sm",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20",
               )}
             >
-              Open <ExternalLink className="size-3.5" />
+              <ExternalLink className="size-4" />
             </a>
           ) : null}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {statCards.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-3 py-2"
-            >
-              <div className={cn("text-muted-foreground", stat.tone)}>
-                {stat.icon}
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-muted-foreground">{stat.label}</div>
-                <div className="truncate text-sm font-semibold text-foreground">
-                  {typeof stat.value === "number"
-                    ? stat.value.toLocaleString("en-US")
-                    : "—"}
+        <div className="p-4 bg-background/30">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {statCards.map((stat) => (
+              <div
+                key={stat.label}
+                className="flex items-center gap-3 rounded-lg border border-purple-500/10 bg-background/50 px-3 py-2.5"
+              >
+                <div className={cn("p-1.5 rounded-md bg-background shadow-sm border border-border/50 text-muted-foreground", stat.tone?.replace("text-", "text-"))}>
+                  {stat.icon}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/70">{stat.label}</div>
+                  <div className="truncate text-sm font-bold text-foreground">
+                    {typeof stat.value === "number"
+                      ? stat.value.toLocaleString("en-US")
+                      : "—"}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {safeBody ? (
-          <p className="mt-4 line-clamp-4 text-sm text-muted-foreground">
-            {safeBody}
-          </p>
-        ) : null}
+          {safeBody ? (
+            <div className="mt-4 pt-4 border-t border-purple-500/10">
+              <p className="line-clamp-4 text-sm text-muted-foreground/90 leading-relaxed">
+                {safeBody}
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ export default function Dashboard() {
     isLoading: workspacesLoading,
     error: workspacesError,
     refetch,
+    deleteWorkspace,
   } = useWorkspaces();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -128,6 +129,7 @@ export default function Dashboard() {
             workspaces={workspaces}
             isLoading={workspacesLoading}
             onAddClick={() => setIsAddModalOpen(true)}
+            onDelete={deleteWorkspace}
           />
         )}
       </main>
