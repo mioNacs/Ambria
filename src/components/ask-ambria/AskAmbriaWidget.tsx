@@ -22,7 +22,7 @@ import { askAmbriaComponents, askAmbriaTools } from "@/lib/ask-ambria/tambo-regi
 import { searchOpenSourceProjects } from "@/services/ask-ambria/search-open-source-projects";
 import { cn } from "@/lib/utils";
 import type { InitialTamboThreadMessage, Suggestion } from "@tambo-ai/react";
-import { TamboProvider } from "@tambo-ai/react";
+import { TamboProvider, useTambo } from "@tambo-ai/react";
 import { MessageSquareText, X } from "lucide-react";
 import * as React from "react";
 
@@ -34,16 +34,10 @@ const initialMessages: InitialTamboThreadMessage[] = [
     role: "system",
     content: [{ type: "text", text: systemPrompt }],
   },
-  {
-    role: "assistant",
-    content: [
-      {
-        type: "text",
-        text: "Hi — I’m Ambria. Tell me what tech stack you want to use (or pick a quick prompt below) and I’ll help you find good beginner-friendly projects.",
-      },
-    ],
-  },
 ];
+
+const introText =
+  "Hi — I’m Ambria. Tell me what tech stack you want to use (or pick a quick prompt below) and I’ll help you find good beginner-friendly projects.";
 
 const suggestionTemplates = {
   whatIsOpenSource: {
@@ -81,9 +75,18 @@ const defaultSuggestions: Suggestion[] = [
 ];
 
 function AskAmbriaChat() {
+  const { thread } = useTambo();
+  const hasUserMessages =
+    thread?.messages?.some((message) => message.role === "user") ?? false;
+
   return (
     <ThreadContainer disableSidebarSpacing className="flex min-h-0 flex-1">
       <ScrollableMessageContainer className="p-4">
+        {!hasUserMessages && (
+          <div className="mb-4 rounded-xl border border-muted-foreground/20 bg-muted/20 p-3 text-sm text-foreground">
+            {introText}
+          </div>
+        )}
         <ThreadContent>
           <ThreadContentMessages />
         </ThreadContent>
