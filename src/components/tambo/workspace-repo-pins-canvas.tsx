@@ -230,7 +230,7 @@ function RepoPinsCanvasBase({
   };
 
   if (!effectiveIsOpen) {
-    return null;
+    return <section className="hidden" aria-hidden="true" />;
   }
 
   return (
@@ -238,7 +238,7 @@ function RepoPinsCanvasBase({
       <div className="px-4 py-3 border-b border-muted-foreground/20 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-muted/40 text-muted-foreground">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15">
               <Bookmark className="w-4 h-4" />
             </div>
             <div className="font-medium text-foreground text-sm truncate">{title}</div>
