@@ -5,7 +5,7 @@ import { Plus, MessageSquare, Search, ChevronLeft, ChevronRight } from "lucide-r
 import { cn } from "@/lib/utils";
 import { useTamboThread, useTamboThreadList } from "@tambo-ai/react";
 
-export interface AskAmbriaThreadHistoryProps {
+interface AskAmbriaThreadHistoryProps {
     position?: "left" | "right";
 }
 
@@ -65,7 +65,7 @@ export function AskAmbriaThreadHistory({
                     title="Expand sidebar"
                 >
                     {position === "left" ? (
-                        <ChevronRight className="w-5 h-5 text-gray-500" />
+                        <ChevronLeft className="w-5 h-5 text-gray-500" />
                     ) : (
                         <ChevronLeft className="w-5 h-5 text-gray-500" />
                     )}

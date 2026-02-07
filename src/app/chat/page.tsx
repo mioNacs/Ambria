@@ -174,7 +174,7 @@ export default function Home() {
           </div>
         </header>
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          {/* New Sidebar */}
+          {/* Interaction Sidebar */}
           <AskAmbriaThreadHistory />
 
           {/* Main Thread Area */}
