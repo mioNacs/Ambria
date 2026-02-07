@@ -153,7 +153,7 @@ function formatDate(value?: string | null) {
 
 function LabelPill({ label }: { label: string }) {
   return (
-    <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+    <span className="rounded-md border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-700 dark:text-purple-300">
       {label}
     </span>
   );
@@ -190,43 +190,53 @@ export function PullRequestCard({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        "w-full rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/5 via-card to-pink-500/5",
+        "border border-purple-500/50",
+        "shadow-sm shadow-purple-500/5 dark:shadow-purple-500/10",
+        "group transition-all hover:shadow-md hover:shadow-purple-500/10 hover:border-purple-500/60",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 p-4">
         <div className="min-w-0">
-          <div className="text-xs text-muted-foreground">{header}</div>
-          <div className="mt-1 truncate text-base font-semibold text-foreground">
+          <div className="flex items-center gap-2">
+             <span className="text-xs font-medium text-purple-500/80 dark:text-purple-400/80">{header}</span>
+             {draft ? (
+               <span className="rounded-full border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                 Draft
+               </span>
+             ) : null}
+             {state ? (
+               <span className={cn(
+                 "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider border",
+                 state === 'open' 
+                   ? "bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400" 
+                   : "bg-purple-500/10 text-purple-700 border-purple-500/20 dark:text-purple-400"
+               )}>
+                 {state}
+               </span>
+             ) : null}
+          </div>
+
+          <div className="mt-1 truncate text-base font-semibold text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
             {title ?? "(no title)"}
           </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            {draft ? (
-              <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-muted-foreground">
-                Draft
-              </span>
-            ) : null}
-            {state ? (
-              <span className="rounded-md border border-muted-foreground/20 bg-muted/40 px-2 py-0.5 text-muted-foreground">
-                {state}
-              </span>
-            ) : null}
-            {author ? <span>by {author}</span> : null}
-            {created ? <span>• opened {created}</span> : null}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/80">
+            {author ? <span className="flex items-center gap-1">by <span className="font-medium text-foreground/80">{author}</span></span> : null}
+            {created ? <span>• {created}</span> : null}
             {updated ? <span>• updated {updated}</span> : null}
             {closed ? <span>• closed {closed}</span> : null}
             {merged ? (
-              <span className="inline-flex items-center gap-1">
-                • <GitMerge className="size-3.5" /> merged {merged}
+              <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-500/5 px-1.5 py-0.5 rounded-md border border-purple-500/20">
+                • <GitMerge className="size-3" /> merged {merged}
               </span>
             ) : null}
           </div>
 
           {head || base ? (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 font-mono text-xs text-muted-foreground">
+            <div className="mt-2.5 inline-flex items-center gap-2 rounded-md border border-purple-500/20 bg-purple-500/5 px-2 py-1 font-mono text-xs text-purple-600 dark:text-purple-400">
               <GitBranch className="size-3.5" />
               <span className="truncate">{head ?? "?"}</span>
               <span>→</span>
@@ -241,25 +251,25 @@ export function PullRequestCard({
             target="_blank"
             rel="noreferrer"
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-md",
-              "border border-muted-foreground/20 bg-muted/40",
-              "px-2 py-1 text-xs text-foreground",
-              "hover:bg-muted/60 transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "inline-flex shrink-0 items-center justify-center size-8 rounded-lg",
+              "border border-purple-500/20 bg-purple-500/5 text-purple-600 dark:text-purple-400",
+              "hover:bg-purple-500/10 hover:border-purple-500/30 transition-all",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20",
             )}
+            title="Open on GitHub"
           >
-            Open <ExternalLink className="size-3.5" />
+            <ExternalLink className="size-4" />
           </a>
         ) : null}
       </div>
 
       {normalizedLabels.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="px-4 pb-4 pt-0 mt-2 flex flex-wrap gap-1.5">
           {normalizedLabels.map((label) => (
             <LabelPill key={label} label={label} />
           ))}
           {extraLabelsCount > 0 ? (
-            <span className="rounded-md border border-muted-foreground/20 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="rounded-md border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-600 dark:text-purple-400">
               +{extraLabelsCount} more
             </span>
           ) : null}
@@ -267,7 +277,11 @@ export function PullRequestCard({
       ) : null}
 
       {showBodyPreview && body ? (
-        <p className="mt-3 line-clamp-4 text-sm text-muted-foreground">{body}</p>
+        <div className="px-4 pb-4">
+          <p className="line-clamp-3 text-sm text-muted-foreground/90 leading-relaxed bg-background/40 p-3 rounded-lg border border-border/40">
+            {body}
+          </p>
+        </div>
       ) : null}
     </div>
   );
@@ -537,20 +551,26 @@ export function PullRequestList({
       </div>
 
       {items.length === 0 ? (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2 p-8 border border-dashed border-purple-500/20 rounded-xl flex flex-col items-center justify-center text-center bg-purple-500/5">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <div className="flex flex-col items-center gap-2">
+               <div className="size-4 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+               <p className="text-sm text-purple-600/80">Loading pull requests…</p>
+            </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+            <>
+              <GitMerge className="size-8 text-purple-500/20 mb-2" />
+              <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+            </>
           )}
           {error ? (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive bg-destructive/10 px-3 py-1 rounded-md">{error}</p>
           ) : null}
         </div>
       ) : (
         <div className="mt-3 space-y-3">
           {error ? (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive bg-destructive/10 px-3 py-1 rounded-md mb-2">{error}</p>
           ) : null}
           {items.map((pr) => (
             <PullRequestCard
@@ -567,14 +587,20 @@ export function PullRequestList({
                 void fetchPage({ page: currentPage + 1, mode: "append" });
               }}
               className={cn(
-                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
-                "px-3 py-2 text-sm text-foreground",
-                "hover:bg-muted/50 transition-colors",
-                "disabled:opacity-60",
+                "w-full rounded-xl border border-purple-500/20 bg-purple-500/5",
+                "px-4 py-3 text-sm font-medium text-purple-600 dark:text-purple-400",
+                "hover:bg-purple-500/10 hover:border-purple-500/30 transition-all",
+                "disabled:opacity-60 disabled:cursor-not-allowed",
+                "flex items-center justify-center gap-2"
               )}
               disabled={isLoading}
             >
-              {isLoading ? "Loading…" : "Load more"}
+              {isLoading ? (
+                <>
+                  <div className="size-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Loading…
+                </>
+              ) : "Load more pull requests"}
             </button>
           ) : null}
         </div>

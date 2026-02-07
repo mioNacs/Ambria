@@ -4,8 +4,10 @@ export type GitHubWriteKind =
   | "comment"
   | "issue_assignees"
   | "issue_close"
+  | "issue_reopen"
   | "pull_request_merge"
-  | "pull_request_close";
+  | "pull_request_close"
+  | "pull_request_reopen";
 
 type ConfirmationStore =
   Map<string, { expiresAt: number; owner: string; repo: string; kind: GitHubWriteKind }>;

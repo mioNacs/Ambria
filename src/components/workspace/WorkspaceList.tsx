@@ -5,18 +5,39 @@ import { WorkspaceCard } from "./WorkspaceCard";
 import { WorkspaceCardSkeleton } from "./WorkspaceCardSkeleton";
 import { Plus, FolderGit2, Sparkles } from "lucide-react";
 
+import { useState } from "react";
+import { ConfirmationDialog } from "../ui/ConfirmationDialog";
+
 interface WorkspaceListProps {
     workspaces: Workspace[];
     isLoading: boolean;
     onAddClick: () => void;
+    onDelete?: (id: string) => Promise<void>;
 }
 
 export function WorkspaceList({
     workspaces,
     isLoading,
     onAddClick,
+    onDelete,
 }: WorkspaceListProps) {
-    const { deleteWorkspace } = useWorkspaces();
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleConfirmDelete = async () => {
+        if (!deletingId || !onDelete) return;
+        
+        try {
+            setIsDeleting(true);
+            await onDelete(deletingId);
+            setDeletingId(null);
+        } catch (error) {
+            console.error("Failed to delete workspace:", error);
+            // Optionally show error toast here
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -107,11 +128,22 @@ export function WorkspaceList({
                     >
                         <WorkspaceCard
                             workspace={workspace}
-                            onDelete={deleteWorkspace}
+                            onDelete={(id) => setDeletingId(id)}
                         />
                     </div>
                 ))}
             </div>
+
+            <ConfirmationDialog
+                isOpen={!!deletingId}
+                title="Delete Workspace?"
+                description="This will remove the workspace from Ambria. This action cannot be undone, but it won't affect the GitHub repository itself."
+                confirmLabel="Delete Workspace"
+                isDestructive
+                isLoading={isDeleting}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setDeletingId(null)}
+            />
         </>
     );
 }

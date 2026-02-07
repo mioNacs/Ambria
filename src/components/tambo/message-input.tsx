@@ -484,6 +484,29 @@ const MessageInputInternal = React.forwardRef<
     }
   }, [value, thread.id]);
 
+  // Listen for global events to append text to the input (e.g. from RemoteTamboComponents)
+  React.useEffect(() => {
+    const handleAppendInput = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text: string }>;
+      if (customEvent.detail && customEvent.detail.text) {
+        setValue((prev) => {
+            const newValue = prev ? `${prev} ${customEvent.detail.text}` : customEvent.detail.text;
+            setDisplayValue(newValue);
+            return newValue;
+        });
+        // Focus the editor
+        setTimeout(() => {
+            editorRef.current?.focus();
+        }, 0);
+      }
+    };
+
+    window.addEventListener('tambo:append-input', handleAppendInput);
+    return () => {
+      window.removeEventListener('tambo:append-input', handleAppendInput);
+    };
+  }, [setValue]);
+
   const handleSubmit = React.useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();

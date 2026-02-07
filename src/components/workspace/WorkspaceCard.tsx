@@ -40,17 +40,10 @@ const accessConfig = {
 };
 
 export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
-    const confirmDeleteWorkspace = () =>
-        confirm(
-            "Delete this workspace from Ambria? This won't change anything in the GitHub repository."
-        );
-
     const handleDelete = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (onDelete && confirmDeleteWorkspace()) {
-            onDelete(workspace.id);
-        }
+        onDelete?.(workspace.id);
     };
 
     const roleData = roleConfig[workspace.role];

@@ -451,45 +451,50 @@ export function GitHubPullRequestFiles({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border border-muted-foreground/20 bg-card",
-        "p-4",
-        "shadow-sm shadow-black/5 dark:shadow-black/30",
+        "w-full rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/5 via-card to-violet-500/5",
+        "border border-indigo-500/50",
+        "shadow-sm shadow-indigo-500/5 dark:shadow-indigo-500/10",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-        <div className="text-xs text-muted-foreground">
-          {items.length.toLocaleString("en-US")} files
-        </div>
+      <div className="flex items-baseline justify-between gap-4 p-4 border-b border-indigo-500/20 bg-indigo-500/5">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+          {title}
+          <span className="text-xs font-normal text-muted-foreground bg-background/50 px-2 py-0.5 rounded-full border border-indigo-500/10">
+            {items.length.toLocaleString("en-US")} files
+          </span>
+        </h3>
       </div>
 
       {grouped.length === 0 ? (
-        <div className="mt-3 space-y-2">
+        <div className="p-8 flex flex-col items-center justify-center text-center">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <div className="flex flex-col items-center gap-2">
+               <div className="size-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+               <p className="text-sm text-indigo-600/80">Loading changed files…</p>
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           )}
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="text-sm text-destructive mt-2 bg-destructive/10 px-3 py-1 rounded-md">{error}</p> : null}
         </div>
       ) : (
-        <div className="mt-3 space-y-4">
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        <div className="p-4 space-y-4">
+          {error ? <p className="text-sm text-destructive bg-destructive/10 px-3 py-1 rounded-md">{error}</p> : null}
           {grouped.map(([folder, groupFiles]) => (
-            <div key={folder} className="rounded-lg border border-muted-foreground/20 bg-muted/10">
-              <div className="flex items-center gap-2 border-b border-muted-foreground/20 bg-muted/30 px-3 py-2">
-                <FileDiff className="size-4 text-muted-foreground" />
-                <div className="truncate font-mono text-xs text-muted-foreground">
+            <div key={folder} className="rounded-lg border border-indigo-500/20 bg-background/40 overflow-hidden">
+              <div className="flex items-center gap-2 border-b border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+                <FileDiff className="size-4 text-indigo-500/70" />
+                <div className="truncate font-mono text-xs font-medium text-foreground/80">
                   {folder}
                 </div>
-                <div className="ml-auto text-xs text-muted-foreground">
+                <div className="ml-auto text-xs text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded-md">
                   {groupFiles.length.toLocaleString("en-US")}
                 </div>
               </div>
 
-              <div className="divide-y divide-muted-foreground/20">
+              <div className="divide-y divide-indigo-500/10">
                 {groupFiles.map((file) => {
                   const link =
                     file.htmlUrl ??
@@ -517,7 +522,7 @@ export function GitHubPullRequestFiles({
                       key={file.previousFilename
                         ? `${file.previousFilename}->${file.filename}`
                         : file.filename}
-                      className="px-3 py-2"
+                      className="px-3 py-2 hover:bg-indigo-500/5 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -529,8 +534,11 @@ export function GitHubPullRequestFiles({
                             {statusText ? (
                               <span
                                 className={cn(
-                                  "rounded-md px-2 py-0.5 text-xs font-medium",
+                                  "rounded-md px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium border",
                                   getStatusTone(statusText),
+                                  statusText === 'added' && "border-emerald-500/20",
+                                  statusText === 'removed' && "border-red-500/20",
+                                  statusText === 'modified' && "border-border",
                                 )}
                               >
                                 {statusText}
@@ -538,8 +546,8 @@ export function GitHubPullRequestFiles({
                             ) : null}
                           </div>
 
-                          <div className="mt-1 space-y-0.5">
-                            <div className="truncate font-mono text-xs text-muted-foreground">
+                          <div className="mt-1 space-y-0.5 pl-6">
+                            <div className="truncate font-mono text-xs text-muted-foreground/80">
                               {file.filename}
                             </div>
                             {file.previousFilename ? (
@@ -548,8 +556,9 @@ export function GitHubPullRequestFiles({
                               </div>
                             ) : null}
                             {statsText ? (
-                              <div className="text-xs text-muted-foreground">
-                                {statsText}
+                              <div className="text-xs text-muted-foreground flex gap-2">
+                                {typeof file.additions === "number" && <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>}
+                                {typeof file.deletions === "number" && <span className="text-red-600 dark:text-red-400">-{file.deletions}</span>}
                               </div>
                             ) : null}
                           </div>
@@ -561,26 +570,97 @@ export function GitHubPullRequestFiles({
                             target="_blank"
                             rel="noreferrer"
                             className={cn(
-                              "inline-flex shrink-0 items-center gap-1 rounded-md",
-                              "border border-muted-foreground/20 bg-muted/40",
-                              "px-2 py-1 text-xs text-foreground",
-                              "hover:bg-muted/60 transition-colors",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                              "inline-flex shrink-0 items-center justify-center size-7 rounded-md",
+                              "border border-indigo-500/20 bg-indigo-500/5 text-indigo-600 dark:text-indigo-400",
+                              "hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20",
                             )}
                           >
-                            Open <ExternalLink className="size-3.5" />
+                            <ExternalLink className="size-3.5" />
                           </a>
                         ) : null}
                       </div>
 
                       {showPatchPreview && file.patch ? (
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-xs text-muted-foreground">
-                            Diff preview
+                        <details className="mt-2 pl-6">
+                          <summary className="cursor-pointer text-xs text-indigo-500 hover:text-indigo-600 font-medium select-none">
+                            Show diff preview
                           </summary>
-                          <pre className="mt-2 max-h-80 overflow-auto rounded-md border border-muted-foreground/20 bg-background p-2 font-mono text-xs text-foreground">
-                            {file.patch}
-                          </pre>
+                          <div className="mt-2 text-xs font-mono max-h-96 overflow-auto rounded-lg border border-indigo-500/20 bg-background/50 scrollbar-thin scrollbar-thumb-indigo-500/10 scrollbar-track-transparent">
+                            <table className="w-full border-collapse">
+                              <tbody>
+                                {(() => {
+                                  const lines = file.patch.split('\n');
+                                  let oldLn = 0;
+                                  let newLn = 0;
+                                  
+                                  return lines.map((line, i) => {
+                                    // Skip empty last line or very short lines if needed, keeping basic check
+                                    if (i === lines.length - 1 && !line) return null;
+
+                                    let oldNum: number | string = "";
+                                    let newNum: number | string = "";
+                                    let type: 'add' | 'del' | 'hunk' | 'context' | 'meta' = 'context';
+                                    
+                                    // Check line type
+                                    if (line.startsWith("@@")) {
+                                      type = 'hunk';
+                                      // Parse @@ -old,count +new,count @@
+                                      const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+                                      if (match) {
+                                        oldLn = parseInt(match[1]) - 1; 
+                                        newLn = parseInt(match[2]) - 1;
+                                      }
+                                      oldNum = "...";
+                                      newNum = "...";
+                                    } else if (line.startsWith("+")) {
+                                      type = 'add';
+                                      newLn++;
+                                      newNum = newLn;
+                                    } else if (line.startsWith("-")) {
+                                      type = 'del';
+                                      oldLn++;
+                                      oldNum = oldLn;
+                                    } else if (line.startsWith(" ")) {
+                                      type = 'context';
+                                      oldLn++;
+                                      newLn++;
+                                      oldNum = oldLn;
+                                      newNum = newLn;
+                                    } else {
+                                      type = 'meta'; // e.g. "No newline at end of file"
+                                    }
+
+                                    // Determine row styling
+                                    let rowClass = "group/line transition-colors hover:bg-muted/50";
+                                    if (type === 'add') {
+                                      rowClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-l-[3px] border-emerald-500/40";
+                                    } else if (type === 'del') {
+                                      rowClass = "bg-red-500/10 text-red-700 dark:text-red-400 border-l-[3px] border-red-500/40";
+                                    } else if (type === 'hunk') {
+                                      rowClass = "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 font-semibold border-l-[3px] border-indigo-500/40 divide-y divide-indigo-500/20";
+                                    } else {
+                                      rowClass = "text-muted-foreground/80 border-l-[3px] border-transparent";
+                                    }
+
+                                    return (
+                                      <tr key={i} className={rowClass}>
+                                        <td className="w-10 select-none text-right pr-3 py-0.5 text-[10px] text-muted-foreground/40 border-r border-indigo-500/10 font-mono tracking-tighter align-top whitespace-nowrap">
+                                          {oldNum}
+                                        </td>
+                                        <td className="w-10 select-none text-right pr-3 py-0.5 text-[10px] text-muted-foreground/40 border-r border-indigo-500/10 font-mono tracking-tighter align-top whitespace-nowrap">
+                                          {newNum}
+                                        </td>
+                                        <td className="pl-3 py-0.5 whitespace-pre break-all align-top font-mono text-xs">
+                                          {line}
+                                        </td>
+                                      </tr>
+                                    );
+                                  });
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
                         </details>
                       ) : null}
                     </div>
@@ -599,14 +679,20 @@ export function GitHubPullRequestFiles({
                 void fetchPage({ page: currentPage + 1, mode: "append" });
               }}
               className={cn(
-                "w-full rounded-md border border-muted-foreground/20 bg-muted/30",
-                "px-3 py-2 text-sm text-foreground",
-                "hover:bg-muted/50 transition-colors",
-                "disabled:opacity-60",
+                "w-full rounded-xl border border-indigo-500/20 bg-indigo-500/5",
+                "px-4 py-3 text-sm font-medium text-indigo-600 dark:text-indigo-400",
+                "hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all",
+                "disabled:opacity-60 disabled:cursor-not-allowed",
+                "flex items-center justify-center gap-2"
               )}
               disabled={isLoading}
             >
-              {isLoading ? "Loading…" : "Load more"}
+              {isLoading ? (
+                <>
+                  <div className="size-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Loading…
+                </>
+              ) : "Load more files"}
             </button>
           ) : null}
         </div>

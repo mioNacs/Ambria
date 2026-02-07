@@ -229,39 +229,49 @@ function ConfirmMergePRForm({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-background p-4 space-y-4",
+        "rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 via-card to-violet-500/5 p-5 space-y-5",
+        "shadow-sm shadow-purple-500/5",
         className,
       )}
       {...pickSafeDomProps(props)}
     >
-      <div className="space-y-1">
-        <div className="text-sm font-semibold text-foreground">
+      <div className="space-y-1 border-b border-purple-500/10 pb-3">
+        <div className="text-base font-semibold text-foreground flex items-center gap-2">
           Merge GitHub Pull Request
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs font-mono text-muted-foreground bg-purple-500/5 px-2 py-0.5 rounded-md inline-block border border-purple-500/10">
           {owner}/{repo}#{pullNumber}
         </div>
       </div>
 
       {info ? (
-        <div className="rounded-lg border border-muted-foreground/20 bg-muted/20 p-3 space-y-2">
-          <div className="text-sm font-semibold text-foreground truncate">
+        <div className="rounded-lg border border-purple-500/20 bg-background/50 p-4 space-y-2 shadow-sm">
+          <div className="text-sm font-bold text-foreground truncate">
             {info.title}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">
+            <span className="font-mono text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/10">
               {info.headRef} → {info.baseRef}
             </span>
             <span>•</span>
-            <span>{mergeableLabel}</span>
+            <span className={cn(
+              "px-1.5 py-0.5 rounded font-medium border",
+              info.mergeable === true ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" : 
+              info.mergeable === false ? "bg-red-500/10 text-red-700 border-red-500/20" : 
+              "bg-muted/40 text-muted-foreground border-border"
+            )}>
+              {mergeableLabel}
+            </span>
           </div>
-          <div className="text-xs text-muted-foreground">{checksLabel}</div>
+          <div className="text-xs text-muted-foreground pl-0.5 border-l-2 border-purple-500/20 pl-2">
+            {checksLabel}
+          </div>
 
           {reviewSummary ? (
-            <div className="text-xs text-muted-foreground">
-              Reviews: {reviewSummary.approvals} approved
+            <div className="text-xs text-muted-foreground pl-0.5 border-l-2 border-purple-500/20 pl-2">
+              Reviews: <span className="font-medium text-foreground">{reviewSummary.approvals} approved</span>
               {reviewSummary.changesRequested
-                ? ` • ${reviewSummary.changesRequested} changes requested`
+                ? <> • <span className="text-red-500 font-medium">{reviewSummary.changesRequested} changes requested</span></>
                 : ""}
             </div>
           ) : null}
@@ -298,7 +308,7 @@ function ConfirmMergePRForm({
               href={result.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground hover:bg-muted"
+              className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-background/50 px-2 py-1 text-xs text-foreground hover:bg-emerald-500/20 transition-colors"
             >
               Open <ExternalLink className="h-3 w-3" />
             </a>
@@ -306,15 +316,15 @@ function ConfirmMergePRForm({
         </div>
       )}
 
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
+      <div className="space-y-4 pt-2">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">
             Merge method
           </label>
           <select
             value={mergeMethod}
             onChange={(e) => setMergeMethod(e.target.value as PullRequestMergeMethod)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/30"
+            className="w-full rounded-lg border border-purple-500/20 bg-background/60 px-3 py-2 text-sm text-foreground outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/10 transition-all cursor-pointer hover:bg-background/80"
           >
             <option value="merge">Merge commit</option>
             <option value="squash">Squash and merge</option>
@@ -322,25 +332,27 @@ function ConfirmMergePRForm({
           </select>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer group">
           <input
             type="checkbox"
             checked={deleteBranch}
             onChange={(e) => setDeleteBranch(e.target.checked)}
-            className="h-4 w-4 rounded border border-border"
+            className="h-4 w-4 rounded border-purple-500/30 text-purple-600 focus:ring-purple-500/30"
           />
-          Delete head branch after merge (only works for branches in the same repo)
+          <span className="group-hover:text-foreground transition-colors">Delete head branch after merge (only same repo)</span>
         </label>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 pt-2">
         <button
           type="button"
           onClick={handleMerge}
           disabled={!canSubmit}
           className={cn(
-            "rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity",
-            !canSubmit && "opacity-50 cursor-not-allowed",
+            "rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all",
+            "hover:bg-purple-700 hover:shadow-md hover:shadow-purple-500/20",
+            "active:scale-95",
+            !canSubmit && "opacity-50 cursor-not-allowed hover:bg-purple-600 hover:shadow-none active:scale-100",
           )}
         >
           {isSubmitting ? "Merging…" : "Confirm & merge"}
