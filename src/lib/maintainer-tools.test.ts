@@ -24,10 +24,30 @@ mock.module("@octokit/rest", () => {
   return { Octokit };
 });
 
-const { getComponentsForRole, getToolsForRole } = await import("@/lib/tambo");
+const { components, tools, getComponentsForRole, getToolsForRole } = await import(
+  "@/lib/tambo",
+);
 const { setIssueAssignees } = await import("@/services/github-repo");
 
 describe("maintainer tool gating", () => {
+  it("does not accidentally orphan tools/components outside role allowlists", () => {
+    const visibleToolNames = new Set([
+      ...getToolsForRole("contributor").map((t) => t.name),
+      ...getToolsForRole("maintainer").map((t) => t.name),
+    ]);
+    for (const tool of tools) {
+      expect(visibleToolNames.has(tool.name)).toBeTrue();
+    }
+
+    const visibleComponentNames = new Set([
+      ...getComponentsForRole("contributor").map((c) => c.name),
+      ...getComponentsForRole("maintainer").map((c) => c.name),
+    ]);
+    for (const component of components) {
+      expect(visibleComponentNames.has(component.name)).toBeTrue();
+    }
+  });
+
   it("hides maintainer tools and components for contributor role", () => {
     const toolNames = getToolsForRole("contributor").map((t) => t.name);
     expect(toolNames).toContain("getRepoIssues");
