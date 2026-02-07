@@ -20,6 +20,7 @@ export default function Dashboard() {
   const linkedProviders = Array.isArray(user?.app_metadata?.providers)
     ? user.app_metadata.providers
     : [];
+  const linkedProvidersLabel = linkedProviders.join(",");
   const hasGitHubLink =
     authProvider === "github" || linkedProviders.includes("github");
 
@@ -35,9 +36,9 @@ export default function Dashboard() {
     if (!authProvider && linkedProviders.length === 0) return;
 
     console.warn(
-      `Dashboard: provider_token present but no GitHub provider is linked (authProvider='${authProvider}', linkedProviders='${linkedProviders.join(",")}'). GitHub search will run unauthenticated.`,
+      `Dashboard: provider_token present but no GitHub provider is linked (authProvider='${authProvider}', linkedProviders='${linkedProvidersLabel}'). GitHub search will run unauthenticated.`,
     );
-  }, [authProvider, githubToken, linkedProviders, providerToken]);
+  }, [authProvider, githubToken, linkedProvidersLabel, providerToken]);
 
   const askAmbriaContextKey = user?.id
     ? `ask-ambria-dashboard:${user.id}`
