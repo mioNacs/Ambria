@@ -23,19 +23,21 @@ export default function Dashboard() {
   const hasGitHubLink =
     authProvider === "github" || linkedProviders.includes("github");
 
+  // `provider_token` is assumed to be a GitHub access token whenever a GitHub
+  // provider is linked.
   const providerToken = session?.provider_token ?? undefined;
   const githubToken = hasGitHubLink ? providerToken : undefined;
 
-  if (
-    process.env.NODE_ENV !== "production" &&
-    providerToken &&
-    !githubToken &&
-    (authProvider || linkedProviders.length > 0)
-  ) {
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (!providerToken) return;
+    if (githubToken) return;
+    if (!authProvider && linkedProviders.length === 0) return;
+
     console.warn(
       `Dashboard: provider_token present but no GitHub provider is linked (authProvider='${authProvider}', linkedProviders='${linkedProviders.join(",")}'). GitHub search will run unauthenticated.`,
     );
-  }
+  }, [authProvider, githubToken, linkedProviders, providerToken]);
 
   const askAmbriaContextKey = user?.id
     ? `ask-ambria-dashboard:${user.id}`
