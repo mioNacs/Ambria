@@ -64,10 +64,16 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   const getInteractable = React.useCallback(
     (componentName: InteractableComponentName) => {
-      return interactables.find((c) => {
-        if (c.name !== componentName) return false;
-        return c.props.workspaceId === workspaceId;
-      });
+      for (let i = interactables.length - 1; i >= 0; i--) {
+        const c = interactables[i];
+        if (!c) continue;
+        if (c.name !== componentName) continue;
+        const candidateWorkspaceId = (c.props as { workspaceId?: unknown }).workspaceId;
+        if (candidateWorkspaceId !== workspaceId) continue;
+        return c;
+      }
+
+      return undefined;
     },
     [interactables, workspaceId],
   );
@@ -87,10 +93,17 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   React.useEffect(() => {
     if (suppressStateNavigationRef.current) return;
-    if (view !== "list") return;
-    if (viewFromState === "list") return;
+    if (pendingOpen) return;
+    if (viewFromState === view) return;
     setView(viewFromState);
-  }, [view, viewFromState]);
+  }, [pendingOpen, view, viewFromState]);
+
+  React.useEffect(() => {
+    if (!isCollapsed) return;
+    if (pendingOpen || viewFromState !== "list") {
+      setIsCollapsed(false);
+    }
+  }, [isCollapsed, pendingOpen, viewFromState]);
 
   React.useEffect(() => {
     if (role !== "both") return;
@@ -173,15 +186,17 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     const openNames = openTargets.filter(([, isOpen]) => isOpen).map(([name]) => name);
     if (openNames.length <= 1) return;
 
-    const keepByView: InteractableComponentName | null = view === "repoPins"
+    const keepByOpenState: InteractableComponentName | null = pinsIsOpen
       ? "RepoPinsCanvas"
-      : view === "repoFindings"
+      : findingsIsOpen
         ? "RepoFindingsCanvas"
-        : view === "workboards"
-          ? activeWorkboard
-          : null;
+        : maintainerIsOpen
+          ? "MaintainerTriageCanvas"
+          : contributorIsOpen
+            ? "ContributorPlanningCanvas"
+            : null;
 
-    const keep = pendingOpen ?? keepByView ?? openNames[0] ?? null;
+    const keep = pendingOpen ?? keepByOpenState ?? openNames[0] ?? null;
     if (!keep) return;
 
     for (const [name, isOpen] of openTargets) {

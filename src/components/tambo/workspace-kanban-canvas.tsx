@@ -66,6 +66,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
   const StableInteractableWrapper: React.FC<ComponentProps> = (props) => {
     const {
       addInteractableComponent,
+      removeInteractableComponent,
       updateInteractableComponentProps,
       getInteractableComponent,
     } = useTamboInteractable();
@@ -98,6 +99,7 @@ function createStableInteractableComponent<ComponentProps extends object>(
       if (cachedId && cachedComponent) {
         setInteractableId(cachedId);
         return () => {
+          removeInteractableComponent(cachedId);
           if (process.env.NODE_ENV !== "development") {
             interactableKeyToId.delete(stableKey);
           }
@@ -118,12 +120,14 @@ function createStableInteractableComponent<ComponentProps extends object>(
       setInteractableId(id);
 
       return () => {
+        removeInteractableComponent(id);
         if (process.env.NODE_ENV !== "development") {
           interactableKeyToId.delete(stableKey);
         }
       };
     }, [
       addInteractableComponent,
+      removeInteractableComponent,
       getInteractableComponent,
       componentName,
       description,
@@ -412,8 +416,14 @@ function KanbanBoard({
     { card: KanbanCard; columnId: string } | null
   >(null);
 
+  React.useEffect(() => {
+    if (!effectiveIsOpen) {
+      setExpandedCard(null);
+    }
+  }, [effectiveIsOpen]);
+
   if (!effectiveIsOpen) {
-    return null;
+    return <section hidden aria-hidden className="h-full bg-card" />;
   }
 
   if (isLoading) {
