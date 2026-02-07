@@ -24,21 +24,21 @@ export default function Dashboard() {
   const hasGitHubLink =
     authProvider === "github" || linkedProviders.includes("github");
 
-  // `provider_token` is assumed to be a GitHub access token whenever a GitHub
-  // provider is linked.
-  const providerToken = session?.provider_token ?? undefined;
-  const githubToken = hasGitHubLink ? providerToken : undefined;
+  // Supabase exposes `provider_token` for the current OAuth provider.
+  // We only forward it to GitHub APIs when the user is linked to GitHub.
+  const sessionProviderToken = session?.provider_token ?? undefined;
+  const githubToken = hasGitHubLink ? sessionProviderToken : undefined;
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
-    if (!providerToken) return;
-    if (githubToken) return;
+    if (!sessionProviderToken) return;
+    if (hasGitHubLink) return;
     if (!authProvider && linkedProvidersLabel.length === 0) return;
 
     console.warn(
       `Dashboard: provider_token present but no GitHub provider is linked (authProvider='${authProvider}', linkedProviders='${linkedProvidersLabel}'). GitHub search will run unauthenticated.`,
     );
-  }, [authProvider, githubToken, linkedProvidersLabel, providerToken]);
+  }, [authProvider, hasGitHubLink, linkedProvidersLabel, sessionProviderToken]);
 
   const askAmbriaContextKey = user?.id
     ? `ask-ambria-dashboard:${user.id}`
