@@ -428,7 +428,7 @@ export function IssueList({
 
         setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
         setCurrentPage(page);
-        setHasMore(next.length > 0 && next.length === pageSize);
+        setHasMore(next.length === pageSize && page < 100);
       } catch (e) {
         if (controller.signal.aborted) return;
 
