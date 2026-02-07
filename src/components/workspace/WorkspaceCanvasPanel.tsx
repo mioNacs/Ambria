@@ -45,20 +45,15 @@ const VIEW_LABELS: Record<Exclude<CanvasView, "list">, string> = {
 export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanelProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
-  const [view, setView] = React.useState<CanvasView>("list");
-  const [tab, setTab] = React.useState<WorkspaceTab>(() =>
+  const [preferredTab, setPreferredTab] = React.useState<WorkspaceTab>(() =>
     role === "maintainer" ? "maintainer" : "contributor",
   );
+
+  const pendingOpenRef = React.useRef<InteractableComponentName | null>(null);
 
   const interactables = useCurrentInteractablesSnapshot();
   const { setInteractableState, clearInteractableSelections, setInteractableSelected } =
     useTamboInteractable();
-
-  const visibleTab: WorkspaceTab =
-    role === "maintainer" ? "maintainer" : role === "contributor" ? "contributor" : tab;
-
-  const activeWorkboard: InteractableComponentName =
-    visibleTab === "maintainer" ? "MaintainerTriageCanvas" : "ContributorPlanningCanvas";
 
   const getInteractable = React.useCallback(
     (componentName: InteractableComponentName) => {
@@ -70,10 +65,39 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     [interactables, workspaceId],
   );
 
+  const contributorIsOpen = getInteractable("ContributorPlanningCanvas")?.state?.isOpen === true;
+  const maintainerIsOpen = getInteractable("MaintainerTriageCanvas")?.state?.isOpen === true;
+  const pinsIsOpen = getInteractable("RepoPinsCanvas")?.state?.isOpen === true;
+  const findingsIsOpen = getInteractable("RepoFindingsCanvas")?.state?.isOpen === true;
+
+  const view: CanvasView = pinsIsOpen
+    ? "repoPins"
+    : findingsIsOpen
+      ? "repoFindings"
+      : contributorIsOpen || maintainerIsOpen
+        ? "workboards"
+        : "list";
+
+  const visibleTab: WorkspaceTab = role === "maintainer"
+    ? "maintainer"
+    : role === "contributor"
+      ? "contributor"
+      : maintainerIsOpen
+        ? "maintainer"
+        : contributorIsOpen
+          ? "contributor"
+          : preferredTab;
+
+  const activeWorkboard: InteractableComponentName =
+    visibleTab === "maintainer" ? "MaintainerTriageCanvas" : "ContributorPlanningCanvas";
+
   const setIsOpen = React.useCallback(
     (componentName: InteractableComponentName, nextOpen: boolean) => {
       const interactable = getInteractable(componentName);
-      if (!interactable) return;
+      if (!interactable) {
+        if (nextOpen) pendingOpenRef.current = componentName;
+        return;
+      }
 
       const current = interactable.state?.isOpen;
       if (nextOpen) {
@@ -90,6 +114,19 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     [getInteractable, setInteractableState],
   );
 
+  React.useEffect(() => {
+    const pending = pendingOpenRef.current;
+    if (!pending) return;
+
+    const interactable = getInteractable(pending);
+    if (!interactable) return;
+
+    pendingOpenRef.current = null;
+    if (interactable.state?.isOpen !== true) {
+      setInteractableState(interactable.id, "isOpen", true);
+    }
+  }, [getInteractable, setInteractableState]);
+
   const focusInteractable = React.useCallback(
     (componentName: InteractableComponentName) => {
       const interactable = getInteractable(componentName);
@@ -101,16 +138,42 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
   );
 
   React.useEffect(() => {
-    const contributorOpen = view === "workboards" && visibleTab === "contributor";
-    const maintainerOpen = view === "workboards" && visibleTab === "maintainer";
-    const pinsOpen = view === "repoPins";
-    const findingsOpen = view === "repoFindings";
+    const openTargets: Array<[InteractableComponentName, boolean]> = [
+      ["RepoPinsCanvas", pinsIsOpen],
+      ["RepoFindingsCanvas", findingsIsOpen],
+      ["MaintainerTriageCanvas", maintainerIsOpen],
+      ["ContributorPlanningCanvas", contributorIsOpen],
+    ];
+    const firstOpen = openTargets.find(([, isOpen]) => isOpen)?.[0] ?? null;
+    if (!firstOpen) return;
 
-    setIsOpen("ContributorPlanningCanvas", contributorOpen);
-    setIsOpen("MaintainerTriageCanvas", maintainerOpen);
-    setIsOpen("RepoPinsCanvas", pinsOpen);
-    setIsOpen("RepoFindingsCanvas", findingsOpen);
-  }, [setIsOpen, view, visibleTab]);
+    for (const [name, isOpen] of openTargets) {
+      if (name === firstOpen) continue;
+      if (isOpen) setIsOpen(name, false);
+    }
+  }, [
+    contributorIsOpen,
+    findingsIsOpen,
+    maintainerIsOpen,
+    pinsIsOpen,
+    setIsOpen,
+  ]);
+
+  const closeAll = React.useCallback(() => {
+    pendingOpenRef.current = null;
+    setIsOpen("ContributorPlanningCanvas", false);
+    setIsOpen("MaintainerTriageCanvas", false);
+    setIsOpen("RepoPinsCanvas", false);
+    setIsOpen("RepoFindingsCanvas", false);
+  }, [setIsOpen]);
+
+  const openOnly = React.useCallback(
+    (componentName: InteractableComponentName) => {
+      closeAll();
+      setIsOpen(componentName, true);
+    },
+    [closeAll, setIsOpen],
+  );
 
   React.useEffect(() => {
     if (!isFullscreen || typeof window === "undefined") return;
@@ -232,7 +295,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                         "hover:bg-muted/40 transition-colors text-left",
                       )}
                       onClick={() => {
-                        setView("workboards");
+                        openOnly(activeWorkboard);
                         focusInteractable(activeWorkboard);
                       }}
                       title="Open workboards"
@@ -267,9 +330,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                       onClick={() => focusInteractable(activeWorkboard)}
                       title="Focus for assistant"
                     >
-                      {(
-                        getInteractable(activeWorkboard)?.isSelected ?? false
-                      ) ? (
+                      {(getInteractable(activeWorkboard)?.isSelected ?? false) ? (
                         <Target className="w-4 h-4 text-primary" />
                       ) : (
                         <Circle className="w-4 h-4" />
@@ -286,7 +347,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                         "hover:bg-muted/40 transition-colors text-left",
                       )}
                       onClick={() => {
-                        setView("repoPins");
+                        openOnly("RepoPinsCanvas");
                         focusInteractable("RepoPinsCanvas");
                       }}
                       title="Open repo pins"
@@ -338,7 +399,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
                         "hover:bg-muted/40 transition-colors text-left",
                       )}
                       onClick={() => {
-                        setView("repoFindings");
+                        openOnly("RepoFindingsCanvas");
                         focusInteractable("RepoFindingsCanvas");
                       }}
                       title="Open repo findings"
@@ -389,7 +450,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
             <div className="px-4 py-2 border-b border-muted-foreground/20 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => setView("list")}
+                onClick={closeAll}
                 className="inline-flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/40 transition-colors text-muted-foreground hover:text-foreground"
                 title="Back"
               >
@@ -423,94 +484,105 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
               </button>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              {role === "both" && view === "workboards" ? (
-                <div className="px-4 py-2 border-b border-muted-foreground/20">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setTab("contributor")}
-                      className={cn(
-                        "flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
-                        visibleTab === "contributor"
-                          ? "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400"
-                          : "bg-muted/30 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50",
-                      )}
-                    >
-                      Contributor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTab("maintainer")}
-                      className={cn(
-                        "flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
-                        visibleTab === "maintainer"
-                          ? "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400"
-                          : "bg-muted/30 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50",
-                      )}
-                    >
-                      Maintainer
-                    </button>
-                  </div>
+            {role === "both" && view === "workboards" ? (
+              <div className="px-4 py-2 border-b border-muted-foreground/20">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreferredTab("contributor");
+                      openOnly("ContributorPlanningCanvas");
+                    }}
+                    className={cn(
+                      "flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
+                      visibleTab === "contributor"
+                        ? "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400"
+                        : "bg-muted/30 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50",
+                    )}
+                  >
+                    Contributor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreferredTab("maintainer");
+                      openOnly("MaintainerTriageCanvas");
+                    }}
+                    className={cn(
+                      "flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
+                      visibleTab === "maintainer"
+                        ? "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400"
+                        : "bg-muted/30 border-muted-foreground/20 text-muted-foreground hover:bg-muted/50",
+                    )}
+                  >
+                    Maintainer
+                  </button>
                 </div>
-              ) : null}
-
-              <div className={cn(view === "workboards" ? "block" : "hidden")}>
-                {role !== "maintainer" ? (
-                  <div
-                    className={cn(
-                      role === "both" && visibleTab !== "contributor"
-                        ? "hidden"
-                        : "block",
-                    )}
-                  >
-                    <ContributorPlanningCanvas
-                      workspaceId={workspaceId}
-                      title="Contributor planning"
-                      instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
-                      defaultOpen={false}
-                    />
-                  </div>
-                ) : null}
-
-                {role !== "contributor" ? (
-                  <div
-                    className={cn(
-                      role === "both" && visibleTab !== "maintainer"
-                        ? "hidden"
-                        : "block",
-                    )}
-                  >
-                    <MaintainerTriageCanvas
-                      workspaceId={workspaceId}
-                      title="Maintainer triage"
-                      instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
-                      defaultOpen={false}
-                    />
-                  </div>
-                ) : null}
               </div>
-
-              <div className={cn(view === "repoPins" ? "block" : "hidden")}>
-                <RepoPinsCanvas
-                  workspaceId={workspaceId}
-                  title="Repo pins"
-                  instructions="Pin issues, PRs, and files you want to track. Ask the assistant to keep this list up to date."
-                  defaultOpen={false}
-                />
-              </div>
-
-              <div className={cn(view === "repoFindings" ? "block" : "hidden")}>
-                <RepoFindingsCanvas
-                  workspaceId={workspaceId}
-                  title="Repo findings"
-                  instructions="Log analysis findings with severity, status, and references. Ask the assistant to capture findings as you explore the repo."
-                  defaultOpen={false}
-                />
-              </div>
-            </div>
+            ) : null}
           </>
         )}
+
+        <div
+          className={cn(
+            "flex-1 min-h-0 overflow-y-auto",
+            view === "list" ? "hidden" : "block",
+          )}
+        >
+          <div className={cn(view === "workboards" ? "block" : "hidden")}>
+            {role !== "maintainer" ? (
+              <div
+                className={cn(
+                  role === "both" && visibleTab !== "contributor"
+                    ? "hidden"
+                    : "block",
+                )}
+              >
+                <ContributorPlanningCanvas
+                  workspaceId={workspaceId}
+                  title="Contributor planning"
+                  instructions="Use this board to track issues you want to work on. Ask the assistant to add issue links and break work into steps."
+                  defaultOpen={false}
+                />
+              </div>
+            ) : null}
+
+            {role !== "contributor" ? (
+              <div
+                className={cn(
+                  role === "both" && visibleTab !== "maintainer"
+                    ? "hidden"
+                    : "block",
+                )}
+              >
+                <MaintainerTriageCanvas
+                  workspaceId={workspaceId}
+                  title="Maintainer triage"
+                  instructions="Use this board to organize incoming issues/PR work. Ask the assistant for a triage list, then drag items through the columns."
+                  defaultOpen={false}
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <div className={cn(view === "repoPins" ? "block" : "hidden")}>
+            <RepoPinsCanvas
+              workspaceId={workspaceId}
+              title="Repo pins"
+              instructions="Pin issues, PRs, and files you want to track. Ask the assistant to keep this list up to date."
+              defaultOpen={false}
+            />
+          </div>
+
+          <div className={cn(view === "repoFindings" ? "block" : "hidden")}>
+            <RepoFindingsCanvas
+              workspaceId={workspaceId}
+              title="Repo findings"
+              instructions="Log analysis findings with severity, status, and references. Ask the assistant to capture findings as you explore the repo."
+              defaultOpen={false}
+            />
+          </div>
+        </div>
       </div>
       </div>
     </>
