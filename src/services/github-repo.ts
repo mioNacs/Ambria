@@ -1192,9 +1192,14 @@ export interface PRFile {
     htmlUrl?: string;
 }
 
+const MAX_PR_FILE_PATCH_CHARS = 2000;
+
 /**
- * Get the list of files changed in a pull request with their patches
- */
+* Get the list of files changed in a pull request.
+*
+* Supports pagination via `limit` and `page`. Patch snippets are optional and
+* truncated to keep payload size bounded.
+*/
 export async function getPullRequestFiles(params: {
     owner: string;
     repo: string;
@@ -1209,7 +1214,7 @@ export async function getPullRequestFiles(params: {
 
     const normalizedLimit = typeof limit === "number" && Number.isFinite(limit)
         ? Math.max(1, Math.min(Math.trunc(limit), 50))
-        : 50;
+        : 20;
     const normalizedPage = typeof page === "number" && Number.isFinite(page)
         ? Math.max(1, Math.min(Math.trunc(page), 100))
         : 1;
@@ -1232,7 +1237,7 @@ export async function getPullRequestFiles(params: {
             changes: file.changes,
             patch:
                 shouldIncludePatch && file.patch
-                    ? file.patch.slice(0, 2000)
+                    ? file.patch.slice(0, MAX_PR_FILE_PATCH_CHARS)
                     : undefined,
             previousFilename: file.previous_filename,
             htmlUrl: file.blob_url,

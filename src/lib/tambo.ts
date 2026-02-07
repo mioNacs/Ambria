@@ -631,7 +631,7 @@ export const tools: TamboTool[] = [
         .positive()
         .max(50)
         .optional()
-        .describe("Number of files to fetch (default 50, max 50)"),
+        .describe("Number of files to fetch (default 20, max 50)"),
       page: z
         .number()
         .int()
@@ -654,7 +654,10 @@ export const tools: TamboTool[] = [
         additions: z.number(),
         deletions: z.number(),
         changes: z.number(),
-        patch: z.string().optional(),
+        patch: z
+          .string()
+          .optional()
+          .describe("Truncated diff patch snippet (up to 2000 characters)"),
         previousFilename: z.string().optional(),
         htmlUrl: z.string().optional(),
       })

@@ -88,11 +88,12 @@ function resolveOwnerRepo(input: {
   if (owner && repo) return { owner, repo };
 
   const candidate =
-    normalizeOptionalString(input.repository) ??
-    normalizeOptionalString(input.repo) ??
-    normalizeOptionalString(input.owner);
+    normalizeOptionalString(input.repository) ?? normalizeOptionalString(input.repo);
 
   if (!candidate) return null;
+  if (!candidate.includes("/") && !candidate.includes("github.com")) {
+    return null;
+  }
   const parsed = parseGitHubUrl(candidate);
   if (!parsed) return null;
   const parsedOwner = normalizeOptionalString(parsed.owner);
@@ -201,29 +202,51 @@ export function GitHubPullRequestFiles({
   const limit = filesRequest?.limit;
   const page = filesRequest?.page;
 
-  const normalizedRequest = React.useMemo(() => {
+  const resolvedOwnerRepo = React.useMemo(() => {
     if (!hasRequest) return null;
-
-    const ownerRepo = resolveOwnerRepo({
+    return resolveOwnerRepo({
       repository,
       owner,
       repo,
     });
+  }, [hasRequest, owner, repo, repository]);
 
-    if (!ownerRepo) return null;
+  const requestError = React.useMemo(() => {
+    if (!hasRequest) return null;
 
-    if (typeof pullNumber !== "number" || !Number.isFinite(pullNumber)) {
-      return null;
+    if (!resolvedOwnerRepo) {
+      return "Invalid request (missing repository). Provide owner+repo or a repository identifier (owner/repo or URL).";
     }
 
+    if (typeof pullNumber !== "number" || !Number.isFinite(pullNumber)) {
+      return "Invalid request (missing or invalid pull request number).";
+    }
+
+    return null;
+  }, [hasRequest, pullNumber, resolvedOwnerRepo]);
+
+  const normalizedRequest = React.useMemo(() => {
+    if (!hasRequest) return null;
+
+    if (requestError) return null;
+    if (!resolvedOwnerRepo) return null;
+    if (typeof pullNumber !== "number") return null;
+
     return {
-      owner: ownerRepo.owner,
-      repo: ownerRepo.repo,
+      owner: resolvedOwnerRepo.owner,
+      repo: resolvedOwnerRepo.repo,
       pullNumber: Math.trunc(pullNumber),
       limit,
       page,
     };
-  }, [hasRequest, limit, owner, page, pullNumber, repo, repository]);
+  }, [
+    hasRequest,
+    limit,
+    page,
+    pullNumber,
+    requestError,
+    resolvedOwnerRepo,
+  ]);
 
   const pageSize = React.useMemo(() => {
     const limit = normalizedRequest?.limit;
@@ -320,7 +343,7 @@ export function GitHubPullRequestFiles({
 
         setItems((prev) => (mode === "append" ? [...prev, ...next] : next));
         setCurrentPage(page);
-        setHasMore(next.length > 0 && next.length === pageSize);
+        setHasMore(next.length > 0 && next.length === pageSize && page < 100);
       } catch (e) {
         if (controller.signal.aborted) return;
 
@@ -363,12 +386,19 @@ export function GitHubPullRequestFiles({
       return;
     }
 
+    if (requestError) {
+      cancelInFlight();
+      setItems([]);
+      setError(requestError);
+      setHasMore(false);
+      setIsLoading(false);
+      return;
+    }
+
     if (!normalizedRequest) {
       cancelInFlight();
       setItems([]);
-      setError(
-        "Invalid request (missing repository). Provide owner+repo or a repository URL.",
-      );
+      setError("Invalid request.");
       setHasMore(false);
       setIsLoading(false);
       return;
@@ -387,6 +417,7 @@ export function GitHubPullRequestFiles({
     filesPropLength,
     hasRequest,
     normalizedRequest,
+    requestError,
   ]);
 
   React.useEffect(() => {
@@ -564,6 +595,7 @@ export function GitHubPullRequestFiles({
               type="button"
               onClick={() => {
                 if (isLoading) return;
+                if (currentPage >= 100) return;
                 void fetchPage({ page: currentPage + 1, mode: "append" });
               }}
               className={cn(
