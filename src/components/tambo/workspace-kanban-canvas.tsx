@@ -53,12 +53,9 @@ type KanbanCanvasProps = z.infer<typeof kanbanCanvasPropsSchema>;
 type KanbanCard = z.infer<typeof kanbanCardSchema>;
 type KanbanColumn = z.infer<typeof kanbanColumnSchema>;
 
-const interactableKeyToId = new Map<string, string>();
-
 function createStableInteractableComponent<ComponentProps extends object>(
   WrappedComponent: React.ComponentType<ComponentProps>,
   config: InteractableConfig<ComponentProps>,
-  stableKeyFn: (props: ComponentProps) => string,
 ) {
   const displayName =
     WrappedComponent.displayName ?? WrappedComponent.name ?? "Component";
@@ -72,8 +69,6 @@ function createStableInteractableComponent<ComponentProps extends object>(
     } = useTamboInteractable();
 
     const { componentName, description, propsSchema, stateSchema } = config;
-
-    const stableKey = stableKeyFn(props);
     const [interactableId, setInteractableId] = React.useState<string | null>(
       null,
     );
@@ -87,27 +82,6 @@ function createStableInteractableComponent<ComponentProps extends object>(
     const [createdAt] = React.useState(() => new Date().toISOString());
 
     React.useEffect(() => {
-      const cachedId = interactableKeyToId.get(stableKey);
-      const cachedComponent = cachedId
-        ? getInteractableComponent(cachedId)
-        : undefined;
-
-      if (cachedId && !cachedComponent) {
-        interactableKeyToId.delete(stableKey);
-      }
-
-      if (cachedId && cachedComponent) {
-        setInteractableId(cachedId);
-        return () => {
-          // Interactables are UI-scoped here; removing them on unmount prevents
-          // stale duplicates (dev/StrictMode + HMR) and keeps the registry aligned
-          // with what's actually mounted.
-          // `removeInteractableComponent` is idempotent (no-op if the ID isn't present).
-          removeInteractableComponent(cachedId);
-          interactableKeyToId.delete(stableKey);
-        };
-      }
-
       const id = addInteractableComponent({
         name: componentName,
         description,
@@ -117,25 +91,23 @@ function createStableInteractableComponent<ComponentProps extends object>(
         stateSchema,
       });
 
-      interactableKeyToId.set(stableKey, id);
       lastSerializedProps.current = propsRef.current as Record<string, unknown>;
       setInteractableId(id);
 
       return () => {
-        // See note above: keep the interactables registry in sync with mounted UI.
+        // Interactables are UI-scoped here; removing them on unmount prevents stale
+        // duplicates (dev/StrictMode + HMR) and keeps the registry aligned with what's
+        // actually mounted.
         // `removeInteractableComponent` is idempotent (no-op if the ID isn't present).
         removeInteractableComponent(id);
-        interactableKeyToId.delete(stableKey);
       };
     }, [
       addInteractableComponent,
       removeInteractableComponent,
-      getInteractableComponent,
       componentName,
       description,
       propsSchema,
       stateSchema,
-      stableKey,
     ]);
 
     const currentInteractable = interactableId
@@ -425,7 +397,7 @@ function KanbanBoard({
   }, [effectiveIsOpen]);
 
   if (!effectiveIsOpen) {
-    return <section hidden aria-hidden="true" className="h-full bg-card" />;
+    return null;
   }
 
   if (isLoading) {
@@ -962,13 +934,9 @@ const maintainerCanvasConfig: InteractableConfig<KanbanCanvasProps> = {
 export const ContributorPlanningCanvas = createStableInteractableComponent(
   ContributorPlanningCanvasBase,
   contributorCanvasConfig,
-  (props) =>
-    `${contributorCanvasConfig.componentName}:${props.workspaceId ?? "local"}`,
 );
 
 export const MaintainerTriageCanvas = createStableInteractableComponent(
   MaintainerTriageCanvasBase,
   maintainerCanvasConfig,
-  (props) =>
-    `${maintainerCanvasConfig.componentName}:${props.workspaceId ?? "local"}`,
 );

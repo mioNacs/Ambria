@@ -37,6 +37,10 @@ type InteractableComponentName =
   | "RepoPinsCanvas"
   | "RepoFindingsCanvas";
 
+type WorkspaceScopedProps = {
+  workspaceId?: string;
+};
+
 const VIEW_LABELS: Record<Exclude<CanvasView, "list">, string> = {
   workboards: "Workboards",
   repoPins: "Repo pins",
@@ -75,7 +79,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
         const c = interactables[i];
         if (!c) continue;
         if (c.name !== componentName) continue;
-        const candidateWorkspaceId = (c.props as { workspaceId?: string }).workspaceId;
+        const candidateWorkspaceId = (c.props as WorkspaceScopedProps).workspaceId;
         if (candidateWorkspaceId !== workspaceId) continue;
         return c;
       }
@@ -276,10 +280,6 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     }
   }, [closeAllCanvases]);
 
-  const viewForComponent = React.useCallback((componentName: InteractableComponentName) => {
-    return viewForInteractable(componentName);
-  }, []);
-
   const openOnly = React.useCallback(
     (componentName: InteractableComponentName) => {
       if (componentName === "ContributorPlanningCanvas") {
@@ -288,13 +288,13 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
       if (componentName === "MaintainerTriageCanvas") {
         setPreferredTab("maintainer");
       }
-      setView(viewForComponent(componentName));
+      setView(viewForInteractable(componentName));
       closeAllCanvases();
       pendingOpenRef.current = componentName;
       setPendingOpen(componentName);
       setIsOpen(componentName, true);
     },
-    [closeAllCanvases, setIsOpen, viewForComponent],
+    [closeAllCanvases, setIsOpen],
   );
 
   const anyCanvasOpen = contributorIsOpen || maintainerIsOpen || pinsIsOpen || findingsIsOpen;
