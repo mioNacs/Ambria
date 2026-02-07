@@ -437,22 +437,36 @@ export function IssueList({
               }
             | null;
 
-          const fieldError = payload?.details?.fieldErrors
-            ? Object.entries(payload.details.fieldErrors).find(
-                ([, value]) => (value?.length ?? 0) > 0,
-              )
-            : undefined;
-          let detail = fieldError ? `${fieldError[0]}: ${fieldError[1]?.[0]}` : null;
-          if (!detail && (payload?.details?.formErrors?.length ?? 0) > 0) {
-            detail = payload?.details?.formErrors?.[0] ?? null;
-          }
+          const formErrors = payload?.details?.formErrors ?? [];
+          const fieldErrors = payload?.details?.fieldErrors ?? {};
+
+          const fieldErrorMessages = Object.entries(fieldErrors).flatMap(
+            ([field, errors]) =>
+              Array.isArray(errors)
+                ? errors.map((error) => `${field}: ${error}`)
+                : [],
+          );
+          const detailsMessage = [...formErrors, ...fieldErrorMessages]
+            .filter(Boolean)
+            .join("; ");
+
+          const statusMessage =
+            !detailsMessage && !payload?.error
+              ? `Request failed (${response.status}). The server did not provide additional error details.`
+              : undefined;
 
           throw new Error(
-            `${payload?.error ?? `Request failed (${response.status})`}${detail ? ` (${detail})` : ""}`,
+            detailsMessage ||
+              payload?.error ||
+              statusMessage ||
+              `Request failed (${response.status})`,
           );
         }
 
-        const payload = await response.json();
+        const payload = (await response.json().catch(() => null)) as unknown;
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          throw new Error("Received an invalid response from the server");
+        }
         const parsed = issuesApiResponseSchema.safeParse(payload);
         if (!parsed.success) {
           throw new Error("Received an invalid response from the server");

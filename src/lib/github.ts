@@ -49,6 +49,101 @@ export function parseGitHubUrl(input: string): { owner: string; repo: string } |
     return null;
 }
 
+export type ResolveGitHubRepoResult =
+    | {
+          ok: true;
+          owner: string;
+          repo: string;
+      }
+    | {
+          ok: false;
+          details: {
+              formErrors: string[];
+              fieldErrors: Record<string, string[]>;
+          };
+      };
+
+/**
+* Resolve a GitHub repo identifier from request fields.
+*
+* Precedence order (first valid source wins):
+* 1) `repoUrl`
+* 2) `fullName`
+* 3) `repo` (when it looks like a URL or `owner/repo`)
+* 4) `{ owner, repo }`
+*/
+export function resolveGitHubRepoFromRequest(input: {
+    owner?: string;
+    repo?: string;
+    repoUrl?: string;
+    fullName?: string;
+}): ResolveGitHubRepoResult {
+    const fieldErrors: Record<string, string[]> = {};
+
+    let resolved: { owner: string; repo: string } | null = null;
+
+    if (input.repoUrl) {
+        const parsed = parseGitHubUrl(input.repoUrl);
+        if (!parsed) {
+            fieldErrors.repoUrl = ["Could not parse GitHub repository."];
+        } else {
+            resolved = parsed;
+        }
+    }
+
+    if (!resolved && input.fullName) {
+        const parsed = parseGitHubUrl(input.fullName);
+        if (!parsed) {
+            fieldErrors.fullName = ["Could not parse GitHub repository."];
+        } else {
+            resolved = parsed;
+        }
+    }
+
+    if (!resolved && input.repo && (input.repo.includes("/") || input.repo.includes("github.com"))) {
+        const parsed = parseGitHubUrl(input.repo);
+        if (!parsed) {
+            fieldErrors.repo = ["Could not parse GitHub repository."];
+        } else {
+            resolved = parsed;
+        }
+    }
+
+    if (!resolved && input.owner && input.repo) {
+        if (input.repo.includes("/") || input.repo.includes("github.com")) {
+            const parsed = parseGitHubUrl(input.repo);
+            if (!parsed) {
+                fieldErrors.repo = ["Could not parse GitHub repository."];
+            } else {
+                resolved = parsed;
+            }
+        } else {
+            resolved = {
+                owner: input.owner,
+                repo: input.repo,
+            };
+        }
+    }
+
+    if (!resolved) {
+        return {
+            ok: false,
+            details: {
+                formErrors: [
+                    "Provide { owner, repo } or a GitHub URL/full name via { repoUrl } or { fullName }.",
+                ],
+                fieldErrors,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        owner: resolved.owner,
+        repo: resolved.repo,
+    };
+}
+
 /**
  * Fetch repository details from GitHub API
  */

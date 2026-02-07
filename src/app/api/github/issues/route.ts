@@ -1,3 +1,4 @@
+import { resolveGitHubRepoFromRequest } from "@/lib/github";
 import { getRepoIssues } from "@/services/github-repo";
 import { parseGitHubUrl } from "@/lib/github";
 import { NextResponse } from "next/server";
@@ -6,15 +7,30 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const requestSchema = z.object({
-  owner: z.string().min(1),
-  repo: z.string().min(1),
-  state: z.enum(["open", "closed", "all"]).optional(),
-  labels: z.string().optional(),
-  limit: z.coerce.number().int().positive().max(50).optional(),
-  page: z.coerce.number().int().positive().max(100).optional(),
-  token: z.string().optional(),
-});
+const requestSchema = z
+  .object({
+    owner: z.string().min(1).optional(),
+    repo: z.string().min(1).optional(),
+    repoUrl: z.string().min(1).optional(),
+    fullName: z.string().min(1).optional(),
+    state: z.enum(["open", "closed", "all"]).optional(),
+    labels: z.string().optional(),
+    limit: z.coerce.number().int().positive().max(50).optional(),
+    page: z.coerce.number().int().positive().max(100).optional(),
+    token: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      (!!data.owner && !!data.repo) ||
+      !!data.repoUrl ||
+      !!data.fullName ||
+      (!!data.repo && (data.repo.includes("/") || data.repo.includes("github.com"))),
+    {
+      message:
+        "Provide { owner, repo } or a GitHub URL/full name via { repoUrl } or { fullName }.",
+      path: ["repo"],
+    },
+  );
 
 function normalizeOptionalString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -74,14 +90,34 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(normalizedBody);
 
   if (!parsed.success) {
+    const flattened = parsed.error.flatten();
     return NextResponse.json(
       {
         error: "Invalid request",
-        details: parsed.error.flatten(),
+        details: {
+          formErrors: flattened.formErrors,
+          fieldErrors: flattened.fieldErrors,
+        },
       },
       { status: 400 },
     );
   }
+
+  const resolvedRepo = resolveGitHubRepoFromRequest(parsed.data);
+  if (!resolvedRepo.ok) {
+    return NextResponse.json(
+      {
+        error: "Invalid request",
+        details: {
+          formErrors: resolvedRepo.details.formErrors,
+          fieldErrors: resolvedRepo.details.fieldErrors,
+        },
+      },
+      { status: 400 },
+    );
+  }
+
+  const { owner, repo } = resolvedRepo;
 
   try {
     const limit = parsed.data.limit ?? 20;
@@ -97,9 +133,13 @@ export async function POST(request: Request) {
     }
 
     const issues = await getRepoIssues({
-      ...parsed.data,
+      owner,
+      repo,
+      state: parsed.data.state,
+      labels: parsed.data.labels,
       limit,
       page,
+      token: parsed.data.token,
     });
     return NextResponse.json({ issues });
   } catch (error) {
