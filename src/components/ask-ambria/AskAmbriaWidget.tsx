@@ -1,0 +1,218 @@
+"use client";
+
+import {
+  MessageInput,
+  MessageInputError,
+  MessageInputSubmitButton,
+  MessageInputTextarea,
+  MessageInputToolbar,
+} from "@/components/tambo/message-input";
+import {
+  MessageSuggestions,
+  MessageSuggestionsList,
+  MessageSuggestionsStatus,
+} from "@/components/tambo/message-suggestions";
+import { ScrollableMessageContainer } from "@/components/tambo/scrollable-message-container";
+import { ThreadContainer } from "@/components/tambo/thread-container";
+import {
+  ThreadContent,
+  ThreadContentMessages,
+} from "@/components/tambo/thread-content";
+import { askAmbriaComponents, askAmbriaTools } from "@/lib/ask-ambria/tambo-registry";
+import { cn } from "@/lib/utils";
+import type { InitialTamboThreadMessage, Suggestion } from "@tambo-ai/react";
+import { TamboProvider } from "@tambo-ai/react";
+import { MessageSquareText, X } from "lucide-react";
+import * as React from "react";
+
+const contextKey = "ask-ambria-dashboard";
+
+const initialMessages: InitialTamboThreadMessage[] = [
+  {
+    role: "system",
+    content:
+      "You are Ambria, a friendly open source mentor. Help users learn open source fundamentals and contribute confidently. When users ask for project recommendations: ask for their preferred tech stack (language) and skill level, then call searchOpenSourceProjects and present the results using the OpenSourceProjectList component. For common questions (what is open source, etiquette, finding projects, raising a good PR), prefer using the OpenSourceGuide component when it fits. Keep answers practical and concise.",
+  },
+];
+
+const suggestionTemplates = {
+  whatIsOpenSource: {
+    id: "ask-ambria-what-is-open-source",
+    title: "What is open source?",
+    detailedSuggestion: "What is open source software?",
+    messageId: "ask-ambria-what-is-open-source",
+  },
+  dosAndDonts: {
+    id: "ask-ambria-dos-and-donts",
+    title: "Do’s and don’ts",
+    detailedSuggestion: "What are open source do’s and don’ts?",
+    messageId: "ask-ambria-dos-and-donts",
+  },
+  recommendProjects: {
+    id: "ask-ambria-recommend-projects",
+    title: "Recommend projects",
+    detailedSuggestion:
+      "Find me some good open source projects to contribute to. Ask me my preferred tech stack and skill level first.",
+    messageId: "ask-ambria-recommend-projects",
+  },
+  goodPr: {
+    id: "ask-ambria-good-pr",
+    title: "Raise a good PR",
+    detailedSuggestion: "How do I raise a good pull request?",
+    messageId: "ask-ambria-good-pr",
+  },
+} satisfies Record<string, Suggestion>;
+
+const defaultSuggestions: Suggestion[] = [
+  suggestionTemplates.whatIsOpenSource,
+  suggestionTemplates.dosAndDonts,
+  suggestionTemplates.recommendProjects,
+  suggestionTemplates.goodPr,
+];
+
+function AskAmbriaChat() {
+  return (
+    <ThreadContainer disableSidebarSpacing className="flex min-h-0 flex-1">
+      <ScrollableMessageContainer className="p-4">
+        <ThreadContent>
+          <ThreadContentMessages />
+        </ThreadContent>
+      </ScrollableMessageContainer>
+
+      <MessageSuggestions>
+        <MessageSuggestionsStatus />
+      </MessageSuggestions>
+
+      <div className="px-4 pb-3">
+        <MessageInput>
+          <MessageInputTextarea placeholder="Ask Ambria about open source…" />
+          <MessageInputToolbar>
+            <MessageInputSubmitButton />
+          </MessageInputToolbar>
+          <MessageInputError />
+        </MessageInput>
+      </div>
+
+      <MessageSuggestions initialSuggestions={defaultSuggestions}>
+        <MessageSuggestionsList />
+      </MessageSuggestions>
+    </ThreadContainer>
+  );
+}
+
+export interface AskAmbriaWidgetProps {
+  userToken?: string;
+  githubToken?: string;
+}
+
+export function AskAmbriaWidget({ userToken, githubToken }: AskAmbriaWidgetProps) {
+  const apiKey = process.env.NEXT_PUBLIC_TAMBO_API_KEY;
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
+  if (!apiKey) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className={cn(
+          "fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gray-900 px-4 py-3 text-sm font-medium text-white shadow-lg",
+          "hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50",
+        )}
+      >
+        <MessageSquareText className="h-5 w-5" />
+        Ask Ambria
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[100]">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Close Ask Ambria"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Ask Ambria"
+            className={cn(
+              "absolute bottom-6 right-6 flex h-[70vh] w-[min(420px,calc(100vw-3rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl",
+              "sm:h-[620px]",
+            )}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white/80 px-4 py-3 backdrop-blur">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900">
+                  Ask Ambria
+                </div>
+                <div className="text-xs text-gray-500">
+                  Open source mentor
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1">
+              <TamboProvider
+                apiKey={apiKey}
+                tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
+                components={askAmbriaComponents}
+                tools={askAmbriaTools}
+                userToken={userToken}
+                contextKey={contextKey}
+                initialMessages={initialMessages}
+                contextHelpers={{
+                  open_source_mode: () => ({
+                    assistantStyle:
+                      "Be practical and encouraging. Prefer checklists, short examples, and next steps.",
+                  }),
+                  github_token: () =>
+                    githubToken
+                      ? {
+                          token: githubToken,
+                          instructions:
+                            "When calling searchOpenSourceProjects, pass this token as the token param to reduce rate limits.",
+                        }
+                      : null,
+                }}
+              >
+                <AskAmbriaChat />
+              </TamboProvider>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

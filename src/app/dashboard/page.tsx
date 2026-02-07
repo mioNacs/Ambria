@@ -8,10 +8,11 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { WorkspaceList } from "@/components/workspace/WorkspaceList";
 import { AddWorkspaceModal } from "@/components/workspace/AddWorkspaceModal";
+import { AskAmbriaWidget } from "@/components/ask-ambria/AskAmbriaWidget";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, session, isLoading: authLoading } = useAuth();
   const { workspaces, isLoading: workspacesLoading, refetch } = useWorkspaces();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -114,6 +115,11 @@ export default function Dashboard() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={refetch}
+      />
+
+      <AskAmbriaWidget
+        userToken={session?.access_token}
+        githubToken={session?.provider_token ?? undefined}
       />
     </div>
   );
