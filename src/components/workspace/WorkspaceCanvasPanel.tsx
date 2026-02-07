@@ -100,38 +100,27 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     [getInteractable, setInteractableState],
   );
 
-  const focusInteractable = React.useCallback(
-    (componentName: InteractableComponentName) => {
-      const interactable = getInteractable(componentName);
-      if (!interactable) {
-        setPendingFocus(componentName);
-        return;
-      }
-      clearInteractableSelections();
-      setInteractableSelected(interactable.id, true);
-    },
-    [clearInteractableSelections, getInteractable, setInteractableSelected],
-  );
+  const focusInteractable = React.useCallback((componentName: InteractableComponentName) => {
+    setPendingFocus(componentName);
+  }, []);
 
   React.useEffect(() => {
     if (!pendingFocus) return;
+
+    const timeout = setTimeout(() => setPendingFocus(null), 2000);
     const interactable = getInteractable(pendingFocus);
-    if (!interactable) return;
+    if (!interactable) return () => clearTimeout(timeout);
+
     clearInteractableSelections();
     setInteractableSelected(interactable.id, true);
     setPendingFocus(null);
+    return () => clearTimeout(timeout);
   }, [
     pendingFocus,
     clearInteractableSelections,
     getInteractable,
     setInteractableSelected,
   ]);
-
-  React.useEffect(() => {
-    if (!pendingFocus) return;
-    const timeout = setTimeout(() => setPendingFocus(null), 2000);
-    return () => clearTimeout(timeout);
-  }, [pendingFocus]);
 
   React.useEffect(() => {
     const contributorOpen = view === "workboards" && visibleTab === "contributor";
@@ -167,6 +156,9 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isFullscreen]);
+
+  const headerTitle = view === "list" ? "Workboards" : VIEW_LABELS[view];
+  const headerSubtitle = view === "list" ? "Click an item to open it" : "Back to list";
 
   return (
     <>
@@ -204,10 +196,10 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
           <>
             <div className="min-w-0">
               <div className="font-medium text-foreground text-sm truncate">
-                Workboards
+                {headerTitle}
               </div>
               <div className="text-xs text-muted-foreground">
-                Click an item to open it
+                {headerSubtitle}
               </div>
             </div>
             <div className="flex items-center gap-1">

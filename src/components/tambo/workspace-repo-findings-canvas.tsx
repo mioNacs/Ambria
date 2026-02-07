@@ -196,6 +196,7 @@ function RepoFindingsCanvasBase({
   };
 
   if (!effectiveIsOpen) {
+    // Keep mounted (hidden) so the workspace panel can open this interactable later.
     return <div className="hidden" />;
   }
 
