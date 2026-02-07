@@ -112,8 +112,8 @@ export default function WorkspacePage() {
                             description: workspace.repo_description || "",
                             language: workspace.repo_language || "",
                             stars: workspace.repo_stars || 0,
-                            userRole: workspace.role,
-                            effectiveUserRole: effectiveRole,
+                            configuredUserRole: workspace.role,
+                            userRole: effectiveRole,
                             detectedAccess: workspace.detected_access,
                             hasWriteAccess: hasGitHubWriteAccess,
                             roleDescription:

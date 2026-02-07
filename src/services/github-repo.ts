@@ -71,7 +71,7 @@ async function assertRepoWriteAccess(params: {
             );
         }
     } catch (error) {
-        if (error instanceof Error && error.message.includes("Write access required")) {
+        if (error instanceof Error && error.message.startsWith("Write access required")) {
             throw error;
         }
 

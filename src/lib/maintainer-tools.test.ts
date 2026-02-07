@@ -33,7 +33,9 @@ describe("maintainer tool gating", () => {
     expect(toolNames).toContain("getRepoIssues");
     expect(toolNames).not.toContain("getRepoPullRequests");
     expect(toolNames).not.toContain("createRepoIssue");
+    expect(toolNames).not.toContain("setIssueAssignees");
     expect(toolNames).not.toContain("closeRepoIssue");
+    expect(toolNames).not.toContain("getRepoMaintainers");
 
     const componentNames = getComponentsForRole("contributor").map(
       (c) => c.name,
@@ -41,6 +43,7 @@ describe("maintainer tool gating", () => {
     expect(componentNames).toContain("IssueList");
     expect(componentNames).not.toContain("PullRequestList");
     expect(componentNames).not.toContain("GitHubCreateIssue");
+    expect(componentNames).not.toContain("ConfirmAssignIssue");
     expect(componentNames).not.toContain("ConfirmCloseIssue");
   });
 
