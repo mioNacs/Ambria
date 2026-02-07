@@ -64,6 +64,7 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
 
   const getInteractable = React.useCallback(
     (componentName: InteractableComponentName) => {
+      // Walk from the end so the newest interactable wins (avoids stale duplicates in dev/StrictMode).
       for (let i = interactables.length - 1; i >= 0; i--) {
         const c = interactables[i];
         if (!c) continue;
@@ -91,16 +92,27 @@ export function WorkspaceCanvasPanel({ role, workspaceId }: WorkspaceCanvasPanel
         ? "workboards"
         : "list";
 
+  const lastViewFromStateRef = React.useRef<CanvasView>(viewFromState);
+
   React.useEffect(() => {
     if (suppressStateNavigationRef.current) return;
+    // While we're intentionally opening a specific canvas, keep the local `view` stable.
     if (pendingOpen) return;
     if (viewFromState === view) return;
     setView(viewFromState);
-  }, [pendingOpen, view, viewFromState]);
+  }, [pendingOpen, setView, view, viewFromState]);
 
   React.useEffect(() => {
+    const prevViewFromState = lastViewFromStateRef.current;
+    lastViewFromStateRef.current = viewFromState;
+
     if (!isCollapsed) return;
-    if (pendingOpen || viewFromState !== "list") {
+    if (pendingOpen) {
+      setIsCollapsed(false);
+      return;
+    }
+
+    if (prevViewFromState !== viewFromState && viewFromState !== "list") {
       setIsCollapsed(false);
     }
   }, [isCollapsed, pendingOpen, viewFromState]);

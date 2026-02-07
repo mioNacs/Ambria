@@ -99,10 +99,11 @@ function createStableInteractableComponent<ComponentProps extends object>(
       if (cachedId && cachedComponent) {
         setInteractableId(cachedId);
         return () => {
+          // Interactables are UI-scoped here; removing them on unmount prevents
+          // stale duplicates (dev/StrictMode + HMR) and keeps the registry aligned
+          // with what's actually mounted.
           removeInteractableComponent(cachedId);
-          if (process.env.NODE_ENV !== "development") {
-            interactableKeyToId.delete(stableKey);
-          }
+          interactableKeyToId.delete(stableKey);
         };
       }
 
@@ -120,10 +121,9 @@ function createStableInteractableComponent<ComponentProps extends object>(
       setInteractableId(id);
 
       return () => {
+        // See note above: keep the interactables registry in sync with mounted UI.
         removeInteractableComponent(id);
-        if (process.env.NODE_ENV !== "development") {
-          interactableKeyToId.delete(stableKey);
-        }
+        interactableKeyToId.delete(stableKey);
       };
     }, [
       addInteractableComponent,
@@ -423,7 +423,9 @@ function KanbanBoard({
   }, [effectiveIsOpen]);
 
   if (!effectiveIsOpen) {
-    return <section hidden aria-hidden className="h-full bg-card" />;
+    return (
+      <section hidden={!effectiveIsOpen} aria-hidden={!effectiveIsOpen} className="h-full bg-card" />
+    );
   }
 
   if (isLoading) {
