@@ -153,6 +153,18 @@ function CodeHeader({
   );
 }
 
+function LineNumbersColumn({ lineCount }: { lineCount: number }) {
+  return (
+    <div className="absolute left-0 top-0 bottom-0 w-8 bg-muted/20 border-r border-muted-foreground/10 text-[10px] text-muted-foreground/50 font-mono flex flex-col items-end pr-2 pt-4 select-none">
+      {Array.from({ length: lineCount }).map((_, i) => (
+        <div key={i} className="leading-relaxed h-[1.5em]">
+          {i + 1}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function GitHubFileViewer({
   title = "File",
   path,
@@ -167,6 +179,13 @@ export function GitHubFileViewer({
   const deferredContent = React.useDeferredValue(content ?? "");
   const inferredLanguage = language ?? inferHljsLanguage(path);
   const resolvedMaxHeight = typeof maxHeight === "number" ? maxHeight : 420;
+
+  // Keep line numbers in sync with highlighting, which uses deferredContent.
+  // deferredContent is normalized to a string via `useDeferredValue(content ?? "")`, so `split()` is safe.
+  const lineCount = React.useMemo(
+    () => Math.max(1, deferredContent.split("\n").length),
+    [deferredContent],
+  );
 
   const highlight = React.useMemo(() => {
     if (!deferredContent) {
@@ -252,11 +271,7 @@ export function GitHubFileViewer({
             <pre className="p-4 text-xs leading-relaxed font-mono">
                 {highlight.kind === "html" ? (
                 <div className="relative">
-                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-muted/20 border-r border-muted-foreground/10 text-[10px] text-muted-foreground/50 font-mono flex flex-col items-end pr-2 pt-4 select-none">
-                    {Array.from({ length: content.split('\n').length }).map((_, i) => (
-                      <div key={i} className="leading-relaxed h-[1.5em]">{i + 1}</div>
-                    ))}
-                  </div>
+                  <LineNumbersColumn lineCount={lineCount} />
                   <code
                     className={cn(
                       "hljs block !bg-transparent !p-0 !pl-10 !pt-4 !pb-4",
@@ -269,11 +284,7 @@ export function GitHubFileViewer({
                 </div>
               ) : (
                 <div className="relative">
-                   <div className="absolute left-0 top-0 bottom-0 w-8 bg-muted/20 border-r border-muted-foreground/10 text-[10px] text-muted-foreground/50 font-mono flex flex-col items-end pr-2 pt-4 select-none">
-                    {Array.from({ length: content.split('\n').length }).map((_, i) => (
-                      <div key={i} className="leading-relaxed h-[1.5em]">{i + 1}</div>
-                    ))}
-                  </div>
+                  <LineNumbersColumn lineCount={lineCount} />
                   <code
                     className={cn(
                       "hljs block !bg-transparent !p-0 !pl-10 !pt-4 !pb-4",
