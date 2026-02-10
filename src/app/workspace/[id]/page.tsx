@@ -63,7 +63,7 @@ export default function WorkspacePage() {
     // Error state
     if (error || !workspace) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+            <div className="min-h-screen bg-green-50/50 flex flex-col items-center justify-center">
                 <p className="text-red-500 mb-4" role="alert">
                     {error || "Workspace not found"}
                 </p>
@@ -102,7 +102,7 @@ export default function WorkspacePage() {
             : configuredRole;
 
     return (
-        <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
+        <div className="h-dvh bg-green-50/50 flex flex-col overflow-hidden">
             {/* Workspace Header */}
             <WorkspaceHeader workspace={workspace} />
 

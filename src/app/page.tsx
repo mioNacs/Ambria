@@ -35,10 +35,10 @@ function FeatureCard({
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 320, damping: 24 }}
-      className="group rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-6 shadow-sm hover:shadow-md transition-shadow"
+      className="group rounded-2xl border-2 border-black bg-white/70 backdrop-blur p-6 shadow-sm hover:shadow-md transition-shadow"
     >
-      <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-xl bg-gray-900 text-white flex items-center justify-center shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-xl text-gray-900 bg-green-50/50 border-2 border-black flex items-center justify-center shadow-sm">
           {icon}
         </div>
         <div>
@@ -80,7 +80,7 @@ export default function LandingPage() {
   const bgOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.6]);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div ref={containerRef} className="min-h-screen bg-green-50/50 overflow-x-hidden">
       {/* Background */}
       <motion.div
         aria-hidden
@@ -93,7 +93,7 @@ export default function LandingPage() {
       </motion.div>
 
       {/* Top nav */}
-      <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/70 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b-2 border-black bg-white/70 backdrop-blur">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
@@ -109,13 +109,13 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="#features"
-                className="hidden sm:inline-flex text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="hidden sm:inline-flex text-sm text-gray-900 hover:text-emerald-700 transition-colors"
               >
                 Features
               </Link>
               <Link
                 href="#signin"
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-white transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border-2 border-gray-900 bg-white/80 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-white transition-colors"
               >
                 Get started
               </Link>
@@ -134,11 +134,11 @@ export default function LandingPage() {
               transition={{ duration: 0.55, ease: "easeOut", delay: 0.05 }}
               className="relative order-2 lg:order-1"
             >
-              <div className="rounded-3xl border border-gray-200 bg-white/75 backdrop-blur shadow-sm overflow-hidden">
+              <div className="rounded-3xl border-2 border-black bg-white/75 backdrop-blur shadow-sm overflow-hidden">
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <ShieldCheck className="w-4 h-4 text-emerald-800" />
                       Secure GitHub OAuth
                     </div>
                     <div className="text-xs text-gray-500">No access without permission</div>
@@ -170,10 +170,10 @@ export default function LandingPage() {
                         key={item.title}
                         whileHover={{ y: -4 }}
                         transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                        className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4"
+                        className="rounded-2xl border-2 border-gray-900 bg-green-50/50 px-4 py-4"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-gray-900 text-white">
+                          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl border-2 border-gray-900 bg-white text-gray-900">
                             {item.icon}
                           </div>
                           <div>
@@ -214,7 +214,7 @@ export default function LandingPage() {
                     ].map((chip) => (
                       <div
                         key={chip.label}
-                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700"
+                        className="inline-flex items-center gap-2 rounded-full border-2 border-gray-900 bg-green-50/50 px-3 py-1 text-xs text-gray-700"
                       >
                         {chip.icon}
                         {chip.label}
@@ -231,12 +231,12 @@ export default function LandingPage() {
               transition={{ duration: 0.55, ease: "easeOut" }}
               className="order-1 lg:order-2"
             >
-              <div className="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1 text-sm text-gray-700">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <div className="inline-flex items-center gap-2 rounded-full bg-white border-2 border-emerald-600 px-3 py-1 text-sm text-gray-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-600" />
                 Open source workspace assistant
               </div>
 
-              <h1 className="mt-6 text-3xl sm:text-5xl font-semibold tracking-tight text-gray-900">
+              <h1 className="mt-6 text-3xl sm:text-5xl font-semibold tracking-tight">
                 <span className="block">Move faster across issues, PRs, and codebase context</span>
                 <span className="block">
                   <span className="gradient-text">with AI</span>
@@ -257,7 +257,7 @@ export default function LandingPage() {
                 </div>
                 <Link
                   href="#features"
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-gray-200 bg-white/80 hover:bg-white text-gray-900 font-medium transition-colors"
+                  className="inline-flex items-center font-bold justify-center gap-2 px-5 py-3.5 rounded-xl border-2 border-gray-900 bg-white hover:text-emerald-600 hover:border-emerald-600 text-gray-900 transition-colors"
                 >
                   Explore features
                   <ArrowRight className="w-4 h-4" />
@@ -283,7 +283,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features */}
-        <section id="features" className="pb-14 lg:pb-20">
+        <section id="features" className="pb-14 pt-8 lg:pb-20">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -324,7 +324,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-120px" }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="rounded-3xl border border-gray-200 bg-white/70 backdrop-blur p-8 lg:p-10 shadow-sm"
+            className="rounded-3xl border-2 border-black bg-white/70 backdrop-blur p-8 lg:p-10 shadow-sm"
           >
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">How it works</h2>
             <p className="mt-2 text-gray-600 max-w-2xl">
@@ -356,10 +356,10 @@ export default function LandingPage() {
                   key={step.title}
                   whileHover={{ y: -6 }}
                   transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                  className="rounded-2xl border border-gray-200 bg-white px-6 py-6"
+                  className="rounded-2xl border-2 border-gray-900 bg-green-50/50 px-6 py-6"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-emerald-600 border-2 border-emerald-600">
                       {step.icon}
                     </div>
                     <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">

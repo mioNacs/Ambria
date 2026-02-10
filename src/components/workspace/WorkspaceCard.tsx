@@ -11,23 +11,23 @@ interface WorkspaceCardProps {
 
 const roleConfig = {
     contributor: {
-        bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50",
+        bg: "bg-emerald-300",
         text: "text-emerald-700",
-        border: "border-emerald-200/60",
+        border: "border-emerald-700",
         icon: GitBranch,
         description: "Contributing to open source"
     },
     maintainer: {
-        bg: "bg-gradient-to-br from-amber-50 to-amber-100/50",
+        bg: "bg-amber-300",
         text: "text-amber-700",
-        border: "border-amber-200/60",
+        border: "border-amber-700",
         icon: Shield,
         description: "Maintaining the project"
     },
     both: {
-        bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50",
+        bg: "bg-indigo-300",
         text: "text-indigo-700",
-        border: "border-indigo-200/60",
+        border: "border-indigo-700",
         icon: Shield,
         description: "Full access"
     },
@@ -56,7 +56,7 @@ export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
             href={`/workspace/${workspace.id}`}
             className="block group"
         >
-            <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden transition-all duration-300 hover:border-gray-300 hover:shadow-lg hover:shadow-gray-100/50 hover:-translate-y-1">
+            <div className="relative bg-white rounded-2xl border-2 border-gray-900 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-gray-100/50 hover:-translate-y-1">
                 {/* Gradient Background Accent */}
                 <div className={`absolute top-0 left-0 right-0 h-1.5 ${roleData.bg}`} />
                 
@@ -68,7 +68,7 @@ export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
                                 <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-emerald-600 transition-colors">
                                     {workspace.repo_name}
                                 </h3>
-                                <ArrowUpRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-all duration-200 -translate-x-1 translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0" />
+                                <ArrowUpRight className="w-4 h-4 text-emerald-600 opacity-0 group-hover:opacity-100 transition-all duration-200 -translate-x-1 translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0" />
                             </div>
                             <p className="text-sm text-gray-500 truncate font-medium">
                                 {workspace.repo_owner}
@@ -76,7 +76,7 @@ export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
                         </div>
                         <button
                             onClick={handleDelete}
-                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-90 sm:group-hover:scale-100"
+                            className="p-2 text-gray-400 border-2 border-white hover:text-rose-600 hover:border-rose-600 rounded-lg transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-90 sm:group-hover:scale-100"
                             title="Delete workspace"
                             aria-label="Delete workspace"
                         >
@@ -97,8 +97,8 @@ export function WorkspaceCard({ workspace, onDelete }: WorkspaceCardProps) {
 
                     {/* Role Badge */}
                     <div className="mb-4">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${roleData.border} ${roleData.bg} ${roleData.text}`}>
-                            <RoleIcon className="w-3.5 h-3.5" />
+                        <div className={`inline-flex items-center gap-2 font-extrabold bg-green-50/50 px-3 py-1.5 rounded-full text-xs border-2 ${roleData.border} ${roleData.text}`}>
+                            <RoleIcon className="w-4.5 h-4.5" />
                             <span>{workspace.role.charAt(0).toUpperCase() + workspace.role.slice(1)}</span>
                         </div>
                     </div>
