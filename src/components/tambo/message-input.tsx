@@ -700,10 +700,10 @@ const MessageInputInternal = React.forwardRef<
       >
         <div
           className={cn(
-            "relative flex flex-col rounded-xl bg-background shadow-md p-2 px-3",
+            "relative flex flex-col rounded-xl p-2 px-3 border-2 border-dashed",
             isDragging
-              ? "border border-dashed border-emerald-400"
-              : "border border-border",
+              ? "border-dashed border-emerald-400"
+              : "border-gray-700",
           )}
         >
           {isDragging && (
