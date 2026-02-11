@@ -40,7 +40,7 @@ export function UserMenu() {
                     if (!isOpen) setSignOutError(null);
                     setIsOpen(!isOpen);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200"
+                className="group flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-all duration-200 border-2 border-transparent hover:border-gray-700"
             >
                 {avatarUrl ? (
                     <img
@@ -56,11 +56,11 @@ export function UserMenu() {
                 <span className="text-sm font-medium text-gray-900 hidden sm:block">
                     {displayName}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 py-2 z-50 animate-scale-in shadow-lg">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border-2 border-gray-700 py-2 z-50 animate-scale-in shadow-lg">
                     <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">{displayName}</p>
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
