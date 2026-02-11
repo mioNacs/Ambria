@@ -120,13 +120,13 @@ export function AddWorkspaceModal({
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="relative bg-white border-2 border-black rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-900">Add Workspace</h2>
                     <button
                         onClick={handleClose}
-                        className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="p-1 text-gray-400 hover:text-gray-900 rounded-full border-2 border-white hover:border-gray-900 transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -138,7 +138,7 @@ export function AddWorkspaceModal({
                     {(step === "input" || step === "error") && (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-900 mb-2">
                                     GitHub Repository URL
                                 </label>
                                 <input
@@ -146,14 +146,14 @@ export function AddWorkspaceModal({
                                     value={repoUrl}
                                     onChange={(e) => setRepoUrl(e.target.value)}
                                     placeholder="https://github.com/owner/repo"
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 border-2 border-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                     onKeyDown={(e) => e.key === "Enter" && handleCheckRepo()}
                                 />
                             </div>
 
                             {error && (
-                                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
-                                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <div className="flex items-center gap-2 p-3 bg-red-50 border-2 border-red-700 rounded-lg">
+                                    <AlertCircle className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
                                     <p className="text-sm text-red-700">{error}</p>
                                 </div>
                             )}
@@ -161,7 +161,7 @@ export function AddWorkspaceModal({
                             <button
                                 onClick={handleCheckRepo}
                                 disabled={!repoUrl.trim()}
-                                className="w-full py-3 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors"
+                                className="w-full py-3 bg-gray-900 hover:bg-green-50 hover:text-black border-2 border-white hover:border-black disabled:bg-gray-300 text-white font-medium rounded-lg transition-all duration-200 disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:text-white"
                             >
                                 Check Repository
                             </button>
@@ -171,16 +171,16 @@ export function AddWorkspaceModal({
                     {/* Checking Step */}
                     {step === "checking" && (
                         <div className="flex flex-col items-center justify-center py-8">
-                            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-4" />
-                            <p className="text-gray-600">Checking repository...</p>
+                            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-4" />
+                            <p className="text-gray-800">Checking repository...</p>
                         </div>
                     )}
 
                     {/* Select Role Step */}
                     {step === "select-role" && repoDetails && permissions && (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             {/* Repo Info */}
-                            <div className="bg-gray-50 rounded-lg p-4">
+                            <div className="bg-green-50/50 rounded-lg px-4 py-3 border-2 border-black">
                                 <div className="flex items-start gap-3">
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-semibold text-gray-900 truncate">
@@ -200,8 +200,8 @@ export function AddWorkspaceModal({
                             </div>
 
                             {/* Access Level */}
-                            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
-                                <Check className="w-5 h-5 text-emerald-500" />
+                            <div className="flex items-center gap-2 p-3 bg-emerald-50 border-2 border-emerald-700 rounded-lg">
+                                <Check className="w-5 h-5 text-emerald-600" />
                                 <span className="text-sm text-emerald-700">
                                     Detected access level:{" "}
                                     <strong className="capitalize">{permissions.access}</strong>
@@ -210,8 +210,8 @@ export function AddWorkspaceModal({
 
                             {/* Role Selection */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Choose your role
+                                <label className="block text-sm underline font-medium text-gray-900 mb-3">
+                                    Choose your role:
                                 </label>
                                 <div className="space-y-2">
                                     <RoleOption
@@ -244,7 +244,7 @@ export function AddWorkspaceModal({
 
                             <button
                                 onClick={handleCreateWorkspace}
-                                className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
+                                className="w-full py-3 bg-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 border-2 border-emerald-600   text-white font-medium rounded-lg transition-colors"
                             >
                                 Create Workspace
                             </button>
@@ -277,13 +277,13 @@ function RoleOption({ label, description, selected, onClick }: RoleOptionProps) 
         <button
             onClick={onClick}
             className={`w-full text-left p-4 rounded-lg border-2 transition-all ${selected
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-emerald-700 bg-emerald-50"
+                    : "border-gray-500 hover:border-gray-900"
                 }`}
         >
             <div className="flex items-center gap-3">
                 <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selected ? "border-emerald-500 bg-emerald-500" : "border-gray-300"
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selected ? "border-emerald-500 bg-emerald-500" : "border-gray-500"
                         }`}
                 >
                     {selected && <div className="w-2 h-2 bg-white rounded-full" />}
